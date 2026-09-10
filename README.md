@@ -14,7 +14,12 @@ Single-file static site. `index.html` is the whole deployment; the internship da
 
        python3 build_data.py path/to/listings.xlsx
 
-   This writes `data.json` and a fresh `index.html` stamped with today's date. Useful flags:
+   This writes `data.json` and a fresh `index.html` stamped with today's date.
+
+   Terms that have already ended are dropped automatically, and a listing whose only
+   advertised term has ended is removed. In September 2026, for example, "Summer 2026"
+   disappears from the Term filter while "Fall 2026" stays. Listings that never name a
+   term are kept. Useful flags:
 
    - `--date "Oct 1, 2026"` to set the "updated" label yourself
    - `--max-age 180` to drop postings older than 180 days (the export can carry listings from a year back)

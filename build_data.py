@@ -102,6 +102,12 @@ def majors_for(desc, title):
 TODAY = dt.date.today()
 # Postings advertise the current cycle and the next two years; anything else is a typo or stale.
 TERM_YEARS = tuple(str(y) for y in range(TODAY.year, TODAY.year + 3))
+# Last month of each academic term, used to tell a term that has already ended from one still ahead.
+SEASON_END_MONTH = {"Winter": 2, "Spring": 5, "Summer": 8, "Fall": 12}
+def term_is_past(term):
+    m = re.match(r"^(Winter|Spring|Summer|Fall)\s+(\d{4})$", term or "")
+    if not m: return False
+    return (int(m.group(2)), SEASON_END_MONTH[m.group(1)]) < (TODAY.year, TODAY.month)
 def term_for(title, desc):
     pats = r"(Summer|Fall|Spring|Winter|Autumn)\s*(20\d\d)|(20\d\d)\s*(Summer|Fall|Spring|Winter)"
     found = []
@@ -365,6 +371,21 @@ def finalize(out):
     out.sort(key=lambda x: x['posted'], reverse=True)   # stable: newest first, then employer A-Z
     return out
 
+def drop_expired(out):
+    """Strip terms that have already ended, and drop a card whose only term has ended.
+
+    A card that never named a term is left alone: it makes no claim about a cycle.
+    """
+    kept, expired = [], []
+    for g in out:
+        live = [t for t in g.get('term') or [] if not term_is_past(t)]
+        past = [t for t in g.get('term') or [] if term_is_past(t)]
+        if past and not live:
+            expired.append(g); continue
+        g['term'] = live
+        kept.append(g)
+    return kept, expired
+
 def json_for_html(out):
     """JSON that is safe to inline inside a <script type="application/json"> block."""
     return json.dumps(out, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
@@ -417,6 +438,11 @@ def main(argv=None):
         out = group_items(items)
         print(f"read {len(data)} rows, skipped {skipped} (blank or duplicate id), grouped {len(items)} postings into {len(out)} cards")
     out = finalize(out)
+    out, expired = drop_expired(out)
+    if expired:
+        print(f"dropped {len(expired)} card(s) whose only term has already ended: "
+              + "; ".join(f"{g['company']} / {g['title'][:40]} ({', '.join(g['term'])})" for g in expired[:8])
+              + (" ..." if len(expired) > 8 else ""))
     if a.stats: print_stats(out, items)
 
     if not a.data or os.path.abspath(a.data) != os.path.abspath(a.json):
