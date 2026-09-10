@@ -37,15 +37,14 @@ Requires Python 3 with `openpyxl` (`pip install openpyxl`).
 
 ## Design
 
-Two colours only: safety orange `#FC5200` as the ground and near-black `#111111` as the ink,
-after an industrial spec-sheet reference. The masthead carries the poster devices, corner
-brackets, a dashed grid, rotated technical labels, a barcode block and a STATUS badge.
-Listings sit on black panels so a long list gives the eye somewhere to rest, with orange
-reserved for employer names, pay and the Apply button.
+Dark, modern and low-chrome. Near-black page `#0B0C0E`, cards `#141619`, one accent
+`#7C8CFF` used only for employer names, pay, freshness and the Apply button. Inter for
+text, IBM Plex Mono for labels and counts, 12px card radius.
 
-Type is Inter Tight for display and body, IBM Plex Mono for the technical labels.
-Every text pair clears WCAG AA: black on orange is 5.7:1, and the panel text runs 6.6:1 or better.
-If you change the orange, re-check those ratios, since white on this orange already fails.
+All colours live in the `:root` block at the top of `template.html`, so the whole look
+swaps by editing that block and rebuilding. Every text pair clears WCAG AA: body text on
+a card is 7.1:1 and the accent 6.1:1. If you change the accent, re-check it against both
+`--bg` and `--panel`.
 
 ## Files
 
@@ -53,7 +52,7 @@ If you change the orange, re-check those ratios, since white on this orange alre
 - `build_data.py`: reads the spreadsheet, classifies each posting (area, majors, term, level, pay, work mode), merges the same role across locations into one card, and renders the page.
 - `index.html`: the generated page. Do not edit by hand; change the template or the script and rebuild.
 - `og.png`: 1200x630 link preview image, referenced by the Open Graph tags in the template.
-  It has no counts on it, so it does not go stale and needs regenerating only if the branding changes.
+  It has no counts on it, so it does not go stale and needs regenerating only if the palette changes.
 
 ## Changing the live URL
 
