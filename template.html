@@ -146,7 +146,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     </div>
   </header>
 
-  <form class="search" role="search" onsubmit="return false">
+  <form class="search" role="search">
     <input id="q" type="search" placeholder="Search by company, title, major, or keyword" autocomplete="off" aria-label="Search internships">
     <button type="button" class="clear" id="clearq">Clear</button>
     <button type="button" id="go">Search</button>
@@ -188,28 +188,49 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 (function(){
   const DATA = JSON.parse(document.getElementById('data').textContent);
   const $ = s => document.querySelector(s);
-  const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const safeUrl = u => /^https?:\/\//i.test(String(u||'')) ? String(u) : '';
   const PAGE = 40;
-  const state = { q:'', area:'', major:'', term:'', level:'', paid:false, remote:false, sort:'new', shown:PAGE };
+  const DEFAULTS = { q:'', area:'', major:'', term:'', level:'', paid:false, remote:false, sort:'new', shown:PAGE };
+  const state = Object.assign({}, DEFAULTS);
+
+  // Normalise every record once so an odd or partial row can never break rendering,
+  // and precompute the lower-cased text that keyword search runs against.
+  DATA.forEach((d, i) => {
+    d.id = String(d.id || i).replace(/[^\w-]/g, '');
+    d.company = String(d.company||''); d.title = String(d.title||'Intern'); d.cat = String(d.cat||'Other');
+    ['majors','term','types','details','counties'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
+    ['pay','level','mode','flag','snippet'].forEach(k => { d[k] = String(d[k]||''); });
+    d.indeed = safeUrl(d.indeed);
+    d.locs = (Array.isArray(d.locs) ? d.locs : []).map(l => ({ loc:String(l&&l.loc||''), apply:safeUrl(l&&l.apply)||d.indeed, county:String(l&&l.county||'') }));
+    if (!d.locs.length) d.locs = [{ loc:'', apply:d.indeed, county:'' }];
+    d.count = Math.max(1, parseInt(d.count,10)||1);
+    d.posted = /^\d{4}-\d{2}-\d{2}$/.test(d.posted||'') ? d.posted : '';
+    d.hay = [d.company, d.title, d.cat, d.majors.join(' '), d.locs.map(l=>l.loc).join(' '), d.counties.join(' '), d.term.join(' '), d.level, d.mode, d.pay, d.flag, d.snippet, d.details.join(' ')].join(' ').toLowerCase();
+  });
 
   const count = (arr, key) => { const m = new Map(); arr.forEach(x => { const v = x[key]; (Array.isArray(v)?v:[v]).forEach(k => { if(k) m.set(k,(m.get(k)||0)+1); }); }); return m; };
   const employers = new Set(DATA.map(d => d.company.toLowerCase().replace(/[.,]/g,'').replace(/\s+-\s+.*$/,'')));
-  const areaCounts = count(DATA,'cat');
+  const areaCounts = count(DATA,'cat'), majorCounts = count(DATA,'majors'), termCounts = count(DATA,'term'), levelCounts = count(DATA,'level');
   $('#st-open').textContent = DATA.length; $('#st-emp').textContent = employers.size;
   $('#st-areas').textContent = areaCounts.size; $('#st-paid').textContent = DATA.filter(d => d.pay).length;
 
   const AREA_ORDER = ['Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
-  const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)));
+  const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)).sort());
   const ul = $('#areas');
   const mkArea = (label, val, n) => { const li=document.createElement('li'); const b=document.createElement('button'); b.type='button'; b.dataset.area=val; b.innerHTML=`<span>${esc(label)}</span><i>${n}</i>`; b.addEventListener('click',()=>{ state.area=(state.area===val?'':val); state.shown=PAGE; render(); }); li.appendChild(b); return li; };
   ul.appendChild(mkArea('All areas','',DATA.length));
   areas.forEach(a => ul.appendChild(mkArea(a,a,areaCounts.get(a))));
 
-  const fill = (sel, map) => [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,n]) => { const o=document.createElement('option'); o.value=k; o.textContent=`${k} (${n})`; sel.appendChild(o); });
-  fill($('#f-major'), count(DATA,'majors'));
-  const termMap = count(DATA,'term');
-  ['Fall 2026','Winter 2027','Spring 2027','Summer 2027','Fall 2027','Winter 2028','Spring 2028'].filter(t=>termMap.has(t)).forEach(t => { const o=document.createElement('option'); o.value=t; o.textContent=`${t} (${termMap.get(t)})`; $('#f-term').appendChild(o); });
-  fill($('#f-level'), count(DATA,'level'));
+  const addOpt = (sel, k, n) => { const o=document.createElement('option'); o.value=k; o.textContent=`${k} (${n})`; sel.appendChild(o); };
+  const fill = (sel, map) => [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,n]) => addOpt(sel,k,n));
+  fill($('#f-major'), majorCounts);
+  // Terms come from the data, ordered chronologically: Winter 2027 runs Dec–Feb so it sits before Spring 2027.
+  const SEASONS = ['Winter','Spring','Summer','Fall'];
+  const termKey = t => { const m=/^(\w+)\s+(\d{4})$/.exec(t); return m ? (+m[2])*10 + Math.max(0,SEASONS.indexOf(m[1])) : 1e9; };
+  [...termCounts.keys()].sort((a,b)=>termKey(a)-termKey(b) || a.localeCompare(b)).forEach(t => addOpt($('#f-term'), t, termCounts.get(t)));
+  fill($('#f-level'), levelCounts);
+  const OPTIONS = { area:new Set(areas), major:new Set(majorCounts.keys()), term:new Set(termCounts.keys()), level:new Set(levelCounts.keys()), sort:new Set(['new','co','title']) };
 
   function matches(d){
     if (state.area && d.cat !== state.area) return false;
@@ -220,21 +241,21 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     if (state.remote && !d.mode) return false;
     if (state.q){
       const q = state.q.toLowerCase().split(/\s+/).filter(Boolean);
-      const hay = (d.company+' '+d.title+' '+d.cat+' '+d.majors.join(' ')+' '+d.locs.map(l=>l.loc).join(' ')+' '+d.snippet).toLowerCase();
-      if (!q.every(w => hay.includes(w))) return false;
+      if (!q.every(w => d.hay.includes(w))) return false;
     }
     return true;
   }
   function sortFn(a,b){
     if (state.sort==='co') return a.company.localeCompare(b.company) || a.title.localeCompare(b.title);
-    if (state.sort==='title') return a.title.localeCompare(b.title);
-    return (b.posted||'').localeCompare(a.posted||'') || a.company.localeCompare(b.company);
+    if (state.sort==='title') return a.title.localeCompare(b.title) || a.company.localeCompare(b.company);
+    return (b.posted||'').localeCompare(a.posted||'') || a.company.localeCompare(b.company) || a.title.localeCompare(b.title);
   }
-  const fmtDate = s => s ? new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+  const fmtDate = s => { if (!s) return ''; const d = new Date(s+'T12:00:00'); return isNaN(d) ? '' : d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); };
 
   function row(d){
     const el = document.createElement('article'); el.className='row';
     const locLine = d.locs.length===1 ? d.locs[0].loc : `${d.locs.length} locations`;
+    const posted = fmtDate(d.posted);
     const chips = [];
     d.term.forEach(t => chips.push(`<span class="chip term">${esc(t)}</span>`));
     if (d.pay) chips.push(`<span class="chip pay">${esc(d.pay)}</span>`);
@@ -243,35 +264,38 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     if (d.level && d.level!=='Undergraduate') chips.push(`<span class="chip">${esc(d.level)}</span>`);
     if (d.flag) chips.push(`<span class="chip flag">${esc(d.flag)}</span>`);
     const majors = d.majors.map(m => `<button type="button" data-major="${esc(m)}">${esc(m)}</button>`).join('');
+    const detId = `det-${d.id}`;
     const details = `
       ${d.details.length ? `<h4>What they ask for</h4><ul>${d.details.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>` : ''}
       ${d.locs.length>1 ? `<h4>Apply by location</h4><div class="locs">${d.locs.map(l=>`<a href="${esc(l.apply)}" target="_blank" rel="noopener">${esc(l.loc)}<span>apply</span></a>`).join('')}</div>` : ''}
-      <div class="src">Posted ${esc(fmtDate(d.posted))} · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a></div>`;
+      <div class="src">${posted ? `Posted ${esc(posted)} · ` : ''}${d.indeed ? `<a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : 'Original listing unavailable'}</div>`;
     el.innerHTML = `
       <div class="main">
-        <div class="co"><span>${esc(d.company)}</span><span class="loc">${esc(locLine)}</span><time datetime="${esc(d.posted)}">${esc(fmtDate(d.posted))}</time></div>
+        <div class="co"><span>${esc(d.company)}</span>${locLine ? `<span class="loc">${esc(locLine)}</span>` : ''}${posted ? `<time datetime="${esc(d.posted)}">${esc(posted)}</time>` : ''}</div>
         <h3>${esc(d.title)}</h3>
         ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
-        <p>${esc(d.snippet)}</p>
+        ${d.snippet ? `<p>${esc(d.snippet)}</p>` : ''}
         ${majors?`<div class="majors">${majors}</div>`:''}
       </div>
       <div class="side">
-        <a class="apply" href="${esc(d.locs[0].apply)}" target="_blank" rel="noopener">Apply ↗</a>
-        <button class="more" type="button" aria-expanded="false">Details</button>
+        ${d.locs[0].apply ? `<a class="apply" href="${esc(d.locs[0].apply)}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
+        <button class="more" type="button" aria-expanded="false" aria-controls="${detId}">Details</button>
       </div>
-      <div class="details">${details}</div>`;
+      <div class="details" id="${detId}">${details}</div>`;
     el.querySelector('.more').addEventListener('click', e => { const b=e.currentTarget, dt=el.querySelector('.details'); const open=!dt.classList.contains('open'); dt.classList.toggle('open',open); b.setAttribute('aria-expanded',open); b.textContent=open?'Hide':'Details'; });
     el.querySelectorAll('.majors button').forEach(b => b.addEventListener('click', () => { state.major=b.dataset.major; $('#f-major').value=state.major; state.shown=PAGE; render(); window.scrollTo({top:$('#filters').offsetTop-12}); }));
     return el;
   }
 
   function render(){
-    document.querySelectorAll('#areas button').forEach(b => { const on=b.dataset.area===state.area; b.setAttribute('aria-pressed',on?'true':'false'); if(on && window.innerWidth<=900) b.scrollIntoView({block:'nearest',inline:'center'}); });
+    document.querySelectorAll('#areas button').forEach(b => { const on=b.dataset.area===state.area; b.setAttribute('aria-pressed',on?'true':'false'); if(on && state.area && window.innerWidth<=900) b.scrollIntoView({block:'nearest',inline:'center'}); });
     const list = DATA.filter(matches).sort(sortFn);
     const wrap = $('#cards'); wrap.innerHTML='';
-    $('#rtitle').innerHTML = state.area ? esc(state.area) : (state.q ? `Results for <em>“${esc(state.q)}”</em>` : 'All areas');
+    const qLabel = state.q ? `<em>“${esc(state.q)}”</em>` : '';
+    $('#rtitle').innerHTML = state.area ? esc(state.area) + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
     const openings = list.reduce((n,d)=>n+d.count,0);
-    $('#rcount').textContent = list.length ? `${list.length} internship${list.length===1?'':'s'}${openings>list.length?` · ${openings} openings across locations`:''}` : '';
+    const shown = Math.min(state.shown, list.length);
+    $('#rcount').textContent = list.length ? `${shown<list.length?`${shown} of `:''}${list.length} internship${list.length===1?'':'s'}${openings>list.length?` · ${openings} openings across locations`:''}` : '';
     if (!list.length){
       wrap.innerHTML = `<div class="empty"><h3>Nothing matches.</h3><p>Try a broader search or clear a filter.</p><button type="button" id="empty-reset">Reset filters</button></div>`;
       $('#empty-reset').addEventListener('click', reset);
@@ -282,18 +306,35 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     $('#clearq').classList.toggle('show', !!state.q);
     writeHash();
   }
-  function reset(){ Object.assign(state,{q:'',area:'',major:'',term:'',level:'',paid:false,remote:false,sort:'new',shown:PAGE}); syncInputs(); render(); }
+  function reset(){ Object.assign(state, DEFAULTS); syncInputs(); render(); }
   function syncInputs(){ $('#q').value=state.q; $('#f-major').value=state.major; $('#f-term').value=state.term; $('#f-level').value=state.level; $('#f-paid').checked=state.paid; $('#f-remote').checked=state.remote; $('#f-sort').value=state.sort; }
-  function writeHash(){ const p=new URLSearchParams(); ['q','area','major','term','level','sort'].forEach(k=>{ if(state[k] && !(k==='sort'&&state[k]==='new')) p.set(k,state[k]); }); if(state.paid) p.set('paid','1'); if(state.remote) p.set('remote','1'); const h=p.toString(); try{ history.replaceState(null,'', h?('#'+h):location.pathname); }catch(e){} }
-  function readHash(){ const p=new URLSearchParams(location.hash.slice(1)); ['q','area','major','term','level','sort'].forEach(k=>{ if(p.get(k)) state[k]=p.get(k); }); state.paid=p.get('paid')==='1'; state.remote=p.get('remote')==='1'; }
+  function writeHash(){
+    const p=new URLSearchParams();
+    ['q','area','major','term','level','sort'].forEach(k=>{ if(state[k] && !(k==='sort'&&state[k]==='new')) p.set(k,state[k]); });
+    if(state.paid) p.set('paid','1'); if(state.remote) p.set('remote','1');
+    const h=p.toString();
+    try{ history.replaceState(null,'', location.pathname+location.search+(h?'#'+h:'')); }catch(e){}
+  }
+  // Only accept hash values that exist as options, so a stale link can't leave an invisible filter applied.
+  function readHash(){
+    Object.assign(state, DEFAULTS);
+    let p; try{ p=new URLSearchParams(location.hash.slice(1)); }catch(e){ return; }
+    state.q=(p.get('q')||'').trim().slice(0,200);
+    ['area','major','term','level','sort'].forEach(k=>{ const v=p.get(k); if(v && OPTIONS[k].has(v)) state[k]=v; });
+    state.paid=p.get('paid')==='1'; state.remote=p.get('remote')==='1';
+  }
 
-  let t; $('#q').addEventListener('input', e => { clearTimeout(t); t=setTimeout(()=>{ state.q=e.target.value.trim(); state.shown=PAGE; render(); },180); });
-  $('#go').addEventListener('click', ()=>{ state.q=$('#q').value.trim(); state.shown=PAGE; render(); });
-  $('#clearq').addEventListener('click', ()=>{ state.q=''; $('#q').value=''; render(); $('#q').focus(); });
+  let t;
+  const setQ = v => { clearTimeout(t); state.q=v.trim(); state.shown=PAGE; render(); };
+  $('#q').addEventListener('input', e => { clearTimeout(t); t=setTimeout(()=>setQ(e.target.value),180); });
+  $('.search').addEventListener('submit', e => { e.preventDefault(); setQ($('#q').value); });
+  $('#go').addEventListener('click', ()=> setQ($('#q').value));
+  $('#clearq').addEventListener('click', ()=>{ $('#q').value=''; setQ(''); $('#q').focus(); });
   [['f-major','major'],['f-term','term'],['f-level','level'],['f-sort','sort']].forEach(([id,k]) => $('#'+id).addEventListener('change', e => { state[k]=e.target.value; state.shown=PAGE; render(); }));
   $('#f-paid').addEventListener('change', e => { state.paid=e.target.checked; state.shown=PAGE; render(); });
   $('#f-remote').addEventListener('change', e => { state.remote=e.target.checked; state.shown=PAGE; render(); });
   $('#reset').addEventListener('click', reset);
+  window.addEventListener('hashchange', ()=>{ readHash(); syncInputs(); render(); });
   readHash(); syncInputs(); render();
 })();
 </script>
