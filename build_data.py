@@ -395,6 +395,7 @@ def main(argv=None):
     ap.add_argument("--template", default=os.path.join(here, "template.html"))
     ap.add_argument("--out", default=os.path.join(here, "index.html"), help="rendered page (default: index.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
+    ap.add_argument("--max-age", type=int, metavar="DAYS", help="drop postings older than DAYS (by postingDateParsed); off by default")
     ap.add_argument("--stats", action="store_true", help="print classification counters")
     ap.add_argument("--check", action="store_true", help="also write check.txt, one line per card, for eyeballing categories")
     a = ap.parse_args(argv)
@@ -408,6 +409,11 @@ def main(argv=None):
     else:
         data = read_rows(a.xlsx)
         items, skipped = build_items(data)
+        if a.max_age is not None:
+            cutoff = (TODAY - dt.timedelta(days=a.max_age)).strftime("%Y-%m-%d")
+            stale = [it for it in items if it['posted'] and it['posted'] < cutoff]
+            items = [it for it in items if not (it['posted'] and it['posted'] < cutoff)]
+            print(f"dropped {len(stale)} postings older than {cutoff}" + (": " + "; ".join(f"{it['company']} / {it['title'][:40]} ({it['posted']})" for it in stale[:8]) + (" ..." if len(stale) > 8 else "") if stale else ""))
         out = group_items(items)
         print(f"read {len(data)} rows, skipped {skipped} (blank or duplicate id), grouped {len(items)} postings into {len(out)} cards")
     out = finalize(out)

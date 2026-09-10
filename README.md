@@ -17,6 +17,7 @@ Single-file static site. `index.html` is the whole deployment; the internship da
    This writes `data.json` and a fresh `index.html` stamped with today's date. Useful flags:
 
    - `--date "Oct 1, 2026"` to set the "updated" label yourself
+   - `--max-age 180` to drop postings older than 180 days (the export can carry listings from a year back)
    - `--stats` to print how postings were categorised
    - `--check` to write `check.txt`, one line per card, for eyeballing categories
    - `--data data.json` to re-render `index.html` from a saved `data.json` without the spreadsheet (for example after editing `template.html`)
