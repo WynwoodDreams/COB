@@ -1,6 +1,10 @@
 # Christian's Opportunity Board
 
-Single-file static site. `index.html` is the whole deployment; the internship data is embedded inside it.
+Static site. `index.html` carries the page and the internship data inline; `og.png` is the
+image that shows when someone shares the link. Those two files are the whole deployment.
+
+Visitors filter by area, county, major, term and level, sort by date, pay or employer, and
+apply straight to the employer. Filter state lives in the URL, so any view can be shared.
 
 ## Deploy to Vercel
 
@@ -36,3 +40,11 @@ Requires Python 3 with `openpyxl` (`pip install openpyxl`).
 - `template.html`: page markup, styles and the client-side filtering script. `__DATA__` and `__DATE__` are filled in by the build.
 - `build_data.py`: reads the spreadsheet, classifies each posting (area, majors, term, level, pay, work mode), merges the same role across locations into one card, and renders the page.
 - `index.html`: the generated page. Do not edit by hand; change the template or the script and rebuild.
+- `og.png`: 1200x630 link preview image, referenced by the Open Graph tags in the template.
+  It has no counts on it, so it does not go stale and needs regenerating only if the branding changes.
+
+## Changing the live URL
+
+The template hardcodes `https://cob-eta.vercel.app/` in the canonical, Open Graph and Twitter
+tags. If the board moves to another domain, update those tags in `template.html` and rebuild,
+otherwise shared links will preview the old address.
