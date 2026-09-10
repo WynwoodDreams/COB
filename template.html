@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Christian's Opportunity Board</title>
+<meta name="description" content="South Florida internships, searchable by major or area, with direct apply links.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#121417; --panel:#1A1D22; --panel-2:#20242B; --rule:#2B313A; --rule-2:#3A414C;
+  --ink:#ECEFF3; --mute:#9AA3AF; --dim:#6B7380;
+  --amber:#F5A524; --amber-2:#FFC457; --amber-dim:rgba(245,165,36,.14);
+  --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'IBM Plex Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit} button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding:26px 24px 60px}
+
+/* header */
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.head h1{font-family:var(--mono);font-weight:600;font-size:clamp(22px,3.2vw,34px);letter-spacing:-.01em;margin:0;line-height:1.1}
+.head h1 span{color:var(--amber)}
+.head .sub{font-family:var(--mono);font-size:12px;color:var(--mute);margin-top:6px}
+.stats{display:flex;gap:22px;font-family:var(--mono);font-size:12px;color:var(--mute)}
+.stats b{display:block;color:var(--ink);font-size:22px;font-weight:600;line-height:1.1}
+
+/* search */
+.search{display:flex;gap:8px;margin:20px 0 0}
+.search input{flex:1;min-width:0;background:var(--panel);border:1px solid var(--rule-2);color:var(--ink);border-radius:8px;padding:13px 16px;font-size:16px;font-family:var(--sans)}
+.search input::placeholder{color:var(--dim)}
+.search input:focus{border-color:var(--amber);outline:none}
+.search button{background:var(--amber);color:#1A1200;border:0;border-radius:8px;padding:0 20px;font-family:var(--mono);font-weight:600;font-size:13px}
+.search button.clear{background:var(--panel-2);color:var(--ink);display:none}
+.search button.clear.show{display:block}
+
+/* layout */
+.layout{display:grid;grid-template-columns:260px 1fr;gap:26px;margin-top:22px;align-items:start}
+.layout>*{min-width:0}
+.areas{position:sticky;top:16px}
+.areas h2{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--mute);letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px}
+.area-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.area-list button{width:100%;text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center;background:transparent;border:1px solid transparent;color:var(--mute);padding:8px 10px;border-radius:6px;font-size:14px;font-weight:500;line-height:1.25}
+.area-list button:hover{color:var(--ink);background:var(--panel)}
+.area-list button[aria-pressed="true"]{color:var(--ink);background:var(--amber-dim);border-color:rgba(245,165,36,.35)}
+.area-list button i{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--dim);flex:none}
+.area-list button[aria-pressed="true"] i{color:var(--amber)}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px}
+.filters label{display:flex;flex-direction:column;gap:4px;min-width:0;font-family:var(--mono);font-size:11px;color:var(--mute);letter-spacing:.04em}
+.filters select{font:inherit;font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--panel-2);border:1px solid var(--rule-2);border-radius:6px;padding:8px 10px;min-width:170px;max-width:240px}
+.filters .toggle{flex-direction:row;align-items:center;gap:8px;font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--panel-2);border:1px solid var(--rule-2);border-radius:6px;padding:8px 12px;letter-spacing:0}
+.filters .toggle input{accent-color:var(--amber);width:15px;height:15px;margin:0}
+.filters .reset{margin-left:auto;background:transparent;border:1px solid var(--rule-2);color:var(--mute);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:12px}
+.filters .reset:hover{color:var(--ink);border-color:var(--amber)}
+
+.resultbar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin:18px 0 10px}
+.resultbar h2{font-family:var(--mono);font-weight:600;font-size:16px;margin:0}
+.resultbar h2 em{font-style:normal;color:var(--amber)}
+.resultbar .note{font-family:var(--mono);font-size:12px;color:var(--mute)}
+
+/* rows */
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:grid;grid-template-columns:1fr auto;gap:8px 20px;align-items:start}
+.row:hover{border-color:var(--rule-2)}
+.row .main{min-width:0}
+.row .co{font-family:var(--mono);font-size:12px;color:var(--amber);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.row .co time{color:var(--dim)}
+.row .co .loc{color:var(--mute)}
+.row h3{margin:4px 0 6px;font-size:18px;font-weight:600;line-height:1.25;letter-spacing:-.01em}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:5px;background:var(--panel-2);border:1px solid var(--rule-2);color:var(--mute)}
+.chip.term{color:var(--ink)}
+.chip.pay{color:var(--amber-2);border-color:rgba(245,165,36,.4);background:var(--amber-dim)}
+.chip.flag{color:#F58B8B;border-color:rgba(245,139,139,.35);background:rgba(245,139,139,.08)}
+.chip.mode{color:#8FD3A8;border-color:rgba(143,211,168,.35);background:rgba(143,211,168,.08)}
+.row p{margin:0;font-size:14px;color:var(--mute);max-width:80ch}
+.majors{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.majors button{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:5px;background:transparent;border:1px dashed var(--rule-2);color:var(--mute)}
+.majors button:hover{color:var(--amber);border-color:var(--amber);border-style:solid}
+.row .side{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:150px}
+.apply{background:var(--amber);color:#1A1200;text-decoration:none;font-family:var(--mono);font-weight:600;font-size:13px;padding:10px 16px;border-radius:7px;text-align:center}
+.apply:hover{background:var(--amber-2)}
+.more{background:transparent;border:1px solid var(--rule-2);color:var(--mute);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:12px}
+.more:hover,.more[aria-expanded="true"]{color:var(--ink);border-color:var(--ink)}
+.details{display:none;grid-column:1/-1;border-top:1px solid var(--rule);padding-top:12px;margin-top:4px;font-size:14px}
+.details.open{display:block}
+.details h4{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:10px 0 6px;font-weight:600}
+.details h4:first-child{margin-top:0}
+.details ul{margin:0;padding-left:18px;color:var(--mute)}
+.details li{margin:3px 0}
+.locs{display:flex;flex-wrap:wrap;gap:6px}
+.locs a{text-decoration:none;background:var(--panel-2);border:1px solid var(--rule-2);border-radius:6px;padding:7px 11px;font-size:13px;color:var(--ink);display:inline-flex;gap:8px;align-items:center}
+.locs a span{font-family:var(--mono);font-size:11px;color:var(--amber)}
+.details .src{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:10px}
+.details .src a{color:var(--mute)}
+
+.empty{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:40px;text-align:center}
+.empty h3{margin:0 0 6px;font-size:20px}
+.empty p{color:var(--mute);margin:0 0 14px}
+.empty button,.loadmore{background:transparent;border:1px solid var(--amber);color:var(--amber);border-radius:7px;padding:11px 20px;font-family:var(--mono);font-size:13px;font-weight:600}
+.loadmore{align-self:center;margin-top:10px}
+.empty button:hover,.loadmore:hover{background:var(--amber);color:#1A1200}
+
+.foot{margin-top:40px;border-top:1px solid var(--rule);padding-top:16px;font-family:var(--mono);font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media (max-width:900px){
+  .wrap{padding:18px 14px 48px}
+  .head{align-items:flex-start}
+  .stats{gap:16px}
+  .search{flex-direction:column}
+  .search button{padding:12px}
+  .layout{grid-template-columns:1fr;gap:16px}
+  .areas{position:static}
+  .area-list{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:6px;scrollbar-width:thin}
+  .area-list li{flex:none}
+  .area-list button{white-space:nowrap;border-color:var(--rule);background:var(--panel);font-size:13px}
+  .filters label{flex:1 1 calc(50% - 4px)}
+  .filters select{min-width:0;width:100%;max-width:none}
+  .filters .reset,.filters .toggle{flex:1 1 calc(50% - 4px);justify-content:center;margin-left:0}
+  .row{grid-template-columns:1fr}
+  .row .side{flex-direction:row}
+  .row .side .apply{flex:1}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <div>
+      <h1>Christian's <span>Opportunity Board</span></h1>
+      <div class="sub">South Florida internships · direct apply links · updated __DATE__</div>
+    </div>
+    <div class="stats">
+      <div><b id="st-open">0</b>internships</div>
+      <div><b id="st-emp">0</b>employers</div>
+      <div><b id="st-areas">0</b>areas</div>
+      <div><b id="st-paid">0</b>list pay</div>
+    </div>
+  </header>
+
+  <form class="search" role="search" onsubmit="return false">
+    <input id="q" type="search" placeholder="Search by company, title, major, or keyword" autocomplete="off" aria-label="Search internships">
+    <button type="button" class="clear" id="clearq">Clear</button>
+    <button type="button" id="go">Search</button>
+  </form>
+
+  <div class="layout">
+    <aside class="areas" aria-label="Areas">
+      <h2>Area</h2>
+      <ul class="area-list" id="areas"></ul>
+    </aside>
+
+    <main>
+      <div class="filters" id="filters">
+        <label>Major <select id="f-major"><option value="">All majors</option></select></label>
+        <label>Term <select id="f-term"><option value="">Any term</option></select></label>
+        <label>Level <select id="f-level"><option value="">Any level</option></select></label>
+        <label class="toggle"><input type="checkbox" id="f-paid"> Pay listed</label>
+        <label class="toggle"><input type="checkbox" id="f-remote"> Remote or hybrid</label>
+        <label>Sort <select id="f-sort"><option value="new">Newest first</option><option value="co">Employer A to Z</option><option value="title">Title A to Z</option></select></label>
+        <button class="reset" id="reset" type="button">Reset</button>
+      </div>
+
+      <div class="resultbar">
+        <h2 id="rtitle">All areas</h2>
+        <div class="note" id="rcount"></div>
+      </div>
+      <div class="rows" id="cards"></div>
+    </main>
+  </div>
+
+  <footer class="foot">
+    <span>Pulled from public postings. Listings close or change without notice. Confirm on the employer's page.</span>
+    <span>Christian Ortega</span>
+  </footer>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+  const DATA = JSON.parse(document.getElementById('data').textContent);
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const PAGE = 40;
+  const state = { q:'', area:'', major:'', term:'', level:'', paid:false, remote:false, sort:'new', shown:PAGE };
+
+  const count = (arr, key) => { const m = new Map(); arr.forEach(x => { const v = x[key]; (Array.isArray(v)?v:[v]).forEach(k => { if(k) m.set(k,(m.get(k)||0)+1); }); }); return m; };
+  const employers = new Set(DATA.map(d => d.company.toLowerCase().replace(/[.,]/g,'').replace(/\s+-\s+.*$/,'')));
+  const areaCounts = count(DATA,'cat');
+  $('#st-open').textContent = DATA.length; $('#st-emp').textContent = employers.size;
+  $('#st-areas').textContent = areaCounts.size; $('#st-paid').textContent = DATA.filter(d => d.pay).length;
+
+  const AREA_ORDER = ['Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
+  const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)));
+  const ul = $('#areas');
+  const mkArea = (label, val, n) => { const li=document.createElement('li'); const b=document.createElement('button'); b.type='button'; b.dataset.area=val; b.innerHTML=`<span>${esc(label)}</span><i>${n}</i>`; b.addEventListener('click',()=>{ state.area=(state.area===val?'':val); state.shown=PAGE; render(); }); li.appendChild(b); return li; };
+  ul.appendChild(mkArea('All areas','',DATA.length));
+  areas.forEach(a => ul.appendChild(mkArea(a,a,areaCounts.get(a))));
+
+  const fill = (sel, map) => [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,n]) => { const o=document.createElement('option'); o.value=k; o.textContent=`${k} (${n})`; sel.appendChild(o); });
+  fill($('#f-major'), count(DATA,'majors'));
+  const termMap = count(DATA,'term');
+  ['Fall 2026','Winter 2027','Spring 2027','Summer 2027','Fall 2027','Winter 2028','Spring 2028'].filter(t=>termMap.has(t)).forEach(t => { const o=document.createElement('option'); o.value=t; o.textContent=`${t} (${termMap.get(t)})`; $('#f-term').appendChild(o); });
+  fill($('#f-level'), count(DATA,'level'));
+
+  function matches(d){
+    if (state.area && d.cat !== state.area) return false;
+    if (state.major && !d.majors.includes(state.major)) return false;
+    if (state.term && !d.term.includes(state.term)) return false;
+    if (state.level && d.level !== state.level) return false;
+    if (state.paid && !d.pay) return false;
+    if (state.remote && !d.mode) return false;
+    if (state.q){
+      const q = state.q.toLowerCase().split(/\s+/).filter(Boolean);
+      const hay = (d.company+' '+d.title+' '+d.cat+' '+d.majors.join(' ')+' '+d.locs.map(l=>l.loc).join(' ')+' '+d.snippet).toLowerCase();
+      if (!q.every(w => hay.includes(w))) return false;
+    }
+    return true;
+  }
+  function sortFn(a,b){
+    if (state.sort==='co') return a.company.localeCompare(b.company) || a.title.localeCompare(b.title);
+    if (state.sort==='title') return a.title.localeCompare(b.title);
+    return (b.posted||'').localeCompare(a.posted||'') || a.company.localeCompare(b.company);
+  }
+  const fmtDate = s => s ? new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+
+  function row(d){
+    const el = document.createElement('article'); el.className='row';
+    const locLine = d.locs.length===1 ? d.locs[0].loc : `${d.locs.length} locations`;
+    const chips = [];
+    d.term.forEach(t => chips.push(`<span class="chip term">${esc(t)}</span>`));
+    if (d.pay) chips.push(`<span class="chip pay">${esc(d.pay)}</span>`);
+    if (d.mode) chips.push(`<span class="chip mode">${esc(d.mode)}</span>`);
+    d.types.filter(t => t==='Full-time'||t==='Part-time').forEach(t => chips.push(`<span class="chip">${esc(t)}</span>`));
+    if (d.level && d.level!=='Undergraduate') chips.push(`<span class="chip">${esc(d.level)}</span>`);
+    if (d.flag) chips.push(`<span class="chip flag">${esc(d.flag)}</span>`);
+    const majors = d.majors.map(m => `<button type="button" data-major="${esc(m)}">${esc(m)}</button>`).join('');
+    const details = `
+      ${d.details.length ? `<h4>What they ask for</h4><ul>${d.details.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+      ${d.locs.length>1 ? `<h4>Apply by location</h4><div class="locs">${d.locs.map(l=>`<a href="${esc(l.apply)}" target="_blank" rel="noopener">${esc(l.loc)}<span>apply</span></a>`).join('')}</div>` : ''}
+      <div class="src">Posted ${esc(fmtDate(d.posted))} · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a></div>`;
+    el.innerHTML = `
+      <div class="main">
+        <div class="co"><span>${esc(d.company)}</span><span class="loc">${esc(locLine)}</span><time datetime="${esc(d.posted)}">${esc(fmtDate(d.posted))}</time></div>
+        <h3>${esc(d.title)}</h3>
+        ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
+        <p>${esc(d.snippet)}</p>
+        ${majors?`<div class="majors">${majors}</div>`:''}
+      </div>
+      <div class="side">
+        <a class="apply" href="${esc(d.locs[0].apply)}" target="_blank" rel="noopener">Apply ↗</a>
+        <button class="more" type="button" aria-expanded="false">Details</button>
+      </div>
+      <div class="details">${details}</div>`;
+    el.querySelector('.more').addEventListener('click', e => { const b=e.currentTarget, dt=el.querySelector('.details'); const open=!dt.classList.contains('open'); dt.classList.toggle('open',open); b.setAttribute('aria-expanded',open); b.textContent=open?'Hide':'Details'; });
+    el.querySelectorAll('.majors button').forEach(b => b.addEventListener('click', () => { state.major=b.dataset.major; $('#f-major').value=state.major; state.shown=PAGE; render(); window.scrollTo({top:$('#filters').offsetTop-12}); }));
+    return el;
+  }
+
+  function render(){
+    document.querySelectorAll('#areas button').forEach(b => { const on=b.dataset.area===state.area; b.setAttribute('aria-pressed',on?'true':'false'); if(on && window.innerWidth<=900) b.scrollIntoView({block:'nearest',inline:'center'}); });
+    const list = DATA.filter(matches).sort(sortFn);
+    const wrap = $('#cards'); wrap.innerHTML='';
+    $('#rtitle').innerHTML = state.area ? esc(state.area) : (state.q ? `Results for <em>“${esc(state.q)}”</em>` : 'All areas');
+    const openings = list.reduce((n,d)=>n+d.count,0);
+    $('#rcount').textContent = list.length ? `${list.length} internship${list.length===1?'':'s'}${openings>list.length?` · ${openings} openings across locations`:''}` : '';
+    if (!list.length){
+      wrap.innerHTML = `<div class="empty"><h3>Nothing matches.</h3><p>Try a broader search or clear a filter.</p><button type="button" id="empty-reset">Reset filters</button></div>`;
+      $('#empty-reset').addEventListener('click', reset);
+    } else {
+      list.slice(0,state.shown).forEach(d => wrap.appendChild(row(d)));
+      if (list.length > state.shown){ const b=document.createElement('button'); b.className='loadmore'; b.type='button'; b.textContent=`Show ${Math.min(PAGE,list.length-state.shown)} more`; b.addEventListener('click',()=>{ state.shown+=PAGE; render(); }); wrap.appendChild(b); }
+    }
+    $('#clearq').classList.toggle('show', !!state.q);
+    writeHash();
+  }
+  function reset(){ Object.assign(state,{q:'',area:'',major:'',term:'',level:'',paid:false,remote:false,sort:'new',shown:PAGE}); syncInputs(); render(); }
+  function syncInputs(){ $('#q').value=state.q; $('#f-major').value=state.major; $('#f-term').value=state.term; $('#f-level').value=state.level; $('#f-paid').checked=state.paid; $('#f-remote').checked=state.remote; $('#f-sort').value=state.sort; }
+  function writeHash(){ const p=new URLSearchParams(); ['q','area','major','term','level','sort'].forEach(k=>{ if(state[k] && !(k==='sort'&&state[k]==='new')) p.set(k,state[k]); }); if(state.paid) p.set('paid','1'); if(state.remote) p.set('remote','1'); const h=p.toString(); try{ history.replaceState(null,'', h?('#'+h):location.pathname); }catch(e){} }
+  function readHash(){ const p=new URLSearchParams(location.hash.slice(1)); ['q','area','major','term','level','sort'].forEach(k=>{ if(p.get(k)) state[k]=p.get(k); }); state.paid=p.get('paid')==='1'; state.remote=p.get('remote')==='1'; }
+
+  let t; $('#q').addEventListener('input', e => { clearTimeout(t); t=setTimeout(()=>{ state.q=e.target.value.trim(); state.shown=PAGE; render(); },180); });
+  $('#go').addEventListener('click', ()=>{ state.q=$('#q').value.trim(); state.shown=PAGE; render(); });
+  $('#clearq').addEventListener('click', ()=>{ state.q=''; $('#q').value=''; render(); $('#q').focus(); });
+  [['f-major','major'],['f-term','term'],['f-level','level'],['f-sort','sort']].forEach(([id,k]) => $('#'+id).addEventListener('change', e => { state[k]=e.target.value; state.shown=PAGE; render(); }));
+  $('#f-paid').addEventListener('change', e => { state.paid=e.target.checked; state.shown=PAGE; render(); });
+  $('#f-remote').addEventListener('change', e => { state.remote=e.target.checked; state.shown=PAGE; render(); });
+  $('#reset').addEventListener('click', reset);
+  readHash(); syncInputs(); render();
+})();
+</script>
+</body>
+</html>
