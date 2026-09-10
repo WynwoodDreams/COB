@@ -10,11 +10,23 @@ Single-file static site. `index.html` is the whole deployment; the internship da
 ## Refresh the listings
 
 1. Export a new spreadsheet with the same columns (company, positionName, location, jobType/0-3, postedAt, postingDateParsed, externalApplyLink, salary, description, url, id).
-2. Edit the path at the top of `tools/build_data.py`, then from the `tools` folder run:
+2. From this folder run:
 
-       python3 build_data.py
-       python3 -c "d=open('data.json',encoding='utf-8').read().replace('</','<\\\\/');t=open('template.html',encoding='utf-8').read();open('../index.html','w',encoding='utf-8').write(t.replace('__DATA__',d).replace('__DATE__','Month D, YYYY'))"
+       python3 build_data.py path/to/listings.xlsx
 
-3. Commit the new `index.html`. Vercel redeploys automatically.
+   This writes `data.json` and a fresh `index.html` stamped with today's date. Useful flags:
+
+   - `--date "Oct 1, 2026"` to set the "updated" label yourself
+   - `--stats` to print how postings were categorised
+   - `--check` to write `check.txt`, one line per card, for eyeballing categories
+   - `--data data.json` to re-render `index.html` from a saved `data.json` without the spreadsheet (for example after editing `template.html`)
+
+3. Commit the new `index.html`. Vercel redeploys automatically. `data.json` and `check.txt` are gitignored.
 
 Requires Python 3 with `openpyxl` (`pip install openpyxl`).
+
+## Files
+
+- `template.html`: page markup, styles and the client-side filtering script. `__DATA__` and `__DATE__` are filled in by the build.
+- `build_data.py`: reads the spreadsheet, classifies each posting (area, majors, term, level, pay, work mode), merges the same role across locations into one card, and renders the page.
+- `index.html`: the generated page. Do not edit by hand; change the template or the script and rebuild.
