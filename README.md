@@ -46,6 +46,15 @@ swaps by editing that block and rebuilding. Every text pair clears WCAG AA: body
 a card is 7.1:1 and the accent 6.1:1. If you change the accent, re-check it against both
 `--bg` and `--panel`.
 
+## Mobile
+
+The page is built for phones first at 900px and below. The area list becomes a
+side-scrolling strip with a fade at its edge, the filter panel collapses behind a
+Filters button that sticks to the top of the list while you scroll, and every control
+clears the 44px touch minimum. No text on a card is under 12px, the search field stays
+at 16px so iOS does not zoom on focus, and `.wrap` respects `env(safe-area-inset-*)`
+for notched phones. Checked at 320, 360, 390 and 430px wide plus landscape.
+
 ## Files
 
 - `template.html`: page markup, styles and the client-side filtering script. Colours live in the `:root` block. `__DATA__` and `__DATE__` are filled in by the build.

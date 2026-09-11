@@ -32,11 +32,14 @@
   --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+button,a,select,input,label{-webkit-tap-highlight-color:rgba(124,140,255,.18)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
 a{color:inherit} button{font:inherit;cursor:pointer}
 :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
-.wrap{max-width:1280px;margin:0 auto;padding:26px 24px 60px}
+.wrap{max-width:1280px;margin:0 auto;padding:26px 24px 60px;
+  padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right))}
 
 /* header */
 .head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--rule)}
@@ -85,7 +88,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .fbar button i{font-style:normal;color:var(--dim);font-size:12px}
 .fbar button .on{color:var(--amber)}
 
-.resultbar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin:18px 0 10px}
+.resultbar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin:18px 0 10px;scroll-margin-top:64px}
 .resultbar h2{font-family:var(--mono);font-weight:600;font-size:16px;margin:0}
 .resultbar h2 em{font-style:normal;color:var(--amber)}
 .resultbar .note{font-family:var(--mono);font-size:12px;color:var(--mute)}
@@ -141,7 +144,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .foot{margin-top:40px;border-top:1px solid var(--rule);padding-top:16px;font-family:var(--mono);font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
 @media (max-width:900px){
-  .wrap{padding:18px 14px 48px}
+  .wrap{padding:18px 14px 48px;
+    padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));
+    padding-bottom:max(48px,env(safe-area-inset-bottom))}
   .head{align-items:flex-start}
   .stats{gap:16px}
   .search{flex-direction:column}
@@ -161,6 +166,60 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row{grid-template-columns:1fr}
   .row .side{flex-direction:row}
   .row .side .apply{flex:1}
+
+  /* --- touch targets: every control clears the 44px minimum --- */
+  .area-list button{min-height:44px;padding:9px 12px}
+  .filters select,.filters .toggle,.filters .reset,.filters .copy{min-height:46px}
+  .filters select{padding:11px 12px}
+  #filter-toggle{min-height:50px}
+  .search input{min-height:50px}
+  .search button.clear{min-height:50px;padding:0 18px}
+  .majors button{min-height:44px;padding:9px 12px}
+  .row .side .apply{min-height:50px;display:flex;align-items:center;justify-content:center;padding:12px 16px}
+  .more{min-height:50px;padding:12px 16px}
+  .locs a{min-height:44px}
+  .loadmore,.empty button{min-height:50px;width:100%}
+
+  /* --- small text is hard to read at arm's length --- */
+  .chip{font-size:12.5px;padding:4px 9px}
+  .majors button{font-size:12.5px}
+  .row p{font-size:15px;line-height:1.55}
+  .row h3{font-size:19px}
+  .row .co{font-size:12.5px}
+  .details{font-size:15px}
+  .details li{margin:6px 0}
+  .resultbar .note,.row .srcline,.details .src{font-size:12px}
+  .row .srcline a,.details .src a{display:inline-block;min-height:44px;line-height:44px;padding:0 2px}
+
+  /* --- the area strip scrolls sideways, so show that it does --- */
+  .area-list{-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;
+    -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);
+    mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);
+    padding-right:28px}
+  .area-list li{scroll-snap-align:start}
+
+  /* --- keep filters reachable once the list is scrolling --- */
+  .fbar{position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 0;
+    box-shadow:0 8px 10px -8px rgba(0,0,0,.75)}
+  .filters{position:sticky;top:58px;z-index:19;background:var(--bg)}
+  .row{padding:16px 15px}
+}
+
+/* very small phones: give the content every pixel */
+@media (max-width:360px){
+  .wrap{padding-left:max(11px,env(safe-area-inset-left));padding-right:max(11px,env(safe-area-inset-right))}
+  .stats{gap:12px}
+  .stats b{font-size:20px}
+  .row .side{flex-wrap:wrap}
+  .row .side .more{flex:1}
+}
+
+/* landscape on a phone: the header should not eat the whole screen */
+@media (max-height:520px) and (orientation:landscape){
+  .wrap{padding-top:12px}
+  .head{padding-bottom:12px}
+  .search{margin-top:12px}
+  .layout{margin-top:12px}
 }
 
 .row,.filters,.empty,.search input{border-radius:12px}
@@ -258,7 +317,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const asDate = s => { const d = new Date(s+'T12:00:00'); return isNaN(d) ? null : d; };
   function ageLabel(days){
     if (days < 1) return 'today';
-    if (days < 7) return days + 'd ago';
+    if (days < 7) return Math.max(1, Math.round(days)) + 'd ago';
     if (days < 31) return Math.round(days/7) + 'w ago';
     if (days < 365) return Math.round(days/30) + 'mo ago';
     return Math.round(days/365) + 'y ago';
@@ -442,6 +501,12 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       b.textContent='Copied'; b.classList.add('done');
     }catch(err){ b.textContent='Press Ctrl+C'; }
   });
+
+  // The full placeholder is clipped on a narrow phone, so trade the hint for legibility.
+  const setPlaceholder = () => { $('#q').placeholder = window.innerWidth <= 480
+    ? 'Search title, company or major' : 'Search by company, title, major, or keyword'; };
+  setPlaceholder();
+  window.addEventListener('resize', setPlaceholder);
 
   window.addEventListener('hashchange', ()=>{ readHash(); syncInputs(); render(); });
   readHash(); syncInputs(); render();
