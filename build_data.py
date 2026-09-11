@@ -10,7 +10,7 @@ Typical use (from the repo root):
 The spreadsheet needs these columns: company, positionName, location, jobType/0..3,
 postingDateParsed, externalApplyLink, salary, description, url, id.
 """
-import argparse, collections, datetime as dt, json, os, re, sys
+import argparse, base64, collections, datetime as dt, hashlib, json, os, re, sys
 
 # ---------- category rules: (category, title keywords) in priority order ----------
 CATS = [
@@ -267,9 +267,20 @@ def s(v):
     if isinstance(v, float) and v.is_integer(): v = int(v)
     return str(v).strip()
 
-def url_or_blank(v):
+UPGRADED_HTTP = collections.Counter()
+def url_or_blank(v, upgrade=True):
+    """Keep only http(s) URLs, and prefer the encrypted form.
+
+    A plain-HTTP apply link can be tampered with in transit on shared wi-fi, which is
+    exactly the network a student is on. Nearly every employer and ATS serves HTTPS, so
+    the upgrade is safe; --keep-http turns it off if a destination ever breaks.
+    """
     v = s(v)
-    return v if re.match(r"^https?://", v, re.I) else ""
+    if not re.match(r"^https?://", v, re.I): return ""
+    if upgrade and v.lower().startswith("http://"):
+        UPGRADED_HTTP[re.sub(r"^http://([^/]+).*", r"\1", v, flags=re.I)] += 1
+        v = "https://" + v[len("http://"):]
+    return v
 
 def date_str(v):
     if isinstance(v, (dt.date, dt.datetime)): return v.strftime("%Y-%m-%d")
@@ -297,7 +308,7 @@ def read_rows(path):
         data.append(dict(zip(hdr, r)))
     return data
 
-def build_items(data):
+def build_items(data, upgrade=True):
     items, seen, skipped = [], set(), 0
     for d in data:
         title = s(d.get('positionName')); company = s(d.get('company')); desc = s(d.get('description'))
@@ -305,7 +316,7 @@ def build_items(data):
         pid = s(d.get('id')) or s(d.get('url'))
         if pid in seen: skipped += 1; continue
         seen.add(pid)
-        indeed = url_or_blank(d.get('url'))
+        indeed = url_or_blank(d.get('url'), upgrade)
         loc = clean_loc(d.get('location'))
         pay = pay_for(d.get('salary'), desc)
         types = []
@@ -317,7 +328,7 @@ def build_items(data):
             cat=classify(title, desc, company), majors=majors_for(desc, title), term=term_for(title, desc),
             pay=pay, level=level_for(title, desc), mode=work_mode(d.get('location'), desc),
             types=types, posted=date_str(d.get('postingDateParsed')),
-            apply=url_or_blank(d.get('externalApplyLink')) or indeed, indeed=indeed,
+            apply=url_or_blank(d.get('externalApplyLink'), upgrade) or indeed, indeed=indeed,
             snippet=snippet_for(desc), details=details_for(desc), flag=flag_for(title, desc, pay), county=county_for(loc),
         ))
     return items, skipped
@@ -350,15 +361,15 @@ def group_items(items):
         out.append(g)
     return out
 
-def finalize(out):
+def finalize(out, upgrade=True):
     """Idempotent clean-up applied to both fresh and re-loaded data."""
     for g in out:
         g['title'] = display_title(g.get('title'))
-        g['indeed'] = url_or_blank(g.get('indeed'))
+        g['indeed'] = url_or_blank(g.get('indeed'), upgrade)
         locs = []
         for l in g.get('locs') or []:
             loc = clean_loc(l.get('loc'))
-            locs.append(dict(loc=loc, apply=url_or_blank(l.get('apply')) or g['indeed'], county=county_for(loc)))
+            locs.append(dict(loc=loc, apply=url_or_blank(l.get('apply'), upgrade) or g['indeed'], county=county_for(loc)))
         g['locs'] = locs
         g['counties'] = list(dict.fromkeys(l['county'] for l in locs))
         g['count'] = max(int(g.get('count') or 1), len(locs))
@@ -386,9 +397,66 @@ def drop_expired(out):
         kept.append(g)
     return kept, expired
 
+# Descriptions are written by whoever posted the job, and they land in this repo where
+# coding agents read them. None of it reaches an LLM at runtime, so this is an early
+# warning for the humans and agents who work on the repo, not a runtime defence.
+SUSPECT = re.compile(
+    r"ignore (all |any )?(previous|prior|above)\b|disregard (the |all )?(above|previous)|"
+    r"\bsystem prompt\b|you are now (a|an|in)\b|new instructions?:|</?system>|\[\[?INST\]?\]|"
+    r"^\s*(assistant|system)\s*:|\bexfiltrat|\bapi[ _-]?key\b|\bbase64\s+-d\b|"
+    r"\beval\(|\bprocess\.env\b|curl\s+https?://", re.I | re.M)
+SCAN_FIELDS = ("company", "title", "snippet", "details", "majors", "term", "pay", "flag", "level")
+
+def scan_injection(cards):
+    """Flag listing text shaped like an instruction aimed at an AI agent."""
+    hits = []
+    for g in cards:
+        for f in SCAN_FIELDS:
+            v = g.get(f)
+            for text in (v if isinstance(v, list) else [v]):
+                m = SUSPECT.search(s(text))
+                if m: hits.append((g.get("company", ""), g.get("title", ""), f, m.group(0).strip()))
+    return hits
+
 def json_for_html(out):
     """JSON that is safe to inline inside a <script type="application/json"> block."""
     return json.dumps(out, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
+
+def sha256_b64(text):
+    return "sha256-" + base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode()
+
+def security_headers(html):
+    """Build a Content-Security-Policy that fits this exact page.
+
+    Both the app script and the stylesheet are inline, so they are allowed by hash
+    rather than by 'unsafe-inline'. That means an injected script cannot run even if
+    escaping somewhere is wrong. The hashes cover the exact bytes of the rendered page,
+    so index.html and vercel.json must be regenerated together; hand-editing index.html
+    will stop its script from running.
+    """
+    scripts = re.findall(r"<script(?![^>]*\btype=)[^>]*>(.*?)</script>", html, re.S)
+    styles = re.findall(r"<style[^>]*>(.*?)</style>", html, re.S)
+    if not scripts: sys.exit("no inline script found: refusing to write a policy that would break the page")
+    csp = "; ".join([
+        "default-src 'none'",
+        "script-src " + " ".join(f"'{sha256_b64(x)}'" for x in scripts),
+        "style-src " + " ".join(f"'{sha256_b64(x)}'" for x in styles) + " https://fonts.googleapis.com",
+        "font-src https://fonts.gstatic.com",
+        "img-src 'self' data:",
+        "connect-src 'none'",
+        "form-action 'none'",
+        "frame-ancestors 'none'",
+        "base-uri 'none'",
+        "object-src 'none'",
+    ])
+    return {"headers": [{"source": "/(.*)", "headers": [
+        {"key": "Content-Security-Policy", "value": csp},
+        {"key": "X-Content-Type-Options", "value": "nosniff"},
+        {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
+        {"key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"},
+        {"key": "X-Frame-Options", "value": "DENY"},
+        {"key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains"},
+    ]}]}
 
 def render_html(template_path, out, date_label):
     tpl = open(template_path, encoding='utf-8').read()
@@ -417,6 +485,9 @@ def main(argv=None):
     ap.add_argument("--out", default=os.path.join(here, "index.html"), help="rendered page (default: index.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
     ap.add_argument("--max-age", type=int, metavar="DAYS", help="drop postings older than DAYS (by postingDateParsed); off by default")
+    ap.add_argument("--keep-http", action="store_true", help="leave plain-HTTP apply links alone instead of upgrading them to HTTPS")
+    ap.add_argument("--strict", action="store_true", help="exit non-zero if a listing contains text shaped like an AI instruction")
+    ap.add_argument("--headers", default=None, help="where to write vercel.json with the CSP and security headers ('-' to skip)")
     ap.add_argument("--stats", action="store_true", help="print classification counters")
     ap.add_argument("--check", action="store_true", help="also write check.txt, one line per card, for eyeballing categories")
     a = ap.parse_args(argv)
@@ -429,7 +500,7 @@ def main(argv=None):
         print(f"loaded {len(out)} cards from {a.data}")
     else:
         data = read_rows(a.xlsx)
-        items, skipped = build_items(data)
+        items, skipped = build_items(data, upgrade=not a.keep_http)
         if a.max_age is not None:
             cutoff = (TODAY - dt.timedelta(days=a.max_age)).strftime("%Y-%m-%d")
             stale = [it for it in items if it['posted'] and it['posted'] < cutoff]
@@ -437,12 +508,29 @@ def main(argv=None):
             print(f"dropped {len(stale)} postings older than {cutoff}" + (": " + "; ".join(f"{it['company']} / {it['title'][:40]} ({it['posted']})" for it in stale[:8]) + (" ..." if len(stale) > 8 else "") if stale else ""))
         out = group_items(items)
         print(f"read {len(data)} rows, skipped {skipped} (blank or duplicate id), grouped {len(items)} postings into {len(out)} cards")
-    out = finalize(out)
+    out = finalize(out, upgrade=not a.keep_http)
+    if UPGRADED_HTTP:
+        print(f"upgraded {sum(UPGRADED_HTTP.values())} plain-HTTP link(s) to HTTPS across "
+              + ", ".join(f"{d} x{n}" for d, n in UPGRADED_HTTP.most_common(6))
+              + (" ..." if len(UPGRADED_HTTP) > 6 else "")
+              + " (spot-check any unfamiliar domain, or rerun with --keep-http)")
     out, expired = drop_expired(out)
     if expired:
         print(f"dropped {len(expired)} card(s) whose only term has already ended: "
               + "; ".join(f"{g['company']} / {g['title'][:40]} ({', '.join(g['term'])})" for g in expired[:8])
               + (" ..." if len(expired) > 8 else ""))
+    hits = scan_injection(out)
+    if hits:
+        print(f"WARNING: {len(hits)} listing field(s) contain text shaped like an AI instruction:")
+        for company, title, field, frag in hits[:10]:
+            print(f"  {company} / {title[:40]} [{field}]: {frag[:70]!r}")
+        print("  These do not affect the site, which runs no model. Review before committing,")
+        print("  because coding agents read this repo.")
+        if a.strict:
+            sys.exit(f"--strict: refusing to write anything while {len(hits)} field(s) look suspicious")
+    else:
+        print(f"injection scan: clean across {len(out)} listings")
+
     if a.stats: print_stats(out, items)
 
     if not a.data or os.path.abspath(a.data) != os.path.abspath(a.json):
@@ -456,6 +544,12 @@ def main(argv=None):
         html = render_html(a.template, out, a.date)
         with open(a.out, 'w', encoding='utf-8') as f: f.write(html)
         print(f"wrote {a.out} ({len(html):,} chars, updated {a.date})")
+        headers_path = a.headers or os.path.join(os.path.dirname(os.path.abspath(a.out)), 'vercel.json')
+        if headers_path != '-':
+            with open(headers_path, 'w', encoding='utf-8') as f:
+                json.dump(security_headers(html), f, indent=2); f.write("\n")
+            print(f"wrote {headers_path} (CSP pinned to this build's inline script and style)")
+
 
 if __name__ == "__main__":
     main()
