@@ -88,9 +88,13 @@ that up.
   the scan trips.
 
 **The CSP hashes cover the exact bytes of `index.html`.** Regenerate the two together and
-never hand-edit `index.html`, or its script will stop running. If you add a script to the
-page, such as merging the Vercel Web Analytics pull request, add `'self'` to `script-src`
-in `security_headers()` in `build_data.py`, otherwise the new script is blocked.
+never hand-edit `index.html`, or its script will stop running.
+
+Vercel Web Analytics is installed, which is why `script-src` carries `'self'` and
+`connect-src` carries `'self'` as well. The analytics script posts page views to a
+same-origin `/_vercel/insights/*` path, not to the `vitals.vercel-insights.com` host, so
+`'self'` in `connect-src` is what actually lets it report. Dropping either one silently
+stops analytics without breaking the page, so it is worth re-testing after any change.
 
 Build only from spreadsheets you exported yourself. Parsing the workbook with `openpyxl`
 is the one place untrusted input is processed on your machine.

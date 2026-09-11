@@ -443,7 +443,9 @@ def security_headers(html):
         "style-src " + " ".join(f"'{sha256_b64(x)}'" for x in styles) + " https://fonts.googleapis.com",
         "font-src https://fonts.gstatic.com",
         "img-src 'self' data:",
-        "connect-src https://vitals.vercel-insights.com",
+        # Vercel Analytics posts page views to a same-origin /_vercel/insights/* path, so
+        # 'self' is what actually matters here; the vitals host covers Speed Insights.
+        "connect-src 'self' https://vitals.vercel-insights.com",
         "form-action 'none'",
         "frame-ancestors 'none'",
         "base-uri 'none'",
