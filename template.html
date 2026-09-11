@@ -121,6 +121,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .row .side{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:150px}
 .apply{background:var(--amber);color:#1A1200;text-decoration:none;font-family:var(--mono);font-weight:600;font-size:13px;padding:10px 16px;border-radius:7px;text-align:center}
 .apply:hover{background:var(--amber-2)}
+.dest{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:center;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:-2px}
+.row:hover .dest{color:var(--mute)}
 .more{background:transparent;border:1px solid var(--rule-2);color:var(--mute);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:12px}
 .more:hover,.more[aria-expanded="true"]{color:var(--ink);border-color:var(--ink)}
 .details{display:none;grid-column:1/-1;border-top:1px solid var(--rule);padding-top:12px;margin-top:4px;font-size:14px}
@@ -165,8 +168,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .filters select{min-width:0;width:100%;max-width:none}
   .filters .reset,.filters .copy,.filters .toggle{flex:1 1 calc(50% - 4px);justify-content:center;margin-left:0}
   .row{grid-template-columns:1fr}
-  .row .side{flex-direction:row}
+  .row .side{flex-direction:row;flex-wrap:wrap}
   .row .side .apply{flex:1}
+  .row .side .dest{order:3;flex-basis:100%;font-size:12.5px;text-align:left;margin-top:2px}
 
   /* --- touch targets: every control clears the 44px minimum --- */
   .area-list button{min-height:44px;padding:9px 12px}
@@ -328,6 +332,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const $ = s => document.querySelector(s);
   const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const safeUrl = u => /^https?:\/\//i.test(String(u||'')) ? String(u) : '';
+  // The board links out to 163 different employer and ATS domains. Naming the destination
+  // lets someone judge a link before they tap it, rather than trusting a bare "Apply".
+  const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./,''); } catch(e){ return ''; } };
   const PAGE = 40;
   const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', paid:false, remote:false, sort:'new', shown:PAGE };
   const state = Object.assign({}, DEFAULTS);
@@ -365,6 +372,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     d.count = Math.max(1, parseInt(d.count,10)||1);
     d.posted = /^\d{4}-\d{2}-\d{2}$/.test(d.posted||'') ? d.posted : '';
     d.rate = hourly(d.pay);
+    d.dest = hostOf(d.locs[0].apply);
     const dt = d.posted ? asDate(d.posted) : null;
     d.days = dt ? Math.max(0, (NOW - dt.getTime()) / DAY) : null;
     d.hay = [d.company, d.title, d.cat, d.majors.join(' '), d.locs.map(l=>l.loc).join(' '), d.counties.join(' '), d.term.join(' '), d.level, d.mode, d.pay, d.flag, d.snippet, d.details.join(' ')].join(' ').toLowerCase();
@@ -442,7 +450,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const detId = `det-${d.id}`;
     const details = `
       ${d.details.length ? `<h4>What they ask for</h4><ul>${d.details.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>` : ''}
-      ${d.locs.length>1 ? `<h4>Apply by location</h4><div class="locs">${d.locs.map(l=>`<a href="${esc(l.apply)}" target="_blank" rel="noopener">${esc(l.loc)}<span>apply</span></a>`).join('')}</div>` : ''}
+      ${d.locs.length>1 ? `<h4>Apply by location</h4><div class="locs">${d.locs.map(l=>`<a href="${esc(l.apply)}" target="_blank" rel="noopener" title="Opens ${esc(hostOf(l.apply))}">${esc(l.loc)}<span>apply</span></a>`).join('')}</div>` : ''}
       <div class="src">${source}</div>`;
     el.innerHTML = `
       <div class="main">
@@ -454,7 +462,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         ${hasDetails ? '' : `<div class="srcline">${source}</div>`}
       </div>
       <div class="side">
-        ${d.locs[0].apply ? `<a class="apply" href="${esc(d.locs[0].apply)}" target="_blank" rel="noopener">Apply ↗</a>` : ''}
+        ${d.locs[0].apply ? `<a class="apply" href="${esc(d.locs[0].apply)}" target="_blank" rel="noopener" title="Opens ${esc(d.locs[0].apply)}">Apply ↗</a>` : ''}
+        ${d.dest ? `<span class="dest" title="This link opens ${esc(d.dest)}">via ${esc(d.dest)}</span>` : ''}
         ${hasDetails ? `<button class="more" type="button" aria-expanded="false" aria-controls="${detId}">Details</button>` : ''}
       </div>
       ${hasDetails ? `<div class="details" id="${detId}">${details}</div>` : ''}`;

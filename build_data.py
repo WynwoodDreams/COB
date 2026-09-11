@@ -484,7 +484,9 @@ def main(argv=None):
     ap.add_argument("--template", default=os.path.join(here, "template.html"))
     ap.add_argument("--out", default=os.path.join(here, "index.html"), help="rendered page (default: index.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
-    ap.add_argument("--max-age", type=int, metavar="DAYS", help="drop postings older than DAYS (by postingDateParsed); off by default")
+    ap.add_argument("--max-age", type=int, default=180, metavar="DAYS",
+                    help="drop postings older than DAYS (default 180; use 0 to keep everything). "
+                         "A dead apply link costs more trust than a missing listing earns.")
     ap.add_argument("--keep-http", action="store_true", help="leave plain-HTTP apply links alone instead of upgrading them to HTTPS")
     ap.add_argument("--strict", action="store_true", help="exit non-zero if a listing contains text shaped like an AI instruction")
     ap.add_argument("--headers", default=None, help="where to write vercel.json with the CSP and security headers ('-' to skip)")
@@ -501,7 +503,7 @@ def main(argv=None):
     else:
         data = read_rows(a.xlsx)
         items, skipped = build_items(data, upgrade=not a.keep_http)
-        if a.max_age is not None:
+        if a.max_age:
             cutoff = (TODAY - dt.timedelta(days=a.max_age)).strftime("%Y-%m-%d")
             stale = [it for it in items if it['posted'] and it['posted'] < cutoff]
             items = [it for it in items if not (it['posted'] and it['posted'] < cutoff)]
