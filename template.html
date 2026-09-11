@@ -6,7 +6,7 @@
 <title>Christian's Opportunity Board</title>
 <meta name="description" content="South Florida internships, searchable by major, county or area, with direct apply links.">
 <link rel="canonical" href="https://cob-eta.vercel.app/">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F5A524'/%3E%3Crect x='16' y='19' width='32' height='6' rx='3' fill='%231A1200'/%3E%3Crect x='16' y='30' width='32' height='6' rx='3' fill='%231A1200'/%3E%3Crect x='16' y='41' width='20' height='6' rx='3' fill='%231A1200'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237C8CFF'/%3E%3Crect x='16' y='19' width='32' height='6' rx='3' fill='%230B0C0E'/%3E%3Crect x='16' y='30' width='32' height='6' rx='3' fill='%230B0C0E'/%3E%3Crect x='16' y='41' width='20' height='6' rx='3' fill='%230B0C0E'/%3E%3C/svg%3E">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Christian's Opportunity Board">
 <meta property="og:title" content="Christian's Opportunity Board">
@@ -20,16 +20,16 @@
 <meta name="twitter:title" content="Christian's Opportunity Board">
 <meta name="twitter:description" content="Open internships across Miami-Dade, Broward and Palm Beach. Filter by major, county and term, then apply straight to the employer.">
 <meta name="twitter:image" content="https://cob-eta.vercel.app/og.png">
-<meta name="theme-color" content="#121417">
+<meta name="theme-color" content="#0B0C0E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#121417; --panel:#1A1D22; --panel-2:#20242B; --rule:#2B313A; --rule-2:#3A414C;
-  --ink:#ECEFF3; --mute:#9AA3AF; --dim:#6B7380;
-  --amber:#F5A524; --amber-2:#FFC457; --amber-dim:rgba(245,165,36,.14);
-  --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --bg:#0B0C0E; --panel:#141619; --panel-2:#1C1F24; --rule:#25282E; --rule-2:#343841;
+  --ink:#F2F4F7; --mute:#9BA3AF; --dim:#6B7280;
+  --amber:#7C8CFF; --amber-2:#9AA6FF; --amber-dim:rgba(124,140,255,.14);
+  --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -162,6 +162,18 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row .side{flex-direction:row}
   .row .side .apply{flex:1}
 }
+
+.row,.filters,.empty,.search input{border-radius:12px}
+.row{border-color:#1F2227}
+.row:hover{border-color:#2E323A;background:#16181C}
+.apply{border-radius:9px;box-shadow:0 1px 0 rgba(255,255,255,.14) inset}
+.head h1{font-weight:800;letter-spacing:-.03em;font-family:var(--sans)}
+.head h1 span{color:var(--amber)}
+.apply{color:#0B0C0E}
+.search button{color:#0B0C0E}
+.empty button:hover,.loadmore:hover{color:#0B0C0E}
+.area-list button[aria-pressed="true"]{border-color:rgba(124,140,255,.4)}
+
 </style>
 </head>
 <body>

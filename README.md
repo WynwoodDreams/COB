@@ -35,13 +35,24 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
 
 Requires Python 3 with `openpyxl` (`pip install openpyxl`).
 
+## Design
+
+Dark, modern and low-chrome. Near-black page `#0B0C0E`, cards `#141619`, one accent
+`#7C8CFF` used only for employer names, pay, freshness and the Apply button. Inter for
+text, IBM Plex Mono for labels and counts, 12px card radius.
+
+All colours live in the `:root` block at the top of `template.html`, so the whole look
+swaps by editing that block and rebuilding. Every text pair clears WCAG AA: body text on
+a card is 7.1:1 and the accent 6.1:1. If you change the accent, re-check it against both
+`--bg` and `--panel`.
+
 ## Files
 
-- `template.html`: page markup, styles and the client-side filtering script. `__DATA__` and `__DATE__` are filled in by the build.
+- `template.html`: page markup, styles and the client-side filtering script. Colours live in the `:root` block. `__DATA__` and `__DATE__` are filled in by the build.
 - `build_data.py`: reads the spreadsheet, classifies each posting (area, majors, term, level, pay, work mode), merges the same role across locations into one card, and renders the page.
 - `index.html`: the generated page. Do not edit by hand; change the template or the script and rebuild.
 - `og.png`: 1200x630 link preview image, referenced by the Open Graph tags in the template.
-  It has no counts on it, so it does not go stale and needs regenerating only if the branding changes.
+  It has no counts on it, so it does not go stale and needs regenerating only if the palette changes.
 
 ## Changing the live URL
 
