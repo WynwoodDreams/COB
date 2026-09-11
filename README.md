@@ -60,11 +60,39 @@ clears the 44px touch minimum. No text on a card is under 12px, the search field
 at 16px so iOS does not zoom on focus, and `.wrap` respects `env(safe-area-inset-*)`
 for notched phones. Checked at 320, 360, 390 and 430px wide plus landscape.
 
+## Security
+
+The site is static: no server, no database, no user input, no JavaScript dependencies.
+Listing text is third-party, so the page escapes every value it renders and accepts only
+`http(s)` links; hostile payloads render as visible text. Three build-time measures back
+that up.
+
+- **`vercel.json` is generated on every build.** It carries a Content-Security-Policy
+  that allows the inline script and stylesheet *by SHA-256 hash*, with no `unsafe-inline`
+  anywhere, plus `nosniff`, a referrer policy, `frame-ancestors 'none'` and HSTS. An
+  injected script cannot run even if escaping is wrong somewhere.
+- **Plain-HTTP apply links are upgraded to HTTPS**, since a student on shared wi-fi can
+  have an HTTP page tampered with in transit. `--keep-http` turns this off if a
+  destination ever breaks.
+- **Listing text is scanned for AI-instruction-shaped phrases.** Nothing in the site
+  talks to a model, but descriptions are written by whoever posted the job and they land
+  in this repo, where coding agents read them. `--strict` refuses to write anything when
+  the scan trips.
+
+**The CSP hashes cover the exact bytes of `index.html`.** Regenerate the two together and
+never hand-edit `index.html`, or its script will stop running. If you add a script to the
+page, such as merging the Vercel Web Analytics pull request, add `'self'` to `script-src`
+in `security_headers()` in `build_data.py`, otherwise the new script is blocked.
+
+Build only from spreadsheets you exported yourself. Parsing the workbook with `openpyxl`
+is the one place untrusted input is processed on your machine.
+
 ## Files
 
 - `template.html`: page markup, styles and the client-side filtering script. Colours live in the `:root` block. `__DATA__` and `__DATE__` are filled in by the build.
 - `build_data.py`: reads the spreadsheet, classifies each posting (area, majors, term, level, pay, work mode), merges the same role across locations into one card, and renders the page.
 - `index.html`: the generated page. Do not edit by hand; change the template or the script and rebuild.
+- `vercel.json`: generated security headers, including a CSP pinned to that build of `index.html`.
 - `og.png`: 1200x630 link preview image, referenced by the Open Graph tags in the template.
   It has no counts on it, so it does not go stale and needs regenerating only if the palette changes.
 
