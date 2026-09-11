@@ -37,14 +37,19 @@ Requires Python 3 with `openpyxl` (`pip install openpyxl`).
 
 ## Design
 
-Dark, modern and low-chrome. Near-black page `#0B0C0E`, cards `#141619`, one accent
-`#7C8CFF` used only for employer names, pay, freshness and the Apply button. Inter for
-text, IBM Plex Mono for labels and counts, 12px card radius.
+Dark and low-chrome, sharing the palette of buildersbench.dev. Green-black page
+`#090D0B`, cards `#101714`, and one accent `#00E37B` used only for employer names, pay,
+freshness and the Apply button, which carries a soft green glow. Inter for text, IBM
+Plex Mono for labels and counts, 12px card radius.
 
 All colours live in the `:root` block at the top of `template.html`, so the whole look
-swaps by editing that block and rebuilding. Every text pair clears WCAG AA: body text on
-a card is 7.1:1 and the accent 6.1:1. If you change the accent, re-check it against both
-`--bg` and `--panel`.
+swaps by editing that block and rebuilding. Every text pair clears WCAG AA: the accent
+runs 10.6:1 on a card and body text 6.8:1. If you change the accent, re-check it against
+both `--bg` and `--panel`.
+
+A banner at the top of every page links to https://www.buildersbench.dev/. It collapses
+to the site name and a Visit link under 900px. Its markup is the `.bbar` block in
+`template.html`.
 
 ## Mobile
 
