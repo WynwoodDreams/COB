@@ -26,7 +26,9 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
    term are kept. Useful flags:
 
    - `--date "Oct 1, 2026"` to set the "updated" label yourself
-   - `--max-age 180` to drop postings older than 180 days (the export can carry listings from a year back)
+   - `--max-age 0` to keep postings older than 180 days. The build drops them by default:
+     the export reaches a year back, and a dead apply link costs more trust than a
+     missing listing earns.
    - `--stats` to print how postings were categorised
    - `--check` to write `check.txt`, one line per card, for eyeballing categories
    - `--data data.json` to re-render `index.html` from a saved `data.json` without the spreadsheet (for example after editing `template.html`)
@@ -59,6 +61,12 @@ Filters button that sticks to the top of the list while you scroll, and every co
 clears the 44px touch minimum. No text on a card is under 12px, the search field stays
 at 16px so iOS does not zoom on focus, and `.wrap` respects `env(safe-area-inset-*)`
 for notched phones. Checked at 320, 360, 390 and 430px wide plus landscape.
+
+## Outbound links
+
+Each card names the domain its Apply button opens, under the button, because the board
+links out to more than 160 employer and applicant-tracking domains that come from scraped
+postings. Per-location links in the details panel carry the same information as a tooltip.
 
 ## Security
 
