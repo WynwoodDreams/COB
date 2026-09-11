@@ -439,11 +439,11 @@ def security_headers(html):
     if not scripts: sys.exit("no inline script found: refusing to write a policy that would break the page")
     csp = "; ".join([
         "default-src 'none'",
-        "script-src " + " ".join(f"'{sha256_b64(x)}'" for x in scripts),
+        "script-src " + " ".join(f"'{sha256_b64(x)}'" for x in scripts) + " 'self'",
         "style-src " + " ".join(f"'{sha256_b64(x)}'" for x in styles) + " https://fonts.googleapis.com",
         "font-src https://fonts.gstatic.com",
         "img-src 'self' data:",
-        "connect-src 'none'",
+        "connect-src https://vitals.vercel-insights.com",
         "form-action 'none'",
         "frame-ancestors 'none'",
         "base-uri 'none'",
