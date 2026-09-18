@@ -57,6 +57,50 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
    and a role missing from one scrape is as likely to have been pushed out of the row cap
    as to have closed. Those cards stay until they age out.
 
+## How a posting is read
+
+An internship search on Indeed returns some things that are not internships: a manager
+of an internship program, a coordinator role that needs a completed degree, a new-grad
+hire "for former interns only". A title that starts with manager, director or supervisor,
+or says "new grad", is left out; so is one that ends in coordinator or manager unless the
+posting itself calls the role an internship. The build prints what it left out.
+
+**Area.** A title that names the work decides it, in the order of `CATS` in
+`build_data.py`. The Business catch-all comes last and only carries words that name
+business work outright (purchasing, leasing, analyst, supply chain). A title that names
+nothing — "Intern", "Summer Associate", "Internship Program" — is decided by the employer's
+name, then by strong nouns in the posting's opening (a general contractor, a law firm, an
+insurance broker, a hotel), then by a looser read of the first 1,500 characters, and only
+then falls into Business.
+
+**Majors.** The Major filter answers "which roles are aimed at students in this major",
+which is narrower than "which roles would accept them". A major is tagged when it is in
+the title, or when it is one of the first five degrees a posting names. A degree sentence
+is read one comma-separated phrase at a time, in order, and stops at the end of the
+sentence, or at the end of the list it introduces. So "Bachelor's in Accounting, Finance,
+or Hospitality Finance" tags all three; "Strong communication skills" on the next line
+tags nothing; and a software posting that will take "Computer Science, Computer
+Engineering, Software Engineering, Electrical Engineering, Wireless Engineering,
+Information Security, Mathematics or related" is tagged Computer Science and Electrical
+Engineering, not Cybersecurity. A list that long is a door left open, not a target, and
+the board does not advertise open doors. Cards that name no major still show under
+"All majors".
+
+Bare "major" is the trap word: it is an adjective as often as a noun ("major market",
+"three major components", and "majority" as a plain substring), so it only opens a degree
+sentence in the shapes a requirement actually takes — "major in", "majors:", "any/related/
+preferred majors", "Accounting major".
+
+**Pay.** The salary cell wins when Indeed has one; placeholder amounts like "Up to $1 a
+month" are dropped. "Commission" is only pay when the posting talks about earning it; a
+hospital's "Commission on Dietetic Registration" is not.
+
+A classifier change only reaches the cards whose rows are in the export you build from:
+the page keeps a card's derived fields, not the posting text they came from. Cards carried
+over from older exports get re-read from their title alone. If that becomes a problem,
+the fix is to commit the source rows the board was built from, which is a design change
+this README does not make.
+
 3. Commit the new `index.html`. Vercel redeploys automatically. `data.json` and `check.txt` are gitignored.
 
 Requires Python 3 with `openpyxl` (`pip install openpyxl`).
@@ -144,7 +188,7 @@ is the one place untrusted input is processed on your machine.
 ## Files
 
 - `template.html`: page markup, styles and the client-side filtering script. Colours live in the `:root` block. `__DATA__` and `__DATE__` are filled in by the build.
-- `build_data.py`: reads the spreadsheet, classifies each posting (area, majors, term, level, pay, work mode), merges the same role across locations into one card, folds the result into the listings already published when `--merge` is given, and renders the page.
+- `build_data.py`: reads the spreadsheet, leaves out postings that are jobs rather than internships, classifies each one (area, majors, term, level, pay, work mode) as described under "How a posting is read", merges the same role across locations into one card, folds the result into the listings already published when `--merge` is given, and renders the page.
 - `index.html`: the generated page. Do not edit by hand; change the template or the script and rebuild.
 - `vercel.json`: generated security headers, including a CSP pinned to that build of `index.html`.
 - `og.png`: 1200x630 link preview image, referenced by the Open Graph tags in the template.

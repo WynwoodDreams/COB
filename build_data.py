@@ -13,35 +13,55 @@ postingDateParsed, externalApplyLink, salary, description, url, id.
 import argparse, base64, collections, datetime as dt, hashlib, json, os, re, sys
 
 # ---------- category rules: (category, title keywords) in priority order ----------
+# A title that names the work decides the area. The Business catch-all sits last and only
+# carries words that name business work outright (purchasing, leasing, analyst...). A title
+# that matches nothing here is vague, and for those the employer's name and the posting's
+# opening paragraph get a say before the catch-all does.
 CATS = [
  ("Health Sciences & Pharmacy", r"pharmac|nurse|nursing|respiratory|medical assistant|\bMA/|chiropract|veterinar|patient care"),
  ("Mental Health & Social Work", r"mental health|counsel|therapist|therapy|psycholog|social work|\bBSW\b|\bMSW\b|RMHCI|LMHC|behavioral health|clinical intern"),
  ("Legal", r"\blaw\b|legal|law clerk|bankruptcy|attorney|paralegal|\b2L\b"),
- ("Accounting, Tax & Audit", r"\btax\b|audit|assurance|accounting|accountant|forensic|attest|risk advisory|technology risk|accounting methods"),
+ ("Accounting, Tax & Audit", r"\btax\b|audit|assurance|accounting|accountant|forensic|attest|risk advisory|technology risk|accounting methods|process risk|internal controls|\bSOX\b"),
  ("Finance, Banking & Insurance", r"financ|wealth|banking|capital markets|private equity|asset management|quant|trading|actuarial|multinational|lending|commercial banking|insurance|state farm agent|FRP internship|client advisory|transaction"),
  ("Human Resources & Talent", r"human resources|\bHR\b|talent acquisition|people & culture|recruit"),
- ("Civil, Structural & Environmental Engineering", r"civil|structural engineer|geotechnical|water|wastewater|transportation engineering|surveying|environmental engineering|\bCEI\b|\bDOT\b|traffic|intern engineer|engineering & estimating|engineering intern \| fort|planning intern"),
+ ("Civil, Structural & Environmental Engineering", r"civil|structural engineer|geotechnical|water|wastewater|transportation|surveying|environmental engineering|\bCEI\b|\bDOT\b|traffic|bridge|structures|intern engineer|engineering & estimating|engineering intern \| fort|planning intern"),
  ("Software, IT, Data & AI", r"software|developer|programmer|\bIT\b|information technology|\bdata\b|analytics|\bAI\b|machine learning|cyber|digital product|android|web develop|it infrastructure|systems engineering|app / game"),
  ("Architecture, Construction & Design", r"architect|construction|\bBIM\b|interior design|estimating|building automation|fire & life safety|^project intern"),
- ("Mechanical, Electrical & Manufacturing Engineering", r"mechanical|electrical|electronics|\bRF\b|analog|radio|industrial engineering|manufacturing|process engineer|materials|packaging|biomedical|design engineering|engineering intern|engineering internship|engineer, intern|test technician|CAD design|advanced operations|aviation safety|technical sales"),
- ("Science, Sustainability & Environment", r"chemist|R&D|environmental|sustainab|scientist|research|\blab\b|QEHS|horticult|landscape"),
+ ("Mechanical, Electrical & Manufacturing Engineering", r"mechanical|electrical|electronics|\bRF\b|analog|radio|industrial engineering|manufacturing|process engineer|materials|packaging|biomedical|design engineering|engineering intern|engineering internship|engineer, intern|test technician|CAD design|advanced operations|aviation safety|technical sales|(?<!studio )\bengineers?\b"),
+ ("Science, Sustainability & Environment", r"chemist|R&D|environmental|sustainab|scientist|research|\blab\b|QEHS|horticult|landscape|grower|nursery|agricultur"),
  ("Marketing, Communications & PR", r"marketing|social media|communication|\bPR\b|public relations|brand|content creator|influencer|campus ambassador|community management|client solutions|e-retail|business communications"),
  ("Creative: Media, Design & Production", r"graphic design|video|photograph|content studio|control room|film|television|studio engineer|music|creative|design intern"),
  ("Hospitality, Events, Sports & Entertainment", r"hospitality|F&B|culinary|hotel|\bclub\b|golf|event|sports|game ops|MIA Academy|strength and conditioning|premium client|sodexo|yotel|academic support|athletic"),
  ("Sales & Business Development", r"\bsales\b|business development|door to door|financial representative"),
- ("Education, Nonprofit & Community", r"ministry|student services|cultivate|programs & partnerships|volunteer|community engagement|nonprofit|school"),
+ ("Education, Nonprofit & Community", r"ministry|student services|cultivate|programs & partnerships|volunteer|community engagement|nonprofit|school|teaching|teacher|practicum"),
  ("Skilled Trades, Automotive & Aviation", r"mechanic|service technician|aircraft|HVAC|maintenance|trainee.*technician"),
- ("Business, Management & Operations", r"management|business|operations|supply chain|purchasing|consult|administrative|administration|store executive|leasing|customer service|client|coordinator|program development|provider operations|internship program|^intern$|intern / co-op|summer internship program"),
+ ("Business, Management & Operations", r"business|operations|supply chain|logistics|purchasing|procurement|consult|administrative|administration|store executive|leasing|customer service|revenue management|analyst|corporate|strategy|leadership development|management trainee|project management|project manager|program development|provider operations"),
 ]
 DEFAULT_CAT = "Business, Management & Operations"
+# Titles that say nothing about the work. These skip the title rules entirely.
 GENERIC = r"^(intern|internship|intern / co-op|summer internship program.*|internship program.*|.*summer 20\d\d internship)$"
+# What the employer is, for a title that doesn't say what the work is.
 COMPANY_RULES = [
  ("Architecture, Construction & Design", r"construction|contracting|builders|architecture"),
  ("Legal", r"\blaw\b|legal"),
- ("Science, Sustainability & Environment", r"landscape"),
+ ("Science, Sustainability & Environment", r"landscape|nursery|farms?\b"),
  ("Accounting, Tax & Audit", r"advisory|\bCPA"),
+ ("Finance, Banking & Insurance", r"\bbank\b|insurance|wealth|financial"),
+ ("Hospitality, Events, Sports & Entertainment", r"hotel|resort"),
+ ("Health Sciences & Pharmacy", r"hospital|medical center|health system"),
  ("Civil, Structural & Environmental Engineering", r"engineering"),
 ]
+# What the posting's opening says the employer does. Strong nouns only: these run on
+# vague titles, where a stray "marketing" would otherwise decide the area.
+DESC_HINTS = [
+ ("Architecture, Construction & Design", r"general contractor|construction (company|firm|management|site|project|industry|services)|jobsite|job site|ready[- ]mix"),
+ ("Legal", r"law (firm|students?|school)|attorneys?|litigation"),
+ ("Business, Management & Operations", r"real estate|property management"),
+ ("Finance, Banking & Insurance", r"insurance broker|\bbank(ing)?\b|banco|wealth management|investment (firm|management|banking)"),
+ ("Science, Sustainability & Environment", r"horticultur|nursery|\bfarms?\b|landscap"),
+ ("Hospitality, Events, Sports & Entertainment", r"\bhotels?\b|\bresorts?\b|hospitality (industry|group|management)"),
+]
+# Last resort, over more of the posting and with looser words.
 DESC_FALLBACK = [
  ("Architecture, Construction & Design", r"construction management|general contractor"),
  ("Accounting, Tax & Audit", r"accounting|\btax\b|audit"),
@@ -55,49 +75,183 @@ DESC_FALLBACK = [
 def classify(title, desc, company=''):
     t = title.strip()
     if re.search(GENERIC, t, re.I):
-        for cat, k in [("Architecture, Construction & Design", r"construction|contracting|builders"),
-                       ("Science, Sustainability & Environment", r"landscape"),
-                       ("Accounting, Tax & Audit", r"advisory|\bCPA")]:
+        for cat, k in COMPANY_RULES:
             if re.search(k, company, re.I): return cat
-        if re.search(r"construction", desc[:600], re.I): return "Architecture, Construction & Design"
     for cat, tk in CATS:
         if re.search(tk, t, re.I): return cat
     for cat, k in COMPANY_RULES:
         if re.search(k, company, re.I): return cat
-    d = desc[:1500]
+    for cat, k in DESC_HINTS:
+        if re.search(k, desc[:1000], re.I): return cat
     for cat, k in DESC_FALLBACK:
-        if re.search(k, d, re.I): return cat
+        if re.search(k, desc[:1500], re.I): return cat
     return DEFAULT_CAT
 
+# A posting that reached an internship search but is a job: a manager, coordinator or
+# supervisor role, or a new-grad hire (HNTB lists those "for former interns only").
+NOT_INTERN = re.compile(r"^(manager|director|supervisor)\b|\bnew grad", re.I)
+NOT_INTERN_TAIL = re.compile(r"\b(coordinator|manager|director|supervisor)$", re.I)
+def is_internship(title, desc):
+    if NOT_INTERN.search(title): return False
+    # a title that ends in a job word is a job unless the posting itself calls it an internship
+    if NOT_INTERN_TAIL.search(display_title(title)) and not re.search(r"\bintern(s|ships?)?\b", title + " " + desc[:3000], re.I): return False
+    return True
+
+# ---------- majors ----------
+# Each pattern is matched against the title and against the degree sentences of the
+# posting, one comma-separated phrase at a time, so a lookbehind sees the words before
+# the phrase but not the whole posting. (?-i:...) keeps an abbreviation case-sensitive:
+# "IT" is a major, "it" is a pronoun.
 MAJORS = [
- ("Accounting", r"accounting|accountant|\bCPA\b"), ("Finance", r"\bfinance\b"), ("Economics", r"economics"),
- ("Marketing", r"marketing"), ("Business Administration", r"business administration|business management|business degree|\bbusiness\b(?! development| communications| analytics| strategy)"),
- ("Communications", r"communications?\b(?! skills| and interpersonal)|journalism|mass comm"), ("Public Relations", r"public relations"),
- ("Computer Science", r"computer science|software engineering|computer engineering"), ("Information Technology", r"information technology|information systems|\bMIS\b"),
- ("Cybersecurity", r"cyber ?security|information security"), ("Data Science / Analytics", r"data science|data analytics|statistics|business analytics"),
- ("Artificial Intelligence", r"artificial intelligence|machine learning"),
- ("Civil Engineering", r"civil engineering"), ("Mechanical Engineering", r"mechanical engineering"), ("Electrical Engineering", r"electrical engineering|electrical and computer"),
- ("Industrial Engineering", r"industrial engineering"), ("Biomedical Engineering", r"biomedical"), ("Chemical Engineering", r"chemical engineering"),
- ("Environmental Engineering / Science", r"environmental (engineering|science)"), ("Aerospace Engineering", r"aerospace"),
- ("Construction Management", r"construction management|construction engineering|construction technology"), ("Architecture", r"(?<!enterprise )(?<!software )(?<!system )architecture|architectural"),
- ("Interior Design", r"interior design"), ("Landscape / Horticulture", r"landscape|horticulture|agriculture|plant science"),
- ("Nursing", r"\bnursing\b|\bRN\b|\bBSN\b"), ("Pharmacy", r"pharmacy|pharm\.?d"), ("Respiratory Therapy", r"respiratory"),
- ("Health Sciences", r"health science|pre-med|biology|medical assist"), ("Psychology", r"psychology"), ("Counseling", r"counseling|counselor education|marriage and family"),
- ("Social Work", r"social work"), ("Graphic Design", r"graphic design"), ("Film / Video", r"\bfilm\b|video production"),
- ("Photography", r"photograph"), ("Music", r"\bmusic\b"), ("Hospitality Management", r"hospitality"), ("Sports Management", r"sports management|sport management|kinesiology|exercise science"),
- ("Human Resources", r"human resources? (management|degree|major)|human resources|\bHR\b"), ("Supply Chain / Logistics", r"supply chain|logistics"), ("Mathematics", r"mathematics"),
- ("Chemistry", r"chemistry"), ("Law / Legal Studies", r"law school|\bJ\.?D\.?\b|legal studies|paralegal"), ("Education", r"\beducation\b degree|early childhood|teaching"),
- ("Aviation", r"aviation"), ("Real Estate", r"real estate"), ("Political Science / Public Admin", r"political science|public administration|public policy"),
+ ("Accounting", r"accounting|accountant|\bCPA\b"),
+ ("Finance", r"\bfinance\b|financial planning|asset management|wealth management|investment (banking|management)|actuarial"),
+ ("Economics", r"economics"),
+ ("Marketing", r"marketing|social media|digital media|advertising"),
+ ("Business Administration", r"business administration|business management|business degree|\bMBA\b|management trainee|\bbusiness\b(?![- ](development|communications?|analytics|strategy|needs|transformation|units?|partners?|days?|hours|travel|operations|processes|case|acumen|objectives|goals|results|outcomes|challenges|problems|priorities|value|functions|side|contacts|software|errands|mileage|savvy|owners|activities|information|stakeholders|leaders|forward|intelligence))"),
+ ("Communications", r"(?<!verbal )(?<!written )(?<!oral )(?<!strong )(?<!excellent )(?<!good )(?<!effective )(?<!clear )(?<!interpersonal )(?<!professional )(?<!frequent )(?<!client )(?<!guest )communications?\b(?!\s+(skills?|abilities|and (interpersonal|organizational|presentation|collaboration|teamwork)|with|to\b|is\b|are\b|style|tools?|plans?|platforms?|initiatives|channels|team))|journalism|mass comm|communication (studies|arts|sciences)"),
+ ("Public Relations", r"public relations"),
+ ("Computer Science", r"computer science|software engineer|software develop|computer engineer|\bdeveloper\b"),
+ ("Information Technology", r"information technology|information systems|(?-i:\bMIS\b|\bIT\b|\bI\.T\.)(?! (skills|support))"),
+ ("Cybersecurity", r"cyber ?security|information security|\bcyber\b"),
+ ("Data Science / Analytics", r"data science|data analytics|data engineering|statistics|business analytics|\banalytics\b"),
+ ("Artificial Intelligence", r"artificial intelligence|machine learning|(?-i:\bAI\b)(?! tools)"),
+ ("Civil Engineering", r"civil engineer|structural engineer|geotechnical|transportation engineer|water resources|\bbridges?\b"),
+ ("Mechanical Engineering", r"mechanical (design )?engineer"),
+ ("Electrical Engineering", r"electrical engineer|electrical and computer|electronics? engineer"),
+ ("Industrial Engineering", r"industrial engineer|manufacturing engineer"),
+ ("Biomedical Engineering", r"biomedical(?! informatics)"),
+ ("Chemical Engineering", r"chemical engineer"),
+ ("Materials Science / Packaging", r"materials (science|engineering)|packaging engineer"),
+ ("Environmental Engineering / Science", r"environmental (engineering|science|studies)|marine (biology|science)|oceanograph|\becology\b"),
+ ("Aerospace Engineering", r"aerospace|aeronautic"),
+ ("Construction Management", r"construction (management|engineering|technology|science|project)|(?-i:\bBIM\b)"),
+ ("Architecture", r"(?<!enterprise )(?<!software )(?<!system )(?<!systems )(?<!data )(?<!cloud )(?<!solution )(?<!network )(?<!information )(?<!technical )\barchitect(ure|ural|s)?\b"),
+ ("Interior Design", r"interior design"),
+ ("Landscape / Horticulture", r"landscape (architecture|design|management)|landscaping|horticultur|agricultur|plant science|\bturf|agronomy|\bgrowers?\b"),
+ ("Nursing", r"\bnursing\b|\bnurses?\b|(?-i:\bRN\b|\bBSN\b)"),
+ ("Pharmacy", r"pharmacy|pharm\.?d"),
+ ("Respiratory Therapy", r"respiratory"),
+ ("Health Sciences", r"health science|pre-?med|\bbiology\b|medical assist|chiropract|veterinar|public health|nutrition|dietetic"),
+ ("Psychology", r"psychology"),
+ ("Counseling", r"counsel(ing|or)|mental health|marriage and family|(?-i:\bLMHC\b|RMHCI)"),
+ ("Social Work", r"social work|(?-i:\bMSW\b|\bBSW\b|RCSWI)"),
+ ("Graphic Design", r"graphic design|graphic art"),
+ ("Film / Video", r"\bfilm\b|\bvideo\b|cinema|broadcast"),
+ ("Photography", r"photograph"),
+ ("Music", r"\bmusic\b|audio engineering|recording arts|studio engineer"),
+ ("Hospitality Management", r"hospitality|hotel management|culinary"),
+ ("Sports Management", r"sports management|sport management|kinesiology|exercise science"),
+ ("Human Resources", r"human resources?|(?-i:\bHR\b)|people & culture|talent acquisition|organizational (development|leadership)"),
+ ("Supply Chain / Logistics", r"supply chain|logistics|procurement|purchasing"),
+ ("Mathematics", r"mathematics|\bmath\b"),
+ ("Chemistry", r"chemistry"),
+ ("Law / Legal Studies", r"law school|(?-i:\bJ\.?D\.?\b)|legal studies|paralegal|pre-?law|law (office|firm|clerk)"),
+ ("Education", r"\beducation\b degree|early childhood|teaching|elementary education|secondary education"),
+ ("Aviation", r"aviation"),
+ ("Real Estate", r"real estate"),
+ ("Political Science / Public Admin", r"political science|public administration|public policy"),
 ]
+# Words that open a sentence about what a candidate studies. Bare 'major' is the noisy
+# one: unlike the others it is a common adjective ("major market", "three major
+# components", and "majority" as a plain substring), so it only counts in the shapes a
+# degree requirement actually takes.
+_MAJOR_NONACADEMIC = r"market|road|hotel|industr|capital|launch|aspect|component|traffic|citi(?:es)?|compan|brand|metro|platform|social|design"
+TRIGGER = re.compile(
+    r"degree|majoring|pursuing|enrolled|studying|student in|students in|program in|candidate in|"
+    r"background in|coursework|field of study|fields?:|"
+    r"law (?:school|students?)|\b[123]L\b|J\.?D\.? candidate|"
+    r"bachelor'?s?(?: of \w+)? in|master'?s?(?: of \w+)? in|\bB\.?[AS]\.? in|\bM\.?[AS]\.? in|"
+    r"(?:is|are) preferred|preferred in|preferably in|preference for|ideally in|"
+    r"(?:undergraduate|graduate|college|university|law|nursing|engineering|pharmacy|doctoral|master'?s|bachelor'?s) students?\b|"
+    r"major(?:s|ing)?\s*(?:in\b|:)|"
+    r"\b(?:any|all|related|relevant|preferred|desired|recommended|specific|no)\s+majors?\b|"
+    r"majors?\s+(?:targeted|represented|include|welcome)|"
+    r"major\s+(?:or\s+minor|requirements?)|"
+    r"\bmajor(?:s)?\b(?!\s*(?:" + _MAJOR_NONACADEMIC + r"))", re.I)
+_BULLET = "•-*·–—"
+
+def _abbrev(desc, i):
+    """Is the '.' at desc[i] part of B.S., M.S., Ph.D., e.g.? Then it is not a sentence end."""
+    j = i - 1
+    while j >= 0 and desc[j].isalpha(): j -= 1
+    return 1 <= i - j - 1 <= 2 and (j < 0 or not desc[j].isalnum())
+
+def degree_window(desc, start, end):
+    """The sentence a trigger sits in, plus the list it introduces if it ends with one.
+
+    The old rule took 220 characters after the trigger regardless, which reached into
+    the next requirement ("Strong communication skills") and the one after that.
+    """
+    n = len(desc)
+    lo = start
+    while lo > 0 and start - lo < 100:
+        ch = desc[lo - 1]
+        if ch == "\n" or (ch in ".;!?" and not _abbrev(desc, lo - 1)): break
+        lo -= 1
+    hi = end
+    while hi < n and hi - end < 340:
+        ch = desc[hi]
+        if ch in ".?":
+            nxt = desc[hi + 1] if hi + 1 < n else " "
+            if nxt in " \n" and not (ch == "." and _abbrev(desc, hi)): break
+        if ch == ";":
+            # "enrolled in a university; preferably in Marketing" runs on, "...; Strong communication" does not
+            after = desc[hi + 1:hi + 3].lstrip(" ")
+            if not after or after[0] == "\n" or after[0].isupper(): break
+        if ch == "\n":
+            sofar = desc[lo:hi].rstrip()
+            # a header that introduces a list may leave a blank line before it
+            header = sofar.endswith(":") or (len(sofar) - (start - lo) < 60 and re.search(r"\bmajors?\b", sofar[start - lo:], re.I))
+            rest = desc[hi + 1:].lstrip(" \t")
+            if not rest: break
+            if rest.startswith("\n"):
+                if not header: break
+                hi += 1; continue
+            line = rest.split("\n", 1)[0].strip()
+            # keep going only into a list: "Majors:" then one per line, or bullets, or short items
+            if not (header or sofar.endswith(",") or line[:1] in _BULLET or (len(line) <= 45 and "." not in line)): break
+        hi += 1
+    return lo, hi
+
+_SPLIT = re.compile(r"[,;/•\n()]|\bor\b|\band\b", re.I)
+_FILLER = {"a", "an", "the", "or", "and", "in", "of", "to", "with", "from", "e.g", "i.e", "etc", "other", "another",
+           "related", "similar", "any", "all", "such", "including", "but", "not", "preferably", "preferred", "ideally"}
+KEEP_FIRST = 5   # a posting that names eight degrees "or related" is aimed at the first few
+MAX_MAJORS = 6
+
 def majors_for(desc, title):
-    windows = [title]
-    for m in re.finditer(r"(degree|major|majoring|pursuing|enrolled|studying|student in|students in|program in|candidate in|background in|coursework|field of study|fields?:)", desc, re.I):
-        windows.append(desc[max(0, m.start()-60): m.end()+220])
-    txt = "\n".join(windows)
+    """Majors the role is aimed at: the ones in its title, then the first few it names.
+
+    A degree sentence is read one phrase at a time, in order, and only the first
+    KEEP_FIRST distinct majors it names are kept. A long "or related field" list is a
+    door left open, not a target, and the board does not advertise open doors: a software
+    engineering posting that lists Information Security sixth is not a cybersecurity role.
+    """
     found = []
     for name, k in MAJORS:
-        if re.search(k, txt, re.I): found.append(name)
-    return found[:8]
+        if re.search(k, title, re.I) and name not in found: found.append(name)
+    windows, last = [], -1
+    for m in TRIGGER.finditer(desc):
+        if m.start() < last: continue          # already inside the previous sentence
+        lo, hi = degree_window(desc, m.start(), m.end())
+        windows.append(desc[lo:hi]); last = hi
+    for w in windows:
+        w = re.sub(r"\bJD[/-]MBA\b", "JD", w)   # a JD/MBA candidate is a law student here
+        rank, base, i = {}, None, 0
+        for tok in _SPLIT.split(w):
+            tok = tok.strip()
+            if not tok: continue
+            hits = [name for name, k in MAJORS if name not in rank and re.search(k, tok, re.I)]
+            for name in hits:
+                rank[name] = i
+                if base is None: base = i
+            # a phrase counts as a named degree if it matched one, or reads like one:
+            # short, and not a connective ("or a related field", "in a quantitative")
+            words = tok.lstrip("*•-–— ").split()
+            if hits or (len(words) <= 4 and words and words[0].lower().strip("'’.,") not in _FILLER): i += 1
+        for name, i in rank.items():
+            if i - base < KEEP_FIRST and name not in found: found.append(name)
+    return found[:MAX_MAJORS]
 
 TODAY = dt.date.today()
 # Postings advertise the current cycle and the next two years; anything else is a typo or stale.
@@ -125,9 +279,18 @@ def clean_loc(l):
     l = re.sub(r"\s*\d{5}(-\d{4})?\s*$", "", l).strip()
     return l or "South Florida"
 
+# "Commission" is only pay when the posting talks about earning it. A hospital's
+# "Commission on Dietetic Registration" and a casino's "Gaming Commission" are not.
+COMMISSION = re.compile(r"commission[- ]based|commission[- ]only|100% commission|plus commission|\+ ?commissions?|"
+                        r"earn(?:s|ed|ing)? commissions?|commissions? (?:per|from)\b|uncapped commission|"
+                        r"performance[- ]based commission|(?:pay|salary|rate|base) (?:plus|and) commission|commission (?:eligible|structure|pay)", re.I)
+JUNK_PAY = re.compile(r"^(up to |from )?\$[0-4](\.\d+)?/(mo|wk|yr|hr)$", re.I)   # "Up to $1/mo" is a placeholder, not pay
+
 def pay_for(sal, desc):
     sal = s(sal)
-    if sal: return sal.replace(" an hour","/hr").replace(" a year","/yr").replace(" a month","/mo").replace(" a week","/wk")
+    if sal:
+        sal = sal.replace(" an hour","/hr").replace(" a year","/yr").replace(" a month","/mo").replace(" a week","/wk")
+        return "" if JUNK_PAY.match(sal) else sal
     d = desc[:4000]
     m = re.search(r"\$\s?\d{2}(?:\.\d\d)?\s*(?:-|–|to)\s*\$?\s?\d{2}(?:\.\d\d)?\s*(?:/|per)\s*(?:hour|hr)", d, re.I)
     if m: return m.group(0).replace("per hour","/hr").replace("per hr","/hr").replace(" ","")
@@ -137,7 +300,7 @@ def pay_for(sal, desc):
         if re.search(r"unpaid", d, re.I): return "Unpaid / credit"
         return "Paid"
     if re.search(r"\bunpaid\b", d, re.I): return "Unpaid"
-    if re.search(r"commission", d, re.I): return "Commission"
+    if COMMISSION.search(d): return "Commission"
     return ""
 
 def level_for(title, desc):
@@ -151,7 +314,7 @@ def level_for(title, desc):
 def flag_for(title, desc, pay=""):
     d = title + " " + desc[:5000]
     strong = re.search(r"door[- ]to[- ]door|\b1099\b|no base|commission[- ]only|100% commission|uncapped|make \$", d, re.I)
-    if strong or (re.search(r"commission", d, re.I) and not re.search(r"/hr", pay or "")): return "Commission-based"
+    if strong or (COMMISSION.search(d) and not re.search(r"/hr", pay or "")): return "Commission-based"
     if re.search(r"for current|returning intern|previous hntb interns", title, re.I): return "Returning interns only"
     return ""
 
@@ -308,11 +471,13 @@ def read_rows(path):
         data.append(dict(zip(hdr, r)))
     return data
 
+NOT_INTERNSHIPS = []
 def build_items(data, upgrade=True):
     items, seen, skipped = [], set(), 0
     for d in data:
         title = s(d.get('positionName')); company = s(d.get('company')); desc = s(d.get('description'))
         if not title and not company: skipped += 1; continue
+        if not is_internship(title, desc): NOT_INTERNSHIPS.append(f"{company} / {title[:50]}"); continue
         pid = s(d.get('id')) or s(d.get('url'))
         if pid in seen: skipped += 1; continue
         seen.add(pid)
@@ -604,6 +769,8 @@ def main(argv=None):
             print(f"dropped {len(stale)} postings older than {cutoff}" + (": " + "; ".join(f"{it['company']} / {it['title'][:40]} ({it['posted']})" for it in stale[:8]) + (" ..." if len(stale) > 8 else "") if stale else ""))
         out = group_items(items)
         print(f"read {len(data)} rows, skipped {skipped} (blank or duplicate id), grouped {len(items)} postings into {len(out)} cards")
+        if NOT_INTERNSHIPS:
+            print(f"left out {len(NOT_INTERNSHIPS)} posting(s) that are jobs, not internships: " + "; ".join(NOT_INTERNSHIPS[:8]) + (" ..." if len(NOT_INTERNSHIPS) > 8 else ""))
     out = finalize(out, upgrade=not a.keep_http)
     if a.merge:
         prior = finalize(load_cards(a.merge), upgrade=not a.keep_http)
