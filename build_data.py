@@ -89,9 +89,26 @@ MAJORS = [
  ("Chemistry", r"chemistry"), ("Law / Legal Studies", r"law school|\bJ\.?D\.?\b|legal studies|paralegal"), ("Education", r"\beducation\b degree|early childhood|teaching"),
  ("Aviation", r"aviation"), ("Real Estate", r"real estate"), ("Political Science / Public Admin", r"political science|public administration|public policy"),
 ]
+# Bare 'major' is the noisy one: unlike the other trigger words it is a common adjective
+# ("major market", "major industries", "three major components", "majority" as a plain
+# substring with no word boundary at all), and each false hit opens a 220-char window
+# that can pick up an unrelated major from unrelated nearby text (a company's "cybersecurity"
+# service line, say, tagging a Project Management intern). Only count it where the sentence
+# is actually about a degree: "major in X", "majors:", "any/related/preferred major(s)",
+# "majors targeted/represented", "major or minor", or "<subject> major" not followed by one
+# of the adjectival nouns it commonly modifies instead.
+_MAJOR_NONACADEMIC = r"market|road|hotel|industr|capital|launch|aspect|component|traffic|citi(?:es)?|compan|brand|metro|platform|social|design"
+TRIGGER = re.compile(
+    r"degree|majoring|pursuing|enrolled|studying|student in|students in|program in|candidate in|"
+    r"background in|coursework|field of study|fields?:|"
+    r"major(?:s|ing)?\s*(?:in\b|:)|"
+    r"\b(?:any|all|related|relevant|preferred|desired|recommended|specific|no)\s+majors?\b|"
+    r"majors?\s+(?:targeted|represented|include|welcome)|"
+    r"major\s+(?:or\s+minor|requirements?)|"
+    r"\bmajor(?:s)?\b(?!\s*(?:" + _MAJOR_NONACADEMIC + r"))", re.I)
 def majors_for(desc, title):
     windows = [title]
-    for m in re.finditer(r"(degree|major|majoring|pursuing|enrolled|studying|student in|students in|program in|candidate in|background in|coursework|field of study|fields?:)", desc, re.I):
+    for m in TRIGGER.finditer(desc):
         windows.append(desc[max(0, m.start()-60): m.end()+220])
     txt = "\n".join(windows)
     found = []
