@@ -438,7 +438,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const AREA_ORDER = ['Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
   const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)).sort());
   const ul = $('#areas');
-  const mkArea = (label, val, n) => { const li=document.createElement('li'); const b=document.createElement('button'); b.type='button'; b.dataset.area=val; b.innerHTML=`<span>${esc(label)}</span><i>${n}</i>`; b.addEventListener('click',()=>{ state.area=(state.area===val?'':val); refilter(); }); li.appendChild(b); return li; };
+  const mkArea = (label, val, n) => { const li=document.createElement('li'); const b=document.createElement('button'); b.type='button'; b.dataset.area=val; b.innerHTML=`<span>${esc(label)}</span><i>${n}</i>`; b.addEventListener('click',()=>{ choose('area', state.area===val ? '' : val); }); li.appendChild(b); return li; };
   ul.appendChild(mkArea('All areas','',DATA.length));
   areas.forEach(a => ul.appendChild(mkArea(a,a,areaCounts.get(a))));
 
@@ -519,7 +519,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       ${hasDetails ? `<div class="details" id="${detId}">${details}</div>` : ''}`;
     const more = el.querySelector('.more');
     if (more) more.addEventListener('click', e => { const b=e.currentTarget, dt=el.querySelector('.details'); const open=!dt.classList.contains('open'); dt.classList.toggle('open',open); b.setAttribute('aria-expanded',open); b.textContent=open?'Hide':'Details'; });
-    el.querySelectorAll('.majors button').forEach(b => b.addEventListener('click', () => { state.major=b.dataset.major; $('#f-major').value=state.major; refilter(); }));
+    el.querySelectorAll('.majors button').forEach(b => b.addEventListener('click', () => choose('major', b.dataset.major)));
     return el;
   }
 
@@ -567,6 +567,24 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   // without this the new list opens halfway down, or past its end on a shorter one. Only
   // scroll when the top of the list is actually out of sight, so changing a filter while
   // the list is already in view leaves the page where it is.
+  // A control that shows a count is making a promise: "Finance, Banking & Insurance 24",
+  // "Aerospace Engineering (1)". Applying it on top of an older filter used to break that
+  // promise more often than keep it — 85% of area+major pairs hold nothing at all, and
+  // inside Skilled Trades every one of the majors is a dead end — which left the visitor
+  // on "Nothing matches" with no clue which filter to undo. So the control you just used
+  // wins, and the older ones step aside until the list has something in it. They yield in
+  // order of how deliberate they are; county is last, because "the county I live in" is
+  // the one refinement worth carrying from one area to the next.
+  const YIELDS = ['area','major','term','level','q','paid','remote','county'];
+  function choose(key, val){
+    state[key] = val;
+    for (const k of YIELDS){
+      if (DATA.some(matches)) break;
+      if (k !== key) state[k] = DEFAULTS[k];
+    }
+    syncInputs();
+    refilter();
+  }
   function refilter(){
     state.shown = PAGE;
     render();
@@ -599,7 +617,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   $('.search').addEventListener('submit', e => { e.preventDefault(); setQ($('#q').value); $('#q').blur(); });
   $('#go').addEventListener('click', ()=> setQ($('#q').value));
   $('#clearq').addEventListener('click', ()=>{ $('#q').value=''; setQ(''); $('#q').focus(); });
-  [['f-county','county'],['f-major','major'],['f-term','term'],['f-level','level'],['f-sort','sort']].forEach(([id,k]) => $('#'+id).addEventListener('change', e => { state[k]=e.target.value; refilter(); }));
+  [['f-county','county'],['f-major','major'],['f-term','term'],['f-level','level']].forEach(([id,k]) => $('#'+id).addEventListener('change', e => choose(k, e.target.value)));
+  // Sort reorders the list, it cannot empty it, so nothing has to give way.
+  $('#f-sort').addEventListener('change', e => { state.sort=e.target.value; refilter(); });
   $('#f-paid').addEventListener('change', e => { state.paid=e.target.checked; refilter(); });
   $('#f-remote').addEventListener('change', e => { state.remote=e.target.checked; refilter(); });
   $('#reset').addEventListener('click', reset);

@@ -139,6 +139,28 @@ Neither animation runs under `prefers-reduced-motion: reduce`, which leaves a st
 and a solid caret. That rule needs `*, *::before, *::after` — a bare `*` matches elements
 only, and would leave the caret blinking.
 
+## Filters give way to each other
+
+Every control that shows a count is making a promise: the area list says "Legal 6", the
+Major menu says "Aerospace Engineering (1)". Applied on top of a filter already set, that
+promise used to break more often than it held — 85% of area-and-major pairs match nothing
+at all, and inside Skilled Trades every one of the majors is a dead end — and the visitor
+was left on "Nothing matches" with no way to tell which of the two filters to undo.
+
+So the control you just used wins. The others give way, one at a time, until the list has
+something in it, in the order set by `YIELDS` in `template.html`: area, major, term, level,
+search, the two checkboxes, then county. County is last on purpose, because "the county I
+live in" is the one refinement worth carrying from one area to the next; it survives about
+half the time in practice, and is only dropped when nothing else left will do.
+
+A filter that still works is never touched: picking Accounting and then the Accounting,
+Tax & Audit area keeps both. The Sort menu is exempt, since reordering a list cannot empty
+it. Whatever gives way visibly returns to "All majors" or "All counties", so the change is
+on screen rather than silent.
+
+Checked by walking all 828 area-and-major combinations in a browser, from both directions:
+no combination reaches a dead end.
+
 ## Mobile
 
 The page is built for phones first at 900px and below. The area list becomes a
