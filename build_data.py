@@ -397,6 +397,95 @@ def drop_expired(out):
         kept.append(g)
     return kept, expired
 
+def drop_stale(out, cutoff):
+    """Split cards by whether their newest posting predates the cutoff. Dead links cost trust."""
+    kept, stale = [], []
+    for g in out:
+        (stale if g.get('posted') and g['posted'] < cutoff else kept).append(g)
+    return kept, stale
+
+# ---------- merging a fresh export into the board already published ----------
+def load_cards(path):
+    """Read cards from a data.json, or from the inline JSON of a built index.html.
+
+    data.json is gitignored, so a committed index.html is usually the only record of
+    what is on the board; being able to read it back is what makes --merge additive.
+    """
+    text = open(path, encoding='utf-8').read()
+    if re.search(r"\.html?$", path, re.I):
+        m = re.search(r'<script id="data" type="application/json">(.*?)</script>', text, re.S)
+        if not m: sys.exit(f"{path}: no <script id=\"data\"> block to read listings from")
+        text = m.group(1).replace("\\u003c", "<")
+    try:
+        cards = json.loads(text)
+    except json.JSONDecodeError as e:
+        sys.exit(f"{path}: not valid JSON ({e})")
+    if not isinstance(cards, list): sys.exit(f"{path}: expected a JSON list of cards")
+    return cards
+
+def card_key(g):
+    """Same identity a build uses to group rows: employer + title, city and case stripped."""
+    return (norm_company(s(g.get('company'))), norm_title(display_title(g.get('title'))))
+
+def card_alias(g):
+    """Looser key: the same words in any order, for a role reposted with a shuffled title."""
+    co, t = card_key(g)
+    return (co, frozenset(t.split()))
+
+def merge_into(g, n):
+    """Fold a fresh card into the one already on the board, and say whether anything changed.
+
+    The published card wins on prose, because it is the one that has been eyeballed; lists
+    take the union, and a newer posting date wins so a refreshed listing floats back up.
+    """
+    before = json.dumps(g, sort_keys=True, ensure_ascii=False)
+    have = [l.get('loc') for l in g.get('locs') or []]
+    for l in n.get('locs') or []:
+        if l.get('loc') not in have:
+            g.setdefault('locs', []).append(dict(l)); have.append(l.get('loc'))
+    for k in ('term', 'majors', 'types', 'counties'):
+        vals = list(g.get(k) or [])
+        for v in n.get(k) or []:
+            if v not in vals: vals.append(v)
+        g[k] = vals
+    for k in ('pay', 'flag', 'indeed', 'mode', 'snippet', 'level', 'cat'):
+        if not s(g.get(k)) and s(n.get(k)): g[k] = n[k]
+    if not (g.get('details') or []) and n.get('details'): g['details'] = list(n['details'])
+    if s(n.get('posted')) > s(g.get('posted')): g['posted'] = n['posted']
+    g['count'] = max(int(g.get('count') or 1), int(n.get('count') or 1), len(g.get('locs') or []))
+    return json.dumps(g, sort_keys=True, ensure_ascii=False) != before
+
+def merge_cards(prior, fresh):
+    """Add only what the board does not already carry.
+
+    A fresh card matches a published one by employer + title, by Indeed posting id, or by
+    the same title words in another order. A match updates that card instead of adding a
+    second one, so re-running a build over an overlapping export cannot duplicate a role.
+    """
+    out = [dict(g) for g in prior]
+    by_key, by_alias, by_ref = {}, {}, {}   # by_ref holds posting ids and apply links alike
+    def index(g):
+        by_key.setdefault(card_key(g), g); by_alias.setdefault(card_alias(g), g)
+        for ref in [g.get('id')] + [l.get('apply') for l in g.get('locs') or []]:
+            if s(ref): by_ref.setdefault(s(ref), g)
+    for g in out: index(g)
+    added, updated, same = [], [], []
+    for n in fresh:
+        refs = [n.get('id')] + [l.get('apply') for l in n.get('locs') or []]
+        g = by_key.get(card_key(n)) or by_alias.get(card_alias(n))
+        for ref in refs:
+            if g is not None: break
+            cand = by_ref.get(s(ref)) if s(ref) else None
+            # one careers page can serve several roles at an employer, so a shared apply
+            # link only settles it when the employer agrees too
+            if cand is not None and norm_company(s(cand.get('company'))) == norm_company(s(n.get('company'))):
+                g = cand
+        if g is None:
+            c = dict(n); out.append(c); index(c); added.append(c)
+        elif merge_into(g, n): updated.append(g)
+        else: same.append(g)
+    return out, added, updated, same
+
 # Descriptions are written by whoever posted the job, and they land in this repo where
 # coding agents read them. None of it reaches an LLM at runtime, so this is an early
 # warning for the humans and agents who work on the repo, not a runtime defence.
@@ -481,7 +570,11 @@ def main(argv=None):
     here = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("xlsx", nargs="?", help="spreadsheet export of the listings")
-    ap.add_argument("--data", help="skip the spreadsheet and re-render from this data.json")
+    ap.add_argument("--data", help="skip the spreadsheet and re-render from this data.json (or a built index.html)")
+    ap.add_argument("--merge", metavar="PATH",
+                    help="add this build to the listings already published, instead of replacing them. "
+                         "PATH is a data.json or a built index.html; a role already on the board is "
+                         "updated in place rather than added a second time.")
     ap.add_argument("--json", default=os.path.join(here, "data.json"), help="where to write data.json (default: next to this script)")
     ap.add_argument("--template", default=os.path.join(here, "template.html"))
     ap.add_argument("--out", default=os.path.join(here, "index.html"), help="rendered page (default: index.html next to this script); '-' to skip")
@@ -496,23 +589,38 @@ def main(argv=None):
     ap.add_argument("--check", action="store_true", help="also write check.txt, one line per card, for eyeballing categories")
     a = ap.parse_args(argv)
     if not a.xlsx and not a.data: ap.error("give a spreadsheet path or --data data.json")
+    cutoff = (TODAY - dt.timedelta(days=a.max_age)).strftime("%Y-%m-%d") if a.max_age else ""
 
     if a.data:
-        out = json.load(open(a.data, encoding='utf-8'))
-        if not isinstance(out, list): sys.exit(f"{a.data}: expected a JSON list")
+        out = load_cards(a.data)
         items, skipped = out, 0
         print(f"loaded {len(out)} cards from {a.data}")
     else:
         data = read_rows(a.xlsx)
         items, skipped = build_items(data, upgrade=not a.keep_http)
         if a.max_age:
-            cutoff = (TODAY - dt.timedelta(days=a.max_age)).strftime("%Y-%m-%d")
             stale = [it for it in items if it['posted'] and it['posted'] < cutoff]
             items = [it for it in items if not (it['posted'] and it['posted'] < cutoff)]
             print(f"dropped {len(stale)} postings older than {cutoff}" + (": " + "; ".join(f"{it['company']} / {it['title'][:40]} ({it['posted']})" for it in stale[:8]) + (" ..." if len(stale) > 8 else "") if stale else ""))
         out = group_items(items)
         print(f"read {len(data)} rows, skipped {skipped} (blank or duplicate id), grouped {len(items)} postings into {len(out)} cards")
     out = finalize(out, upgrade=not a.keep_http)
+    if a.merge:
+        prior = finalize(load_cards(a.merge), upgrade=not a.keep_http)
+        fresh = len(out)
+        out, added, updated, same = merge_cards(prior, out)
+        print(f"merged into {len(prior)} card(s) already on the board from {a.merge}: "
+              f"{len(added)} new, {len(updated)} updated, {len(same)} already there (of {fresh} built)")
+        if added:
+            print("  new: " + "; ".join(f"{g['company']} / {display_title(g['title'])[:40]}" for g in added[:8])
+                  + (f" ... and {len(added)-8} more" if len(added) > 8 else ""))
+        out = finalize(out, upgrade=not a.keep_http)
+        if a.max_age:
+            out, stale = drop_stale(out, cutoff)
+            if stale:
+                print(f"dropped {len(stale)} published card(s) last posted before {cutoff}: "
+                      + "; ".join(f"{g['company']} / {g['title'][:40]} ({g['posted']})" for g in stale[:8])
+                      + (" ..." if len(stale) > 8 else ""))
     if UPGRADED_HTTP:
         print(f"upgraded {sum(UPGRADED_HTTP.values())} plain-HTTP link(s) to HTTPS across "
               + ", ".join(f"{d} x{n}" for d, n in UPGRADED_HTTP.most_common(6))
