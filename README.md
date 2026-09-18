@@ -77,6 +77,24 @@ A banner at the top of every page links to https://www.buildersbench.dev/. It co
 to the site name and a Visit link under 900px. Its markup is the `.bbar` block in
 `template.html`.
 
+## The mark, and the two things that move
+
+The logo beside the title is a sibling of the BuildersBench mark, not a copy of it: the
+same language of glowing nodes joined by thin links, in the board's own green, arranged
+as one hub reaching five ways instead of BuildersBench's loose web. It turns once every
+12 seconds. The title carries a blinking block caret, the same one that sits after the
+BuildersBench headline, which is why the board reads as a terminal prompt.
+
+Both live in `template.html`: the `.mark` block for the SVG and its `markspin`, and
+`.head h1::after` for the `caret`. The SVG takes its colour from `currentColor` and its
+gradient stops from CSS classes, so the mark follows `:root` like everything else and
+needs no edit if the accent changes. It is `aria-hidden`; the title next to it already
+names the site.
+
+Neither animation runs under `prefers-reduced-motion: reduce`, which leaves a still mark
+and a solid caret. That rule needs `*, *::before, *::after` — a bare `*` matches elements
+only, and would leave the caret blinking.
+
 ## Mobile
 
 The page is built for phones first at 900px and below. The area list becomes a
