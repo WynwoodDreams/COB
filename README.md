@@ -16,14 +16,29 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
 1. Export a new spreadsheet with the same columns (company, positionName, location, jobType/0-3, postedAt, postingDateParsed, externalApplyLink, salary, description, url, id).
 2. From this folder run:
 
-       python3 build_data.py path/to/listings.xlsx
+       python3 build_data.py path/to/listings.xlsx --merge index.html
 
-   This writes `data.json` and a fresh `index.html` stamped with today's date.
+   `--merge` adds the export to what is already on the board instead of replacing it.
+   Without it the spreadsheet becomes the whole board, and every listing the new export
+   happens to miss disappears — a scrape is capped at a few hundred rows, so that is
+   easy to do by accident. Drop the flag only when you mean to start the board over.
+
+   Either way the run writes `data.json` and a fresh `index.html` stamped with today's
+   date, newest posting first. That is also the order the page opens in, so new listings
+   are the first thing a visitor sees under "All areas".
+
+   A role already on the board is never added twice. A fresh card matches a published one
+   by employer and title (case, punctuation and city names ignored), by Indeed posting id,
+   or by the same title words in another order; a match updates that card in place —
+   picking up new locations, a newer posting date, a term or a pay figure it was missing —
+   rather than adding a second copy. The run prints how many cards were new, updated and
+   already there, and names the new ones.
 
    Terms that have already ended are dropped automatically, and a listing whose only
    advertised term has ended is removed. In September 2026, for example, "Summer 2026"
    disappears from the Term filter while "Fall 2026" stays. Listings that never name a
-   term are kept. Useful flags:
+   term are kept. Postings past `--max-age` are dropped on both sides of a merge, so the
+   board sheds its own stale cards as it takes on new ones. Useful flags:
 
    - `--date "Oct 1, 2026"` to set the "updated" label yourself
    - `--max-age 0` to keep postings older than 180 days. The build drops them by default:
@@ -32,6 +47,15 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
    - `--stats` to print how postings were categorised
    - `--check` to write `check.txt`, one line per card, for eyeballing categories
    - `--data data.json` to re-render `index.html` from a saved `data.json` without the spreadsheet (for example after editing `template.html`)
+
+   `--merge` and `--data` both read a built `index.html` as happily as a `data.json`,
+   pulling the listings back out of its inline `<script id="data">` block. `data.json` is
+   gitignored, so the committed page is usually the only record of what is live.
+
+   What the build cannot see is a listing that was taken down without its term ending.
+   Nothing in the export says so — `isExpired` is `false` on every row of a fresh scrape,
+   and a role missing from one scrape is as likely to have been pushed out of the row cap
+   as to have closed. Those cards stay until they age out.
 
 3. Commit the new `index.html`. Vercel redeploys automatically. `data.json` and `check.txt` are gitignored.
 
@@ -102,7 +126,7 @@ is the one place untrusted input is processed on your machine.
 ## Files
 
 - `template.html`: page markup, styles and the client-side filtering script. Colours live in the `:root` block. `__DATA__` and `__DATE__` are filled in by the build.
-- `build_data.py`: reads the spreadsheet, classifies each posting (area, majors, term, level, pay, work mode), merges the same role across locations into one card, and renders the page.
+- `build_data.py`: reads the spreadsheet, classifies each posting (area, majors, term, level, pay, work mode), merges the same role across locations into one card, folds the result into the listings already published when `--merge` is given, and renders the page.
 - `index.html`: the generated page. Do not edit by hand; change the template or the script and rebuild.
 - `vercel.json`: generated security headers, including a CSP pinned to that build of `index.html`.
 - `og.png`: 1200x630 link preview image, referenced by the Open Graph tags in the template.
