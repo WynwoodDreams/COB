@@ -255,17 +255,25 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 
 .row,.filters,.empty,.search input{border-radius:12px}
 .row{border-color:#18211D;position:relative;transition:transform .22s cubic-bezier(.2,.7,.3,1),border-color .22s ease,background-color .22s ease,box-shadow .22s ease}
-/* The backlight: a soft green wash behind the card that fades in on hover, in the same
-   family as the Apply button's glow. It sits on a pseudo-element under the card so the
-   card's own background stays flat and the text contrast is untouched. Pointer-only, so
-   a phone tap never leaves a card stuck lit; the reduced-motion rule above stills it. */
-.row::before{content:"";position:absolute;inset:-1px;border-radius:inherit;z-index:-1;opacity:0;
-  background:radial-gradient(120% 90% at 50% 100%,rgba(0,227,123,.28),rgba(0,227,123,0) 70%);
-  filter:blur(14px);transition:opacity .28s ease}
+/* The light: a short bright arc that orbits the card's edge while the pointer is on it,
+   with a blurred twin under it for the glow. Both are a conic gradient on a pseudo-element
+   one ring outside the card; the card's own background stays flat, so text contrast is
+   untouched. The gradient's start angle is a registered custom property, which is what
+   lets it animate smoothly. Pointer-only, so a phone tap never leaves a card stuck lit;
+   the reduced-motion rule above leaves the arc still. */
+@property --orbit{syntax:'<angle>';inherits:false;initial-value:0deg}
+.row::before,.row::after{content:"";position:absolute;inset:-2px;border-radius:inherit;z-index:-1;opacity:0;pointer-events:none;
+  background:conic-gradient(from var(--orbit),transparent 0 62%,rgba(0,227,123,.25) 78%,#00E37B 88%,#B8FFDD 91%,transparent 100%);
+  transition:opacity .3s ease;
+  /* keep only a ring: paint the box, then cut out everything inside the padding */
+  padding:2px;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
+.row::after{inset:-6px;padding:8px;filter:blur(8px)}
+@keyframes orbit{to{--orbit:360deg}}
 @media (hover:hover) and (pointer:fine){
-  .row:hover{border-color:rgba(0,227,123,.45);background:#121B17;transform:translateY(-2px);
-    box-shadow:0 10px 30px rgba(0,0,0,.35),0 0 0 1px rgba(0,227,123,.12),0 0 28px rgba(0,227,123,.14)}
-  .row:hover::before{opacity:1}
+  .row:hover{border-color:rgba(0,227,123,.22);background:#121B17;transform:translateY(-2px);
+    box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .row:hover::before,.row:hover::after{opacity:1;animation:orbit 2.6s linear infinite}
   .row:hover h3{color:#fff}
   .row:hover .apply{box-shadow:0 0 26px rgba(0,227,123,.42)}
 }
