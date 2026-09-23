@@ -18,7 +18,7 @@ import argparse, base64, collections, datetime as dt, hashlib, json, os, re, sys
 # that matches nothing here is vague, and for those the employer's name and the posting's
 # opening paragraph get a say before the catch-all does.
 CATS = [
- ("Health Sciences & Pharmacy", r"pharmac|nurse|nursing|respiratory|medical assistant|\bMA/|chiropract|veterinar|patient care"),
+ ("Health Sciences & Pharmacy", r"pharmac|nurse|nursing|respiratory|medical assistant|\bMA/|chiropract|veterinar|patient care|dietetic|dietitian|nutrition"),
  ("Mental Health & Social Work", r"mental health|counsel|therapist|therapy|psycholog|social work|\bBSW\b|\bMSW\b|RMHCI|LMHC|behavioral health|clinical intern"),
  ("Legal", r"\blaw\b|legal|law clerk|bankruptcy|attorney|paralegal|\b2L\b"),
  ("Accounting, Tax & Audit", r"\btax\b|audit|assurance|accounting|accountant|forensic|attest|risk advisory|technology risk|accounting methods|process risk|internal controls|\bSOX\b"),
@@ -33,7 +33,7 @@ CATS = [
  ("Creative: Media, Design & Production", r"graphic design|video|photograph|content studio|control room|film|television|studio engineer|music|creative|design intern"),
  ("Hospitality, Events, Sports & Entertainment", r"hospitality|F&B|culinary|hotel|\bclub\b|golf|event|sports|game ops|MIA Academy|strength and conditioning|premium client|sodexo|yotel|academic support|athletic"),
  ("Sales & Business Development", r"\bsales\b|business development|door to door|financial representative"),
- ("Education, Nonprofit & Community", r"ministry|student services|cultivate|programs & partnerships|volunteer|community engagement|nonprofit|school|teaching|teacher|practicum"),
+ ("Education, Nonprofit & Community", r"ministry|student services|cultivate|programs & partnerships|volunteer|community engagement|community services|nonprofit|school|teaching|teacher|practicum|youth"),
  ("Skilled Trades, Automotive & Aviation", r"mechanic|service technician|aircraft|HVAC|maintenance|trainee.*technician"),
  ("Business, Management & Operations", r"business|operations|supply chain|logistics|purchasing|procurement|consult|administrative|administration|store executive|leasing|customer service|revenue management|analyst|corporate|strategy|leadership development|management trainee|project management|project manager|program development|provider operations"),
 ]
@@ -58,8 +58,10 @@ DESC_HINTS = [
  ("Legal", r"law (firm|students?|school)|attorneys?|litigation"),
  ("Business, Management & Operations", r"real estate|property management"),
  ("Finance, Banking & Insurance", r"insurance broker|\bbank(ing)?\b|banco|wealth management|investment (firm|management|banking)"),
- ("Science, Sustainability & Environment", r"horticultur|nursery|\bfarms?\b|landscap"),
+ # "landscaping" is a trade; "the music landscape" and "the competitive landscape" are not
+ ("Science, Sustainability & Environment", r"horticultur|nursery|\bfarms?\b|landscaping|landscape (?:architect|design|contractor|maintenance|management|company|services|industry)"),
  ("Hospitality, Events, Sports & Entertainment", r"\bhotels?\b|\bresorts?\b|hospitality (industry|group|management)"),
+ ("Creative: Media, Design & Production", r"record label|music (?:and entertainment )?(?:company|industry|label)"),
 ]
 # Last resort, over more of the posting and with looser words.
 DESC_FALLBACK = [
@@ -91,10 +93,13 @@ def classify(title, desc, company=''):
 # supervisor role, or a new-grad hire (HNTB lists those "for former interns only").
 NOT_INTERN = re.compile(r"^(manager|director|supervisor)\b|\bnew grad", re.I)
 NOT_INTERN_TAIL = re.compile(r"\b(coordinator|manager|director|supervisor)$", re.I)
+# Internships as the job's subject matter, not the job: a student services coordinator
+# "conducts market outreach, job and internship development".
+INTERN_DUTY = re.compile(r"\b(?:jobs?|careers?) and internships?\b|\binternships? (?:development|placements?)\b", re.I)
 def is_internship(title, desc):
     if NOT_INTERN.search(title): return False
     # a title that ends in a job word is a job unless the posting itself calls it an internship
-    if NOT_INTERN_TAIL.search(display_title(title)) and not re.search(r"\bintern(s|ships?)?\b", title + " " + desc[:3000], re.I): return False
+    if NOT_INTERN_TAIL.search(display_title(title)) and not re.search(r"\bintern(s|ships?)?\b", INTERN_DUTY.sub(" ", title + " " + desc[:3000]), re.I): return False
     return True
 
 # ---------- majors ----------
@@ -343,6 +348,16 @@ def norm_company(c):
     c = re.sub(r"\s+-\s+[A-Za-z .]+$", "", c)   # "D1 Training - Coral Springs"
     c = re.sub(r"[.,]", "", c).lower().strip()
     return c
+# Indeed sometimes lists one employer under two names, or under the wrong arm of a firm.
+# Keys are norm_company() of the name in the export; values are the name the board shows.
+# Every name for an employer maps to one, so its postings group and dedupe as one.
+COMPANY_NAMES = {
+ "team tti": "Techtronic Industries (TTI)",
+ "techtronic industries co ltd": "Techtronic Industries (TTI)",
+ "baker tilly canada": "Baker Tilly",   # US roles on Baker Tilly's US careers site
+}
+def company_name(c):
+    return COMPANY_NAMES.get(norm_company(c), c)
 CITIES = sorted({c for v in COUNTY.values() for c in v} | {"orlando","ft lauderdale","ft. lauderdale","downtown miami","pompano","fort lauderdale","florida","miami-fort lauderdale region"}, key=len, reverse=True)
 def norm_title(t):
     t = t.lower().replace("internship","intern")
@@ -475,7 +490,7 @@ NOT_INTERNSHIPS = []
 def build_items(data, upgrade=True):
     items, seen, skipped = [], set(), 0
     for d in data:
-        title = s(d.get('positionName')); company = s(d.get('company')); desc = s(d.get('description'))
+        title = s(d.get('positionName')); company = company_name(s(d.get('company'))); desc = s(d.get('description'))
         if not title and not company: skipped += 1; continue
         if not is_internship(title, desc): NOT_INTERNSHIPS.append(f"{company} / {title[:50]}"); continue
         pid = s(d.get('id')) or s(d.get('url'))
@@ -542,6 +557,7 @@ def finalize(out, upgrade=True):
             g[k] = [x for x in (g.get(k) or []) if x]
         for k in ('pay', 'level', 'mode', 'flag', 'snippet', 'company', 'cat'):
             g[k] = s(g.get(k))
+        g['company'] = company_name(g['company'])
         g['posted'] = date_str(g.get('posted'))
     out.sort(key=lambda x: (x['company'].lower(), x['title'].lower()))
     out.sort(key=lambda x: x['posted'], reverse=True)   # stable: newest first, then employer A-Z
@@ -593,9 +609,18 @@ def card_key(g):
     return (norm_company(s(g.get('company'))), norm_title(display_title(g.get('title'))))
 
 def card_alias(g):
-    """Looser key: the same words in any order, for a role reposted with a shuffled title."""
+    """Looser key: the same words in any order, for a role reposted with a shuffled title.
+
+    "Intern" and the words of the card's own term are left out of the title, and the terms
+    join the key instead. "TTI Group Finance and Accounting Internship" meets the same title
+    with "- Summer 2027" appended when both are for Summer 2027, while "Audit Summer 2027"
+    and "Audit Winter 2027" stay two roles. A season the build could not read as a term
+    ("Audit Spring Internship 2027") stays in the title words, so it still tells roles apart.
+    """
     co, t = card_key(g)
-    return (co, frozenset(t.split()))
+    terms = frozenset(g.get('term') or [])
+    said = {w.lower() for x in terms for w in x.split()} | {"intern", "interns"}
+    return (co, frozenset(w for w in t.split() if w not in said), terms)
 
 def merge_into(g, n):
     """Fold a fresh card into the one already on the board, and say whether anything changed.
@@ -650,6 +675,23 @@ def merge_cards(prior, fresh):
         elif merge_into(g, n): updated.append(g)
         else: same.append(g)
     return out, added, updated, same
+
+def dedupe_cards(cards):
+    """Fold cards that are one role into the newest of them, across the whole board.
+
+    merge_cards only compares fresh cards with published ones, so two copies that are both
+    already published, or both in one export under different titles, would otherwise stay.
+    Matching is by employer + title or by card_alias; a shared apply link is not enough on
+    its own here, because one careers page can list every role an employer has.
+    """
+    kept, folded, seen = [], [], {}
+    for g in cards:   # newest first, from finalize, so the newest copy is the one kept
+        k = seen.get(card_key(g)) or seen.get(card_alias(g))
+        if k is None:
+            kept.append(g); seen.setdefault(card_key(g), g); seen.setdefault(card_alias(g), g)
+        else:
+            merge_into(k, g); folded.append(g)
+    return kept, folded
 
 # Descriptions are written by whoever posted the job, and they land in this repo where
 # coding agents read them. None of it reaches an LLM at runtime, so this is an early
@@ -744,8 +786,8 @@ def main(argv=None):
     ap.add_argument("--template", default=os.path.join(here, "template.html"))
     ap.add_argument("--out", default=os.path.join(here, "index.html"), help="rendered page (default: index.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
-    ap.add_argument("--max-age", type=int, default=180, metavar="DAYS",
-                    help="drop postings older than DAYS (default 180; use 0 to keep everything). "
+    ap.add_argument("--max-age", type=int, default=122, metavar="DAYS",
+                    help="drop postings older than DAYS (default 122, about four months; use 0 to keep everything). "
                          "A dead apply link costs more trust than a missing listing earns.")
     ap.add_argument("--keep-http", action="store_true", help="leave plain-HTTP apply links alone instead of upgrading them to HTTPS")
     ap.add_argument("--strict", action="store_true", help="exit non-zero if a listing contains text shaped like an AI instruction")
@@ -798,6 +840,11 @@ def main(argv=None):
         print(f"dropped {len(expired)} card(s) whose only term has already ended: "
               + "; ".join(f"{g['company']} / {g['title'][:40]} ({', '.join(g['term'])})" for g in expired[:8])
               + (" ..." if len(expired) > 8 else ""))
+    out, folded = dedupe_cards(out)
+    if folded:
+        print(f"folded {len(folded)} duplicate card(s) into a newer copy of the same role: "
+              + "; ".join(f"{g['company']} / {g['title'][:40]} ({g['posted']})" for g in folded[:8])
+              + (" ..." if len(folded) > 8 else ""))
     hits = scan_injection(out)
     if hits:
         print(f"WARNING: {len(hits)} listing field(s) contain text shaped like an AI instruction:")
