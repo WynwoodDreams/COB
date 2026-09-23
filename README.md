@@ -179,6 +179,11 @@ that up.
 - **Plain-HTTP apply links are upgraded to HTTPS**, since a student on shared wi-fi can
   have an HTTP page tampered with in transit. `--keep-http` turns this off if a
   destination ever breaks.
+- **Referral tags are stripped from apply links.** The scrape arrives with `utm_*`,
+  `indeed-apply-token`, `iis`/`iisn`, a per-click `sid`, and `source=Indeed`-style tags,
+  which only credit Indeed. The build removes those and leaves every other parameter,
+  since many applicant-tracking systems need theirs (`opportunityId`, `jobId`, `cid`) to
+  find the job. `TRACKING_KEYS` and `SOURCE_KEYS` in `build_data.py` hold the list.
 - **Listing text is scanned for AI-instruction-shaped phrases.** Nothing in the site
   talks to a model, but descriptions are written by whoever posted the job and they land
   in this repo, where coding agents read them. `--strict` refuses to write anything when
