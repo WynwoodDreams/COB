@@ -116,7 +116,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .resultbar .note{font-family:var(--mono);font-size:12px;color:var(--mute)}
 
 /* rows */
-.rows{display:flex;flex-direction:column;gap:8px}
+.rows{display:flex;flex-direction:column;gap:8px;isolation:isolate}
 .row{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:grid;grid-template-columns:1fr auto;gap:8px 20px;align-items:start}
 .row:hover{border-color:var(--rule-2)}
 .row .main{min-width:0}
@@ -254,8 +254,30 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 }
 
 .row,.filters,.empty,.search input{border-radius:12px}
-.row{border-color:#18211D}
-.row:hover{border-color:#2A3B34;background:#121B17}
+.row{border-color:#18211D;position:relative;transition:transform .22s cubic-bezier(.2,.7,.3,1),border-color .22s ease,background-color .22s ease,box-shadow .22s ease}
+/* The light: a short bright arc that orbits the card's edge while the pointer is on it,
+   with a blurred twin under it for the glow. Both are a conic gradient on a pseudo-element
+   one ring outside the card; the card's own background stays flat, so text contrast is
+   untouched. The gradient's start angle is a registered custom property, which is what
+   lets it animate smoothly. Pointer-only, so a phone tap never leaves a card stuck lit;
+   the reduced-motion rule above leaves the arc still. */
+@property --orbit{syntax:'<angle>';inherits:false;initial-value:0deg}
+.row::before,.row::after{content:"";position:absolute;inset:-2px;border-radius:inherit;z-index:-1;opacity:0;pointer-events:none;
+  background:conic-gradient(from var(--orbit),transparent 0 62%,rgba(0,227,123,.25) 78%,#00E37B 88%,#B8FFDD 91%,transparent 100%);
+  transition:opacity .3s ease;
+  /* keep only a ring: paint the box, then cut out everything inside the padding */
+  padding:2px;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
+.row::after{inset:-6px;padding:8px;filter:blur(8px)}
+@keyframes orbit{to{--orbit:360deg}}
+@media (hover:hover) and (pointer:fine){
+  .row:hover{border-color:rgba(0,227,123,.22);background:#121B17;transform:translateY(-2px);
+    box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .row:hover::before,.row:hover::after{opacity:1;animation:orbit 2.6s linear infinite}
+  .row:hover h3{color:#fff}
+  .row:hover .apply{box-shadow:0 0 26px rgba(0,227,123,.42)}
+}
+.row:focus-within{border-color:rgba(0,227,123,.45)}
 .apply{border-radius:9px;box-shadow:var(--glow)}
 .apply:hover{box-shadow:0 0 30px rgba(0,227,123,.42)}
 .head h1{font-weight:800;letter-spacing:-.03em;font-family:var(--sans)}
@@ -385,6 +407,14 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   // The board links out to 163 different employer and ATS domains. Naming the destination
   // lets someone judge a link before they tap it, rather than trusting a bare "Apply".
   const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./,''); } catch(e){ return ''; } };
+  // A scrape can't see a posting the employer took down early, so visitors can say so.
+  // Reports land as pre-filled GitHub issues on the public repo, which keeps any email
+  // address off the page. To take reports by email instead, swap this for a mailto: link.
+  const REPORT_URL = 'https://github.com/WynwoodDreams/COB/issues/new';
+  const reportLink = d => REPORT_URL + '?' + new URLSearchParams({
+    title: `Listing closed or broken: ${d.company} / ${d.title}`.slice(0, 200),
+    body: `Employer: ${d.company}\nRole: ${d.title}\nCard: ${d.id}\nApply link: ${d.locs[0].apply}\n\nWhat's wrong (closed, link broken, not an internship, other):\n`,
+  }).toString();
   const PAGE = 40;
   const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', paid:false, remote:false, sort:'new', shown:PAGE };
   const state = Object.assign({}, DEFAULTS);
@@ -494,7 +524,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     if (d.level && d.level!=='Undergraduate') chips.push(`<span class="chip">${esc(d.level)}</span>`);
     if (d.flag) chips.push(`<span class="chip flag">${esc(d.flag)}</span>`);
     const majors = d.majors.map(m => `<button type="button" data-major="${esc(m)}">${esc(m)}</button>`).join('');
-    const source = `${full ? `Posted ${esc(full)}` : 'Posted date unknown'}${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''}`;
+    const source = `${full ? `Posted ${esc(full)}` : 'Posted date unknown'}${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''} · <a class="report" href="${esc(reportLink(d))}" target="_blank" rel="noopener" title="Opens a pre-filled report on GitHub">Report closed listing</a>`;
     // Only offer a Details button when it opens onto something the card is not already showing.
     const hasDetails = d.details.length > 0 || d.locs.length > 1;
     const detId = `det-${d.id}`;

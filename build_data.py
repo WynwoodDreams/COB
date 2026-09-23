@@ -458,7 +458,24 @@ def url_or_blank(v, upgrade=True):
     if upgrade and v.lower().startswith("http://"):
         UPGRADED_HTTP[re.sub(r"^http://([^/]+).*", r"\1", v, flags=re.I)] += 1
         v = "https://" + v[len("http://"):]
-    return v
+    return strip_tracking(v)
+
+# Referral tags the scrape picked up on its way through Indeed. They only credit Indeed
+# (and in one case carry a per-click session id), and an employer's page opens the same
+# without them. Everything else in a query string is left alone: many applicant-tracking
+# systems need theirs (opportunityId, jobId, cid...) to find the job at all.
+TRACKING_KEYS = re.compile(r"^(utm_\w+|indeed-apply-token|iis|iisn|sid)$", re.I)
+SOURCE_KEYS = re.compile(r"^(source|src|rb|lever-source)$", re.I)
+def strip_tracking(v):
+    base, q, frag = re.match(r"^([^?#]*)(?:\?([^#]*))?(#.*)?$", v).groups()
+    if not q: return v
+    keep = []
+    for part in q.split("&"):
+        k, _, val = part.partition("=")
+        if TRACKING_KEYS.match(k): continue
+        if SOURCE_KEYS.match(k) and re.search(r"indeed|^IN$", val, re.I): continue
+        keep.append(part)
+    return base + ("?" + "&".join(keep) if keep else "") + (frag or "")
 
 def date_str(v):
     if isinstance(v, (dt.date, dt.datetime)): return v.strftime("%Y-%m-%d")

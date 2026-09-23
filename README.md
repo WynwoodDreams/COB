@@ -146,8 +146,16 @@ gradient stops from CSS classes, so the mark follows `:root` like everything els
 needs no edit if the accent changes. It is `aria-hidden`; the title next to it already
 names the site.
 
-Neither animation runs under `prefers-reduced-motion: reduce`, which leaves a still mark
-and a solid caret. That rule needs `*, *::before, *::after` — a bare `*` matches elements
+A card lights up under the pointer: it lifts 2px and a short bright arc orbits its edge
+once every 2.6 seconds, with a blurred twin under it for the glow. Both are a conic
+gradient on the card's `::before` and `::after`, masked to a ring so only the edge is
+painted and the card's own background and text contrast stay as they are; the
+gradient's start angle is a registered `@property`, which is what lets it animate
+smoothly. That only runs on `(hover:hover) and (pointer:fine)`, so a phone tap never
+leaves a card stuck lit.
+
+None of these animations run under `prefers-reduced-motion: reduce`, which leaves a still
+mark, a solid caret and a card that changes colour without moving. That rule needs `*, *::before, *::after` — a bare `*` matches elements
 only, and would leave the caret blinking.
 
 ## Mobile
@@ -165,6 +173,13 @@ Each card names the domain its Apply button opens, under the button, because the
 links out to more than 160 employer and applicant-tracking domains that come from scraped
 postings. Per-location links in the details panel carry the same information as a tooltip.
 
+Next to "Original listing" every card has a **Report closed listing** link. It opens a
+new issue on this repo's GitHub, pre-filled with the employer, role, card id and apply
+link, because a scrape can't see a posting the employer took down early. Reports need a
+GitHub account and are public; they carry only the listing, nothing about the reporter.
+To take reports by email instead, point `REPORT_URL` in `template.html` at a `mailto:`
+address and rebuild, knowing that address will be readable in the page source.
+
 ## Security
 
 The site is static: no server, no database, no user input, no JavaScript dependencies.
@@ -179,6 +194,11 @@ that up.
 - **Plain-HTTP apply links are upgraded to HTTPS**, since a student on shared wi-fi can
   have an HTTP page tampered with in transit. `--keep-http` turns this off if a
   destination ever breaks.
+- **Referral tags are stripped from apply links.** The scrape arrives with `utm_*`,
+  `indeed-apply-token`, `iis`/`iisn`, a per-click `sid`, and `source=Indeed`-style tags,
+  which only credit Indeed. The build removes those and leaves every other parameter,
+  since many applicant-tracking systems need theirs (`opportunityId`, `jobId`, `cid`) to
+  find the job. `TRACKING_KEYS` and `SOURCE_KEYS` in `build_data.py` hold the list.
 - **Listing text is scanned for AI-instruction-shaped phrases.** Nothing in the site
   talks to a model, but descriptions are written by whoever posted the job and they land
   in this repo, where coding agents read them. `--strict` refuses to write anything when
