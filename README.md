@@ -165,6 +165,13 @@ Each card names the domain its Apply button opens, under the button, because the
 links out to more than 160 employer and applicant-tracking domains that come from scraped
 postings. Per-location links in the details panel carry the same information as a tooltip.
 
+Next to "Original listing" every card has a **Report closed listing** link. It opens a
+new issue on this repo's GitHub, pre-filled with the employer, role, card id and apply
+link, because a scrape can't see a posting the employer took down early. Reports need a
+GitHub account and are public; they carry only the listing, nothing about the reporter.
+To take reports by email instead, point `REPORT_URL` in `template.html` at a `mailto:`
+address and rebuild, knowing that address will be readable in the page source.
+
 ## Security
 
 The site is static: no server, no database, no user input, no JavaScript dependencies.

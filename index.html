@@ -385,6 +385,14 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   // The board links out to 163 different employer and ATS domains. Naming the destination
   // lets someone judge a link before they tap it, rather than trusting a bare "Apply".
   const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./,''); } catch(e){ return ''; } };
+  // A scrape can't see a posting the employer took down early, so visitors can say so.
+  // Reports land as pre-filled GitHub issues on the public repo, which keeps any email
+  // address off the page. To take reports by email instead, swap this for a mailto: link.
+  const REPORT_URL = 'https://github.com/WynwoodDreams/COB/issues/new';
+  const reportLink = d => REPORT_URL + '?' + new URLSearchParams({
+    title: `Listing closed or broken: ${d.company} / ${d.title}`.slice(0, 200),
+    body: `Employer: ${d.company}\nRole: ${d.title}\nCard: ${d.id}\nApply link: ${d.locs[0].apply}\n\nWhat's wrong (closed, link broken, not an internship, other):\n`,
+  }).toString();
   const PAGE = 40;
   const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', paid:false, remote:false, sort:'new', shown:PAGE };
   const state = Object.assign({}, DEFAULTS);
@@ -494,7 +502,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     if (d.level && d.level!=='Undergraduate') chips.push(`<span class="chip">${esc(d.level)}</span>`);
     if (d.flag) chips.push(`<span class="chip flag">${esc(d.flag)}</span>`);
     const majors = d.majors.map(m => `<button type="button" data-major="${esc(m)}">${esc(m)}</button>`).join('');
-    const source = `${full ? `Posted ${esc(full)}` : 'Posted date unknown'}${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''}`;
+    const source = `${full ? `Posted ${esc(full)}` : 'Posted date unknown'}${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''} · <a class="report" href="${esc(reportLink(d))}" target="_blank" rel="noopener" title="Opens a pre-filled report on GitHub">Report closed listing</a>`;
     // Only offer a Details button when it opens onto something the card is not already showing.
     const hasDetails = d.details.length > 0 || d.locs.length > 1;
     const detId = `det-${d.id}`;
