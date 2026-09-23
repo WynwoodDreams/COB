@@ -146,8 +146,13 @@ gradient stops from CSS classes, so the mark follows `:root` like everything els
 needs no edit if the accent changes. It is `aria-hidden`; the title next to it already
 names the site.
 
-Neither animation runs under `prefers-reduced-motion: reduce`, which leaves a still mark
-and a solid caret. That rule needs `*, *::before, *::after` — a bare `*` matches elements
+A card lights up under the pointer: it lifts 2px, its border turns green, and a soft
+green backlight fades in behind it on a `::before` pseudo-element, so the card's own
+background and text contrast stay as they are. That only runs on `(hover:hover) and
+(pointer:fine)`, so a phone tap never leaves a card stuck lit.
+
+None of these animations run under `prefers-reduced-motion: reduce`, which leaves a still
+mark, a solid caret and a card that changes colour without moving. That rule needs `*, *::before, *::after` — a bare `*` matches elements
 only, and would leave the caret blinking.
 
 ## Mobile

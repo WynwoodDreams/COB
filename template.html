@@ -116,7 +116,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .resultbar .note{font-family:var(--mono);font-size:12px;color:var(--mute)}
 
 /* rows */
-.rows{display:flex;flex-direction:column;gap:8px}
+.rows{display:flex;flex-direction:column;gap:8px;isolation:isolate}
 .row{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:grid;grid-template-columns:1fr auto;gap:8px 20px;align-items:start}
 .row:hover{border-color:var(--rule-2)}
 .row .main{min-width:0}
@@ -254,8 +254,22 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 }
 
 .row,.filters,.empty,.search input{border-radius:12px}
-.row{border-color:#18211D}
-.row:hover{border-color:#2A3B34;background:#121B17}
+.row{border-color:#18211D;position:relative;transition:transform .22s cubic-bezier(.2,.7,.3,1),border-color .22s ease,background-color .22s ease,box-shadow .22s ease}
+/* The backlight: a soft green wash behind the card that fades in on hover, in the same
+   family as the Apply button's glow. It sits on a pseudo-element under the card so the
+   card's own background stays flat and the text contrast is untouched. Pointer-only, so
+   a phone tap never leaves a card stuck lit; the reduced-motion rule above stills it. */
+.row::before{content:"";position:absolute;inset:-1px;border-radius:inherit;z-index:-1;opacity:0;
+  background:radial-gradient(120% 90% at 50% 100%,rgba(0,227,123,.28),rgba(0,227,123,0) 70%);
+  filter:blur(14px);transition:opacity .28s ease}
+@media (hover:hover) and (pointer:fine){
+  .row:hover{border-color:rgba(0,227,123,.45);background:#121B17;transform:translateY(-2px);
+    box-shadow:0 10px 30px rgba(0,0,0,.35),0 0 0 1px rgba(0,227,123,.12),0 0 28px rgba(0,227,123,.14)}
+  .row:hover::before{opacity:1}
+  .row:hover h3{color:#fff}
+  .row:hover .apply{box-shadow:0 0 26px rgba(0,227,123,.42)}
+}
+.row:focus-within{border-color:rgba(0,227,123,.45)}
 .apply{border-radius:9px;box-shadow:var(--glow)}
 .apply:hover{box-shadow:0 0 30px rgba(0,227,123,.42)}
 .head h1{font-weight:800;letter-spacing:-.03em;font-family:var(--sans)}
