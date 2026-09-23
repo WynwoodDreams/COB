@@ -32,18 +32,28 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
    or by the same title words in another order; a match updates that card in place —
    picking up new locations, a newer posting date, a term or a pay figure it was missing —
    rather than adding a second copy. The run prints how many cards were new, updated and
-   already there, and names the new ones.
+   already there, and names the new ones. "Intern" and a title's restatement of its own term
+   don't count as title words, so "Finance and Accounting Internship" and the same title
+   with "- Summer 2027" on the end are one Summer 2027 role, while "Audit Summer 2027" and
+   "Audit Winter 2027" stay two. The same check then runs across the whole board, so two
+   copies that were both already published fold into the newer one.
+
+   Indeed sometimes files one employer under two names ("Team TTI" and "Techtronic
+   Industries Co. Ltd" for the same posting) or under the wrong arm of a firm ("Baker Tilly
+   Canada" for US roles). `COMPANY_NAMES` in `build_data.py` maps each of those to the one
+   name the board shows; add a line there when a new export does it again.
 
    Terms that have already ended are dropped automatically, and a listing whose only
    advertised term has ended is removed. In September 2026, for example, "Summer 2026"
    disappears from the Term filter while "Fall 2026" stays. Listings that never name a
-   term are kept. Postings past `--max-age` are dropped on both sides of a merge, so the
-   board sheds its own stale cards as it takes on new ones. Useful flags:
+   term are kept. Postings more than about four months old (`--max-age`, 122 days) are
+   dropped on both sides of a merge, so the board sheds its own stale cards as it takes on
+   new ones, and an export's older rows never come back in. Useful flags:
 
    - `--date "Oct 1, 2026"` to set the "updated" label yourself
-   - `--max-age 0` to keep postings older than 180 days. The build drops them by default:
-     the export reaches a year back, and a dead apply link costs more trust than a
-     missing listing earns.
+   - `--max-age 0` to keep postings older than four months. The build drops them by
+     default: the export reaches a year back, and a dead apply link costs more trust than
+     a missing listing earns.
    - `--stats` to print how postings were categorised
    - `--check` to write `check.txt`, one line per card, for eyeballing categories
    - `--data data.json` to re-render `index.html` from a saved `data.json` without the spreadsheet (for example after editing `template.html`)
@@ -63,7 +73,8 @@ An internship search on Indeed returns some things that are not internships: a m
 of an internship program, a coordinator role that needs a completed degree, a new-grad
 hire "for former interns only". A title that starts with manager, director or supervisor,
 or says "new grad", is left out; so is one that ends in coordinator or manager unless the
-posting itself calls the role an internship. The build prints what it left out.
+posting itself calls the role an internship. Internships as the job's subject matter
+("job and internship development") don't count. The build prints what it left out.
 
 **Area.** A title that names the work decides it, in the order of `CATS` in
 `build_data.py`. The Business catch-all comes last and only carries words that name
