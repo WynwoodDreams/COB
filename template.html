@@ -277,6 +277,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row:hover h3{color:#fff}
   .row:hover .apply{box-shadow:0 0 26px rgba(0,227,123,.42)}
 }
+/* On a touch screen there is no hover, so a tap on the card itself (not on a link or a
+   button) runs the light around once. The class comes off when the lap ends. */
+.row.lit::before,.row.lit::after{opacity:1;animation:orbit 1.6s linear 1}
 .row:focus-within{border-color:rgba(0,227,123,.45)}
 .apply{border-radius:9px;box-shadow:var(--glow)}
 .apply:hover{box-shadow:0 0 30px rgba(0,227,123,.42)}
@@ -547,6 +550,10 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         ${hasDetails ? `<button class="more" type="button" aria-expanded="false" aria-controls="${detId}">Details</button>` : ''}
       </div>
       ${hasDetails ? `<div class="details" id="${detId}">${details}</div>` : ''}`;
+    el.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'touch' || e.target.closest('a,button') || el.classList.contains('lit')) return;
+      el.classList.add('lit'); setTimeout(() => el.classList.remove('lit'), 1700);
+    });
     const more = el.querySelector('.more');
     if (more) more.addEventListener('click', e => { const b=e.currentTarget, dt=el.querySelector('.details'); const open=!dt.classList.contains('open'); dt.classList.toggle('open',open); b.setAttribute('aria-expanded',open); b.textContent=open?'Hide':'Details'; });
     el.querySelectorAll('.majors button').forEach(b => b.addEventListener('click', () => { state.major=b.dataset.major; $('#f-major').value=state.major; refilter(); }));

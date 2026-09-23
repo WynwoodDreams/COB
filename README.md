@@ -151,8 +151,10 @@ once every 2.6 seconds, with a blurred twin under it for the glow. Both are a co
 gradient on the card's `::before` and `::after`, masked to a ring so only the edge is
 painted and the card's own background and text contrast stay as they are; the
 gradient's start angle is a registered `@property`, which is what lets it animate
-smoothly. That only runs on `(hover:hover) and (pointer:fine)`, so a phone tap never
-leaves a card stuck lit.
+smoothly. The hover rules only run on `(hover:hover) and (pointer:fine)`, so a phone tap never
+leaves a card stuck lit; on a touch screen a tap on the card itself (not on a link or
+button) runs the light around once instead, and the `lit` class comes off when the lap
+ends. Checked at 320, 360, 390 and 430px: no horizontal scroll, every tap target 44px.
 
 None of these animations run under `prefers-reduced-motion: reduce`, which leaves a still
 mark, a solid caret and a card that changes colour without moving. That rule needs `*, *::before, *::after` — a bare `*` matches elements
