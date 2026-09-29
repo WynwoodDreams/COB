@@ -188,7 +188,10 @@ only, and would leave the caret blinking.
 
 ## Mobile
 
-The page is built for phones first at 900px and below. The area list becomes a
+The page is built for phones first at 900px and below. The two spotlight tabs
+(Cybersecurity and IT Support / Help Desk) get a full-width row each above the area
+strip, so a first visit on a phone cannot miss them, and their "jobs + internships" tag
+drops onto its own line under the results title. The area list becomes a
 side-scrolling strip with a fade at its edge, the filter panel collapses behind a
 Filters button that sticks to the top of the list while you scroll, and every control
 clears the 44px touch minimum. No text on a card is under 12px, the search field stays

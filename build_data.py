@@ -593,7 +593,7 @@ def build_sheet_items(data, area, upgrade=True):
             term=term_for(title, ""), pay=pay_for(d.get('Salary'), ""),
             level=JOB_LEVEL if kind == "Job" else level_for(title, ""), mode=work_mode(d.get('Location'), ""),
             types=[jtype] if jtype in ("Full-time", "Part-time") else [], posted=date_str(d.get('Posted')), apply=apply, indeed="",
-            snippet=(("Entry-level job" if kind == "Job" else "Internship") + (f" · Experience: {exp}" if exp else "")),
+            snippet=(("Entry-level job" if kind == "Job" else "Internship") + f" · Experience: {exp}") if exp else "",
             details=[], flag="", county=county_for(loc),
         ))
     return items, skipped
@@ -648,6 +648,8 @@ def finalize(out, upgrade=True):
             if re.search(spec['title'], g['title'], re.I): g['cat'] = area; break
         # Only the spotlight areas mix jobs with internships, so only their cards say which they are.
         if g['cat'] in SPOT_AREAS and not g['kind']: g['kind'] = "Internship"
+        # a snippet that only repeats the card's own chip says nothing
+        if g['cat'] in SPOT_AREAS and g['snippet'] in ("Entry-level job", "Internship"): g['snippet'] = ""
         if g['cat'] not in SPOT_AREAS: g.pop('kind', None)
     out.sort(key=lambda x: (x['company'].lower(), x['title'].lower()))
     out.sort(key=lambda x: x['posted'], reverse=True)   # stable: newest first, then employer A-Z

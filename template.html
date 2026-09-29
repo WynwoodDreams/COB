@@ -90,25 +90,27 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .areas{position:sticky;top:16px}
 .areas h2{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--mute);letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px}
 .area-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
-.area-list button{width:100%;text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center;background:transparent;border:1px solid transparent;color:var(--mute);padding:8px 10px;border-radius:6px;font-size:14px;font-weight:500;line-height:1.25}
-.area-list button:hover{color:var(--ink);background:var(--panel)}
-.area-list button[aria-pressed="true"]{color:var(--ink);background:var(--amber-dim);border-color:rgba(245,165,36,.35)}
-.area-list button i{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--dim);flex:none}
-.area-list button[aria-pressed="true"] i{color:var(--amber)}
-/* The spotlight areas sit right under "All areas" and glow, so a visitor finds them first.
-   .spot picks the mechanics; .cyber or .it picks the colour. */
+.areas button{width:100%;text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center;background:transparent;border:1px solid transparent;color:var(--mute);padding:8px 10px;border-radius:6px;font-size:14px;font-weight:500;line-height:1.25}
+.areas button:hover{color:var(--ink);background:var(--panel)}
+.areas button[aria-pressed="true"]{color:var(--ink);background:var(--amber-dim);border-color:rgba(245,165,36,.35)}
+.areas button i{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--dim);flex:none}
+.areas button[aria-pressed="true"] i{color:var(--amber)}
+/* The spotlight areas sit in their own row above the list and glow, so a visitor finds
+   them first. .spot picks the mechanics; .cyber or .it picks the colour. */
+.spots{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+.spots:empty{display:none}
 .spot,.spot.cyber{--sp:var(--spot-cyber);--sp-2:var(--spot-cyber-2);--sp-rgb:var(--spot-cyber-rgb)}
 .spot.it{--sp:var(--spot-it);--sp-2:var(--spot-it-2);--sp-rgb:var(--spot-it-rgb)}
-.area-list button.spot{color:var(--ink);background:rgba(var(--sp-rgb),.12);border-color:rgba(var(--sp-rgb),.45);box-shadow:0 0 18px rgba(var(--sp-rgb),.16);margin:4px 0}
-.area-list button.spot:hover{background:rgba(var(--sp-rgb),.2);border-color:var(--sp)}
-.area-list button.spot[aria-pressed="true"]{background:rgba(var(--sp-rgb),.22);border-color:var(--sp);box-shadow:0 0 22px rgba(var(--sp-rgb),.38)}
-.area-list button.spot i{color:var(--sp)}
-.area-list button.spot .tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:#04121A;background:var(--sp);border-radius:4px;padding:2px 6px;margin-left:8px;vertical-align:1px}
+.areas button.spot{color:var(--ink);background:rgba(var(--sp-rgb),.12);border-color:rgba(var(--sp-rgb),.45);box-shadow:0 0 18px rgba(var(--sp-rgb),.16)}
+.areas button.spot:hover{background:rgba(var(--sp-rgb),.2);border-color:var(--sp)}
+.areas button.spot[aria-pressed="true"]{background:rgba(var(--sp-rgb),.22);border-color:var(--sp);box-shadow:0 0 22px rgba(var(--sp-rgb),.38)}
+.areas button.spot i{color:var(--sp)}
+.areas button.spot .tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:#04121A;background:var(--sp);border-radius:4px;padding:2px 6px;margin-left:8px;vertical-align:1px}
 .row.spot{border-color:rgba(var(--sp-rgb),.35);box-shadow:inset 3px 0 0 var(--sp)}
 .row.spot .co .emp{color:var(--sp)}
 .row.spot .apply{background:var(--sp);box-shadow:0 0 24px rgba(var(--sp-rgb),.3)}
 .row.spot .apply:hover{background:var(--sp-2)}
-.resultbar h2 .tag{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--sp);border:1px solid rgba(var(--sp-rgb),.45);border-radius:5px;padding:2px 8px;margin-left:10px;vertical-align:2px}
+.resultbar h2 .tag{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--sp);border:1px solid rgba(var(--sp-rgb),.45);border-radius:5px;padding:2px 8px;margin-left:10px;vertical-align:2px}
 
 /* filters */
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px}
@@ -201,9 +203,16 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .search button{padding:12px}
   .layout{grid-template-columns:1fr;gap:16px}
   .areas{position:static}
+  /* The two spotlight tabs get a row each, full width, so a first visit on a phone
+     cannot miss them; the rest of the areas scroll sideways underneath. */
+  .spots{gap:8px;margin-bottom:10px}
+  .spots button{min-height:50px;padding:10px 14px;font-size:15px;white-space:normal}
+  .spots button .tag{font-size:11px;padding:3px 7px}
+  .spots button i{font-size:13px}
+  .resultbar h2 .tag{margin-left:0;margin-top:6px;display:block;width:max-content;font-size:12px}
   .area-list{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:6px;scrollbar-width:thin}
   .area-list li{flex:none}
-  .area-list button{white-space:nowrap;border-color:var(--rule);background:var(--panel);font-size:13px}
+  .areas button{white-space:nowrap;border-color:var(--rule);background:var(--panel);font-size:13px}
   .search #go{display:none}
   .fbar{display:block;margin-top:10px}
   .filters{margin-top:8px}
@@ -217,7 +226,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row .side .dest{order:3;flex-basis:100%;font-size:12.5px;text-align:left;margin-top:2px}
 
   /* --- touch targets: every control clears the 44px minimum --- */
-  .area-list button{min-height:44px;padding:9px 12px}
+  .areas button{min-height:44px;padding:9px 12px}
   .filters select,.filters .toggle,.filters .reset,.filters .copy{min-height:46px}
   .filters select{padding:11px 12px}
   #filter-toggle{min-height:50px}
@@ -310,8 +319,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .apply{color:#04120B;font-weight:700}
 .search button{color:#04120B}
 .empty button:hover,.loadmore:hover{color:#04120B}
-.area-list button[aria-pressed="true"]{border-color:rgba(0,227,123,.4)}
-.area-list button.spot[aria-pressed="true"]{border-color:var(--sp)}
+.areas button[aria-pressed="true"]{border-color:rgba(0,227,123,.4)}
+.areas button.spot[aria-pressed="true"]{border-color:var(--sp)}
 
 
 /* ---------- sibling-site banner ---------- */
@@ -391,6 +400,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   <div class="layout">
     <aside class="areas" aria-label="Areas">
       <h2>Area</h2>
+      <div class="spots" id="spots"></div>
       <ul class="area-list" id="areas"></ul>
     </aside>
 
@@ -498,10 +508,11 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const spotClass = cat => SPOTS[cat] ? ` spot ${SPOTS[cat]}` : '';
   const AREA_ORDER = [...Object.keys(SPOTS),'Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
   const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)).sort());
-  const ul = $('#areas');
-  const mkArea = (label, val, n) => { const li=document.createElement('li'); const b=document.createElement('button'); b.type='button'; b.dataset.area=val; b.className=spotClass(val).trim(); b.innerHTML=`<span>${esc(label)}${SPOTS[val]?'<span class="tag">NEW</span>':''}</span><i>${n}</i>`; b.addEventListener('click',()=>{ state.area=(state.area===val?'':val); refilter(); }); li.appendChild(b); return li; };
-  ul.appendChild(mkArea('All areas','',DATA.length));
-  areas.forEach(a => ul.appendChild(mkArea(a,a,areaCounts.get(a))));
+  const ul = $('#areas'), spots = $('#spots');
+  const mkArea = (label, val, n) => { const b=document.createElement('button'); b.type='button'; b.dataset.area=val; b.className=spotClass(val).trim(); b.innerHTML=`<span>${esc(label)}${SPOTS[val]?'<span class="tag">NEW</span>':''}</span><i>${n}</i>`; b.addEventListener('click',()=>{ state.area=(state.area===val?'':val); refilter(); }); return b; };
+  const addToList = b => { const li=document.createElement('li'); li.appendChild(b); ul.appendChild(li); };
+  addToList(mkArea('All areas','',DATA.length));
+  areas.forEach(a => (SPOTS[a] ? spots.appendChild(mkArea(a,a,areaCounts.get(a))) : addToList(mkArea(a,a,areaCounts.get(a)))));
 
   const addOpt = (sel, k, n) => { const o=document.createElement('option'); o.value=k; o.textContent=`${k} (${n})`; sel.appendChild(o); };
   const fill = (sel, map) => [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,n]) => addOpt(sel,k,n));
@@ -594,7 +605,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const activeCount = () => ['area','county','major','term','level'].filter(k=>state[k]).length + (state.paid?1:0) + (state.remote?1:0);
 
   function render(){
-    document.querySelectorAll('#areas button').forEach(b => { const on=b.dataset.area===state.area; b.setAttribute('aria-pressed',on?'true':'false'); if(on && state.area && window.innerWidth<=900) b.scrollIntoView({block:'nearest',inline:'center'}); });
+    document.querySelectorAll('.areas button[data-area]').forEach(b => { const on=b.dataset.area===state.area; b.setAttribute('aria-pressed',on?'true':'false'); if(on && state.area && window.innerWidth<=900 && b.closest('#areas')) b.scrollIntoView({block:'nearest',inline:'center'}); });
     const list = DATA.filter(matches).sort(sortFn);
     const wrap = $('#cards'); wrap.innerHTML='';
     const qLabel = state.q ? `<em>“${esc(state.q)}”</em>` : '';
