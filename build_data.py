@@ -6,9 +6,15 @@ Typical use (from the repo root):
     python3 build_data.py listings.xlsx            # xlsx -> data.json + index.html
     python3 build_data.py --data data.json         # re-render index.html from a saved data.json
     python3 build_data.py listings.xlsx --stats    # also print classification counters
+    python3 build_data.py --cyber cyber.xlsx --merge index.html   # add a hand-made cybersecurity sheet
 
 The spreadsheet needs these columns: company, positionName, location, jobType/0..3,
 postingDateParsed, externalApplyLink, salary, description, url, id.
+
+A --cyber sheet is a hand-made list of cybersecurity jobs and internships, with the
+columns Posted, Company, Role, Type, Location, Experience, Salary, Direct Apply URL.
+Every row lands in the Cybersecurity area, and a Type other than "Internship" is shown
+as an entry-level job rather than left out as one.
 """
 import argparse, base64, collections, datetime as dt, hashlib, json, os, re, sys
 
@@ -17,7 +23,13 @@ import argparse, base64, collections, datetime as dt, hashlib, json, os, re, sys
 # carries words that name business work outright (purchasing, leasing, analyst...). A title
 # that matches nothing here is vague, and for those the employer's name and the posting's
 # opening paragraph get a say before the catch-all does.
+# A cyber title goes to its own area, ahead of the Audit and Software rules that would
+# otherwise claim "Cyber Risk Services" or "Cybersecurity Analyst". Applied again in
+# finalize(), so cards carried over from older builds move too.
+CYBER_TITLE = r"cyber|information security|infosec|security analyst|security engineer|security operations|\bSOC analyst|penetration|threat|vulnerabilit"
+CYBER_CAT = "Cybersecurity"
 CATS = [
+ ("Cybersecurity", CYBER_TITLE),
  ("Health Sciences & Pharmacy", r"pharmac|nurse|nursing|respiratory|medical assistant|\bMA/|chiropract|veterinar|patient care|dietetic|dietitian|nutrition"),
  ("Mental Health & Social Work", r"mental health|counsel|therapist|therapy|psycholog|social work|\bBSW\b|\bMSW\b|RMHCI|LMHC|behavioral health|clinical intern"),
  ("Legal", r"\blaw\b|legal|law clerk|bankruptcy|attorney|paralegal|\b2L\b"),
@@ -25,7 +37,7 @@ CATS = [
  ("Finance, Banking & Insurance", r"financ|wealth|banking|capital markets|private equity|asset management|quant|trading|actuarial|multinational|lending|commercial banking|insurance|state farm agent|FRP internship|client advisory|transaction"),
  ("Human Resources & Talent", r"human resources|\bHR\b|talent acquisition|people & culture|recruit"),
  ("Civil, Structural & Environmental Engineering", r"civil|structural engineer|geotechnical|water|wastewater|transportation|surveying|environmental engineering|\bCEI\b|\bDOT\b|traffic|bridge|structures|intern engineer|engineering & estimating|engineering intern \| fort|planning intern"),
- ("Software, IT, Data & AI", r"software|developer|programmer|\bIT\b|information technology|\bdata\b|analytics|\bAI\b|machine learning|cyber|digital product|android|web develop|it infrastructure|systems engineering|app / game"),
+ ("Software, IT, Data & AI", r"software|developer|programmer|\bIT\b|information technology|\bdata\b|analytics|\bAI\b|machine learning|digital product|android|web develop|it infrastructure|systems engineering|app / game"),
  ("Architecture, Construction & Design", r"architect|construction|\bBIM\b|interior design|estimating|building automation|fire & life safety|^project intern"),
  ("Mechanical, Electrical & Manufacturing Engineering", r"mechanical|electrical|electronics|\bRF\b|analog|radio|industrial engineering|manufacturing|process engineer|materials|packaging|biomedical|design engineering|engineering intern|engineering internship|engineer, intern|test technician|CAD design|advanced operations|aviation safety|technical sales|(?<!studio )\bengineers?\b"),
  ("Science, Sustainability & Environment", r"chemist|R&D|environmental|sustainab|scientist|research|\blab\b|QEHS|horticult|landscape|grower|nursery|agricultur"),
@@ -530,6 +542,50 @@ def build_items(data, upgrade=True):
         ))
     return items, skipped
 
+# ---------- a hand-made cybersecurity sheet ----------
+# Not an Indeed export: one row per role, written by hand for a group that wants cyber
+# roles in one place. Jobs are welcome here, so is_internship() is not consulted.
+CYBER_COLUMNS = ["Posted", "Company", "Role", "Type", "Location", "Experience", "Salary", "Direct Apply URL"]
+JOB_LEVEL = "Entry-level job"
+
+def read_cyber_rows(path):
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        sys.exit("openpyxl is required to read spreadsheets: pip install openpyxl")
+    wb = load_workbook(path, read_only=True, data_only=True)
+    rows = wb.active.iter_rows(values_only=True)
+    try:
+        hdr = [s(h) for h in next(rows)]
+    except StopIteration:
+        sys.exit(f"{path}: spreadsheet is empty")
+    missing = [c for c in CYBER_COLUMNS if c not in hdr]
+    if missing: sys.exit(f"{path}: missing columns: {', '.join(missing)}")
+    return [dict(zip(hdr, r)) for r in rows if any(s(v) for v in r)]
+
+def build_cyber_items(data, upgrade=True):
+    items, skipped = [], 0
+    for d in data:
+        title = s(d.get('Role')); company = company_name(s(d.get('Company')))
+        if not title or not company: skipped += 1; continue
+        apply = url_or_blank(d.get('Direct Apply URL'), upgrade)
+        if not apply: skipped += 1; continue
+        kind = "Internship" if re.search(r"\bintern", s(d.get('Type')) + " " + title, re.I) else "Job"
+        exp = s(d.get('Experience'))
+        loc = clean_loc(d.get('Location'))
+        majors = majors_for("", title)
+        if "Cybersecurity" not in majors: majors.insert(0, "Cybersecurity")
+        items.append(dict(
+            id="cyber-" + hashlib.sha1(f"{company}|{title}|{apply}".encode('utf-8')).hexdigest()[:10],
+            company=company, title=title, loc=loc, cat=CYBER_CAT, kind=kind, majors=majors[:MAX_MAJORS],
+            term=term_for(title, ""), pay=pay_for(d.get('Salary'), ""),
+            level=JOB_LEVEL if kind == "Job" else level_for(title, ""), mode=work_mode(d.get('Location'), ""),
+            types=[], posted=date_str(d.get('Posted')), apply=apply, indeed="",
+            snippet=(("Entry-level job" if kind == "Job" else "Internship") + (f" · Experience: {exp}" if exp else "")),
+            details=[], flag="", county=county_for(loc),
+        ))
+    return items, skipped
+
 def group_items(items):
     """Merge rows that are the same company + title into one card with several locations."""
     groups = collections.OrderedDict()
@@ -572,10 +628,14 @@ def finalize(out, upgrade=True):
         g['count'] = max(int(g.get('count') or 1), len(locs))
         for k in ('majors', 'term', 'types', 'details'):
             g[k] = [x for x in (g.get(k) or []) if x]
-        for k in ('pay', 'level', 'mode', 'flag', 'snippet', 'company', 'cat'):
+        for k in ('pay', 'level', 'mode', 'flag', 'snippet', 'company', 'cat', 'kind'):
             g[k] = s(g.get(k))
         g['company'] = company_name(g['company'])
         g['posted'] = date_str(g.get('posted'))
+        if re.search(CYBER_TITLE, g['title'], re.I): g['cat'] = CYBER_CAT
+        # Only the Cybersecurity area mixes jobs with internships, so only its cards say which they are.
+        if g['cat'] == CYBER_CAT and not g['kind']: g['kind'] = "Internship"
+        if g['cat'] != CYBER_CAT: g.pop('kind', None)
     out.sort(key=lambda x: (x['company'].lower(), x['title'].lower()))
     out.sort(key=lambda x: x['posted'], reverse=True)   # stable: newest first, then employer A-Z
     return out
@@ -655,8 +715,11 @@ def merge_into(g, n):
         for v in n.get(k) or []:
             if v not in vals: vals.append(v)
         g[k] = vals
-    for k in ('pay', 'flag', 'indeed', 'mode', 'snippet', 'level', 'cat'):
+    for k in ('pay', 'flag', 'indeed', 'mode', 'snippet', 'level', 'cat', 'kind'):
         if not s(g.get(k)) and s(n.get(k)): g[k] = n[k]
+    # A hand-made cyber sheet is curated, so its say on the area beats a classifier's guess.
+    if s(n.get('cat')) == CYBER_CAT and s(n.get('kind')):
+        g['cat'] = CYBER_CAT; g['kind'] = n['kind']
     if not (g.get('details') or []) and n.get('details'): g['details'] = list(n['details'])
     if s(n.get('posted')) > s(g.get('posted')): g['posted'] = n['posted']
     g['count'] = max(int(g.get('count') or 1), int(n.get('count') or 1), len(g.get('locs') or []))
@@ -795,6 +858,10 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("xlsx", nargs="?", help="spreadsheet export of the listings")
     ap.add_argument("--data", help="skip the spreadsheet and re-render from this data.json (or a built index.html)")
+    ap.add_argument("--cyber", metavar="PATH",
+                    help="a hand-made sheet of cybersecurity jobs and internships (columns: Posted, Company, Role, Type, "
+                         "Location, Experience, Salary, Direct Apply URL). Every row lands in the Cybersecurity area. "
+                         "Can stand in for the export, or be added to one.")
     ap.add_argument("--merge", metavar="PATH",
                     help="add this build to the listings already published, instead of replacing them. "
                          "PATH is a data.json or a built index.html; a role already on the board is "
@@ -812,7 +879,7 @@ def main(argv=None):
     ap.add_argument("--stats", action="store_true", help="print classification counters")
     ap.add_argument("--check", action="store_true", help="also write check.txt, one line per card, for eyeballing categories")
     a = ap.parse_args(argv)
-    if not a.xlsx and not a.data: ap.error("give a spreadsheet path or --data data.json")
+    if not a.xlsx and not a.data and not a.cyber: ap.error("give a spreadsheet path, --cyber PATH or --data data.json")
     cutoff = (TODAY - dt.timedelta(days=a.max_age)).strftime("%Y-%m-%d") if a.max_age else ""
 
     if a.data:
@@ -820,8 +887,16 @@ def main(argv=None):
         items, skipped = out, 0
         print(f"loaded {len(out)} cards from {a.data}")
     else:
-        data = read_rows(a.xlsx)
-        items, skipped = build_items(data, upgrade=not a.keep_http)
+        data, items, skipped = [], [], 0
+        if a.xlsx:
+            data = read_rows(a.xlsx)
+            items, skipped = build_items(data, upgrade=not a.keep_http)
+        if a.cyber:
+            cdata = read_cyber_rows(a.cyber)
+            citems, cskipped = build_cyber_items(cdata, upgrade=not a.keep_http)
+            print(f"read {len(cdata)} cybersecurity row(s) from {a.cyber}: {len(citems)} usable, {cskipped} skipped "
+                  f"({sum(1 for it in citems if it['kind'] == 'Job')} jobs, {sum(1 for it in citems if it['kind'] == 'Internship')} internships)")
+            data += cdata; items += citems; skipped += cskipped
         if a.max_age:
             stale = [it for it in items if it['posted'] and it['posted'] < cutoff]
             items = [it for it in items if not (it['posted'] and it['posted'] < cutoff)]
