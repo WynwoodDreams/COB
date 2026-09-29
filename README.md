@@ -67,26 +67,31 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
    and a role missing from one scrape is as likely to have been pushed out of the row cap
    as to have closed. Those cards stay until they age out.
 
-## The Cybersecurity tab
+## The spotlight tabs: Cybersecurity and IT Support / Help Desk
 
-Cybersecurity has its own area, pinned under "All areas" and drawn in cyan with a NEW
-badge so a visitor finds it first. It is the one area that carries entry-level **jobs**
-as well as internships, and every card in it says which it is. Its listings come from a
-hand-made sheet rather than the Indeed export, with the columns Posted, Company, Role,
-Type, Location, Experience, Salary and Direct Apply URL:
+Two areas are pinned under "All areas" and drawn to stand out, each in its own colour
+with a NEW badge: Cybersecurity in cyan and IT Support / Help Desk in amber. They are the
+areas that carry entry-level **jobs** as well as internships, and every card in them says
+which it is. Their listings come from hand-made sheets rather than the Indeed export, one
+sheet per area, with the columns Posted, Company, Role, Location and Direct Apply URL,
+plus any of Type or Job Type, Experience and Salary:
 
-    python3 build_data.py --cyber cyber_jobs.xlsx --merge index.html
+    python3 build_data.py --sheet Cybersecurity cyber.xlsx --sheet "IT Support / Help Desk" it.xlsx --merge index.html
 
 A Type of "Internship" (or a Role that says intern) is an internship; anything else is
-shown as an entry-level job, listed under "Entry-level job" in the Level filter. Every row
-is tagged with the Cybersecurity major, and the sheet's say on the area wins over the
-classifier when a row matches a card already on the board. Any card whose title names
-cyber work (`CYBER_TITLE` in `build_data.py`) moves into this area too, including cards
-carried over from older exports. The sheet's rows age out like any other posting, so
-rebuild with the sheet again to keep them.
+shown as an entry-level job, listed under "Entry-level job" in the Level filter, with
+Full-time or Part-time shown when the sheet says so. Every row is tagged with the area's
+major (Cybersecurity, or Information Technology), and the sheet's say on the area wins
+over the classifier when a row matches a card already on the board. Any card whose title
+names that work (the `title` rules in `SPOT_AREAS` in `build_data.py`) moves into the
+area too, including cards carried over from older exports. Sheet rows age out like any
+other posting, so rebuild with the sheets again to keep them.
 
-The tab's colours are the `--spot` variables in the `:root` block of `template.html`; the
-cyan clears WCAG AA on both the page and card backgrounds.
+To add another spotlight area, add an entry to `SPOT_AREAS` (its title rule, the major
+to tag, and a short slug for card ids) and a matching colour class in `template.html`:
+the `--spot-*` variables in `:root`, a `.spot.<slug>` rule beside `.spot.it`, and the
+area's name in the `SPOTS` map in the script. Each colour clears WCAG AA on both the
+page and card backgrounds.
 
 ## How a posting is read
 

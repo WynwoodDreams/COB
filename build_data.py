@@ -6,15 +6,15 @@ Typical use (from the repo root):
     python3 build_data.py listings.xlsx            # xlsx -> data.json + index.html
     python3 build_data.py --data data.json         # re-render index.html from a saved data.json
     python3 build_data.py listings.xlsx --stats    # also print classification counters
-    python3 build_data.py --cyber cyber.xlsx --merge index.html   # add a hand-made cybersecurity sheet
+    python3 build_data.py --sheet Cybersecurity cyber.xlsx --merge index.html   # add a hand-made sheet
 
 The spreadsheet needs these columns: company, positionName, location, jobType/0..3,
 postingDateParsed, externalApplyLink, salary, description, url, id.
 
-A --cyber sheet is a hand-made list of cybersecurity jobs and internships, with the
-columns Posted, Company, Role, Type, Location, Experience, Salary, Direct Apply URL.
-Every row lands in the Cybersecurity area, and a Type other than "Internship" is shown
-as an entry-level job rather than left out as one.
+A --sheet is a hand-made list of jobs and internships for one spotlight area (SPOT_AREAS),
+with the columns Posted, Company, Role, Location, Direct Apply URL and optionally Type or
+Job Type, Experience and Salary. Every row lands in that area, and a row that is not an
+internship is shown as an entry-level job rather than left out as one.
 """
 import argparse, base64, collections, datetime as dt, hashlib, json, os, re, sys
 
@@ -23,13 +23,22 @@ import argparse, base64, collections, datetime as dt, hashlib, json, os, re, sys
 # carries words that name business work outright (purchasing, leasing, analyst...). A title
 # that matches nothing here is vague, and for those the employer's name and the posting's
 # opening paragraph get a say before the catch-all does.
-# A cyber title goes to its own area, ahead of the Audit and Software rules that would
-# otherwise claim "Cyber Risk Services" or "Cybersecurity Analyst". Applied again in
-# finalize(), so cards carried over from older builds move too.
-CYBER_TITLE = r"cyber|information security|infosec|security analyst|security engineer|security operations|\bSOC analyst|penetration|threat|vulnerabilit"
-CYBER_CAT = "Cybersecurity"
+# Spotlight areas: each is fed by a hand-made sheet (--sheet), carries entry-level jobs
+# as well as internships, and is drawn to stand out on the page. Their title rules run
+# ahead of the Audit and Software rules that would otherwise claim "Cyber Risk Services"
+# or "IT Support Specialist", and again in finalize(), so cards carried over from older
+# builds move too. The major named here is tagged on every row of that area's sheet.
+SPOT_AREAS = collections.OrderedDict([
+ ("Cybersecurity", dict(
+    title=r"cyber|information security|infosec|security analyst|security engineer|security operations|\bSOC analyst|penetration|threat|vulnerabilit",
+    major="Cybersecurity", slug="cyber")),
+ ("IT Support / Help Desk", dict(
+    title=r"help ?desk|service desk|\bIT support|desktop support|tech(?:nical)? support|support (?:specialist|technician|analyst)|field service tech",
+    major="Information Technology", slug="it")),
+])
+JOB_LEVEL = "Entry-level job"
 CATS = [
- ("Cybersecurity", CYBER_TITLE),
+ *[(name, spec['title']) for name, spec in SPOT_AREAS.items()],
  ("Health Sciences & Pharmacy", r"pharmac|nurse|nursing|respiratory|medical assistant|\bMA/|chiropract|veterinar|patient care|dietetic|dietitian|nutrition"),
  ("Mental Health & Social Work", r"mental health|counsel|therapist|therapy|psycholog|social work|\bBSW\b|\bMSW\b|RMHCI|LMHC|behavioral health|clinical intern"),
  ("Legal", r"\blaw\b|legal|law clerk|bankruptcy|attorney|paralegal|\b2L\b"),
@@ -306,7 +315,7 @@ JUNK_PAY = re.compile(r"^(up to |from )?\$[0-4](\.\d+)?/(mo|wk|yr|hr)$", re.I)  
 def pay_for(sal, desc):
     sal = s(sal)
     if sal:
-        sal = sal.replace(" an hour","/hr").replace(" a year","/yr").replace(" a month","/mo").replace(" a week","/wk")
+        sal = sal.replace(" an hour","/hr").replace(" a year","/yr").replace(" a month","/mo").replace(" a week","/wk").replace(" a day","/day")
         return "" if JUNK_PAY.match(sal) else sal
     d = desc[:4000]
     m = re.search(r"\$\s?\d{2}(?:\.\d\d)?\s*(?:-|–|to)\s*\$?\s?\d{2}(?:\.\d\d)?\s*(?:/|per)\s*(?:hour|hr)", d, re.I)
@@ -542,13 +551,14 @@ def build_items(data, upgrade=True):
         ))
     return items, skipped
 
-# ---------- a hand-made cybersecurity sheet ----------
-# Not an Indeed export: one row per role, written by hand for a group that wants cyber
-# roles in one place. Jobs are welcome here, so is_internship() is not consulted.
-CYBER_COLUMNS = ["Posted", "Company", "Role", "Type", "Location", "Experience", "Salary", "Direct Apply URL"]
-JOB_LEVEL = "Entry-level job"
+# ---------- a hand-made sheet for a spotlight area ----------
+# Not an Indeed export: one row per role, written by hand for a group that wants one
+# kind of role in one place. Jobs are welcome here, so is_internship() is not consulted.
+# Optional columns: Type or Job Type (an "Internship" is one; Full-time/Part-time is
+# shown), Experience (shown on the card), Salary.
+SHEET_COLUMNS = ["Posted", "Company", "Role", "Location", "Direct Apply URL"]
 
-def read_cyber_rows(path):
+def read_sheet_rows(path):
     try:
         from openpyxl import load_workbook
     except ImportError:
@@ -559,28 +569,30 @@ def read_cyber_rows(path):
         hdr = [s(h) for h in next(rows)]
     except StopIteration:
         sys.exit(f"{path}: spreadsheet is empty")
-    missing = [c for c in CYBER_COLUMNS if c not in hdr]
+    missing = [c for c in SHEET_COLUMNS if c not in hdr]
     if missing: sys.exit(f"{path}: missing columns: {', '.join(missing)}")
     return [dict(zip(hdr, r)) for r in rows if any(s(v) for v in r)]
 
-def build_cyber_items(data, upgrade=True):
+def build_sheet_items(data, area, upgrade=True):
+    spec = SPOT_AREAS[area]
     items, skipped = [], 0
     for d in data:
-        title = s(d.get('Role')); company = company_name(s(d.get('Company')))
+        title = s(d.get('Role')); company = company_name(s(d.get('Company')).rstrip(" ,;"))
         if not title or not company: skipped += 1; continue
         apply = url_or_blank(d.get('Direct Apply URL'), upgrade)
         if not apply: skipped += 1; continue
-        kind = "Internship" if re.search(r"\bintern", s(d.get('Type')) + " " + title, re.I) else "Job"
+        jtype = s(d.get('Type')) or s(d.get('Job Type'))
+        kind = "Internship" if re.search(r"\bintern", jtype + " " + title, re.I) else "Job"
         exp = s(d.get('Experience'))
         loc = clean_loc(d.get('Location'))
         majors = majors_for("", title)
-        if "Cybersecurity" not in majors: majors.insert(0, "Cybersecurity")
+        if spec['major'] not in majors: majors.insert(0, spec['major'])
         items.append(dict(
-            id="cyber-" + hashlib.sha1(f"{company}|{title}|{apply}".encode('utf-8')).hexdigest()[:10],
-            company=company, title=title, loc=loc, cat=CYBER_CAT, kind=kind, majors=majors[:MAX_MAJORS],
+            id=spec['slug'] + "-" + hashlib.sha1(f"{company}|{title}|{apply}".encode('utf-8')).hexdigest()[:10],
+            company=company, title=title, loc=loc, cat=area, kind=kind, majors=majors[:MAX_MAJORS],
             term=term_for(title, ""), pay=pay_for(d.get('Salary'), ""),
             level=JOB_LEVEL if kind == "Job" else level_for(title, ""), mode=work_mode(d.get('Location'), ""),
-            types=[], posted=date_str(d.get('Posted')), apply=apply, indeed="",
+            types=[jtype] if jtype in ("Full-time", "Part-time") else [], posted=date_str(d.get('Posted')), apply=apply, indeed="",
             snippet=(("Entry-level job" if kind == "Job" else "Internship") + (f" · Experience: {exp}" if exp else "")),
             details=[], flag="", county=county_for(loc),
         ))
@@ -632,10 +644,11 @@ def finalize(out, upgrade=True):
             g[k] = s(g.get(k))
         g['company'] = company_name(g['company'])
         g['posted'] = date_str(g.get('posted'))
-        if re.search(CYBER_TITLE, g['title'], re.I): g['cat'] = CYBER_CAT
-        # Only the Cybersecurity area mixes jobs with internships, so only its cards say which they are.
-        if g['cat'] == CYBER_CAT and not g['kind']: g['kind'] = "Internship"
-        if g['cat'] != CYBER_CAT: g.pop('kind', None)
+        for area, spec in SPOT_AREAS.items():
+            if re.search(spec['title'], g['title'], re.I): g['cat'] = area; break
+        # Only the spotlight areas mix jobs with internships, so only their cards say which they are.
+        if g['cat'] in SPOT_AREAS and not g['kind']: g['kind'] = "Internship"
+        if g['cat'] not in SPOT_AREAS: g.pop('kind', None)
     out.sort(key=lambda x: (x['company'].lower(), x['title'].lower()))
     out.sort(key=lambda x: x['posted'], reverse=True)   # stable: newest first, then employer A-Z
     return out
@@ -717,9 +730,9 @@ def merge_into(g, n):
         g[k] = vals
     for k in ('pay', 'flag', 'indeed', 'mode', 'snippet', 'level', 'cat', 'kind'):
         if not s(g.get(k)) and s(n.get(k)): g[k] = n[k]
-    # A hand-made cyber sheet is curated, so its say on the area beats a classifier's guess.
-    if s(n.get('cat')) == CYBER_CAT and s(n.get('kind')):
-        g['cat'] = CYBER_CAT; g['kind'] = n['kind']
+    # A hand-made sheet is curated, so its say on the area beats a classifier's guess.
+    if s(n.get('cat')) in SPOT_AREAS and s(n.get('kind')):
+        g['cat'] = n['cat']; g['kind'] = n['kind']
     if not (g.get('details') or []) and n.get('details'): g['details'] = list(n['details'])
     if s(n.get('posted')) > s(g.get('posted')): g['posted'] = n['posted']
     g['count'] = max(int(g.get('count') or 1), int(n.get('count') or 1), len(g.get('locs') or []))
@@ -858,10 +871,12 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("xlsx", nargs="?", help="spreadsheet export of the listings")
     ap.add_argument("--data", help="skip the spreadsheet and re-render from this data.json (or a built index.html)")
-    ap.add_argument("--cyber", metavar="PATH",
-                    help="a hand-made sheet of cybersecurity jobs and internships (columns: Posted, Company, Role, Type, "
-                         "Location, Experience, Salary, Direct Apply URL). Every row lands in the Cybersecurity area. "
-                         "Can stand in for the export, or be added to one.")
+    ap.add_argument("--sheet", nargs=2, action="append", default=[], metavar=("AREA", "PATH"),
+                    help="a hand-made sheet of jobs and internships for one spotlight area (one of: "
+                         + "; ".join(SPOT_AREAS) + "). Columns: Posted, Company, Role, Location, Direct Apply URL, "
+                         "and optionally Type or Job Type, Experience, Salary. Every row lands in that area. "
+                         "Repeatable; can stand in for the export, or be added to one.")
+    ap.add_argument("--cyber", metavar="PATH", help="shorthand for --sheet Cybersecurity PATH")
     ap.add_argument("--merge", metavar="PATH",
                     help="add this build to the listings already published, instead of replacing them. "
                          "PATH is a data.json or a built index.html; a role already on the board is "
@@ -879,7 +894,10 @@ def main(argv=None):
     ap.add_argument("--stats", action="store_true", help="print classification counters")
     ap.add_argument("--check", action="store_true", help="also write check.txt, one line per card, for eyeballing categories")
     a = ap.parse_args(argv)
-    if not a.xlsx and not a.data and not a.cyber: ap.error("give a spreadsheet path, --cyber PATH or --data data.json")
+    if a.cyber: a.sheet.append(["Cybersecurity", a.cyber])
+    for area, _ in a.sheet:
+        if area not in SPOT_AREAS: ap.error(f"--sheet: unknown area {area!r}; one of: " + "; ".join(SPOT_AREAS))
+    if not a.xlsx and not a.data and not a.sheet: ap.error("give a spreadsheet path, --sheet AREA PATH or --data data.json")
     cutoff = (TODAY - dt.timedelta(days=a.max_age)).strftime("%Y-%m-%d") if a.max_age else ""
 
     if a.data:
@@ -891,10 +909,10 @@ def main(argv=None):
         if a.xlsx:
             data = read_rows(a.xlsx)
             items, skipped = build_items(data, upgrade=not a.keep_http)
-        if a.cyber:
-            cdata = read_cyber_rows(a.cyber)
-            citems, cskipped = build_cyber_items(cdata, upgrade=not a.keep_http)
-            print(f"read {len(cdata)} cybersecurity row(s) from {a.cyber}: {len(citems)} usable, {cskipped} skipped "
+        for area, path in a.sheet:
+            cdata = read_sheet_rows(path)
+            citems, cskipped = build_sheet_items(cdata, area, upgrade=not a.keep_http)
+            print(f"read {len(cdata)} {area} row(s) from {path}: {len(citems)} usable, {cskipped} skipped "
                   f"({sum(1 for it in citems if it['kind'] == 'Job')} jobs, {sum(1 for it in citems if it['kind'] == 'Internship')} internships)")
             data += cdata; items += citems; skipped += cskipped
         if a.max_age:

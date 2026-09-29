@@ -34,8 +34,10 @@
   --ink:#E9F1ED; --mute:#8FA39B; --dim:#66796F;
   --amber:#00E37B; --amber-2:#5BF2AC; --amber-dim:rgba(0,227,123,.13); --amber-glow:rgba(0,227,123,.35);
   --glow:0 0 24px rgba(0,227,123,.28);
-  /* Spotlight: the one area that also carries jobs. Cyan so it reads apart from the green. */
-  --spot:#4FD3FF; --spot-2:#9BE7FF; --spot-dim:rgba(79,211,255,.12); --spot-glow:rgba(79,211,255,.38);
+  /* Spotlight areas: the ones that also carry jobs. Each has its own colour, set apart from
+     the green: cyan for Cybersecurity, amber for IT Support. --sp-rgb feeds the tints. */
+  --spot-cyber:#4FD3FF; --spot-cyber-2:#9BE7FF; --spot-cyber-rgb:79,211,255;
+  --spot-it:#FFB84D; --spot-it-2:#FFD48A; --spot-it-rgb:255,184,77;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
@@ -93,17 +95,20 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .area-list button[aria-pressed="true"]{color:var(--ink);background:var(--amber-dim);border-color:rgba(245,165,36,.35)}
 .area-list button i{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--dim);flex:none}
 .area-list button[aria-pressed="true"] i{color:var(--amber)}
-/* The spotlight area sits right under "All areas" and glows, so a visitor finds it first. */
-.area-list button.spot{color:var(--ink);background:var(--spot-dim);border-color:rgba(79,211,255,.45);box-shadow:0 0 18px rgba(79,211,255,.16);margin:4px 0}
-.area-list button.spot:hover{background:rgba(79,211,255,.2);border-color:var(--spot)}
-.area-list button.spot[aria-pressed="true"]{background:rgba(79,211,255,.22);border-color:var(--spot);box-shadow:0 0 22px var(--spot-glow)}
-.area-list button.spot i{color:var(--spot)}
-.area-list button.spot .tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:#04121A;background:var(--spot);border-radius:4px;padding:2px 6px;margin-left:8px;vertical-align:1px}
-.row.spot{border-color:rgba(79,211,255,.35);box-shadow:inset 3px 0 0 var(--spot)}
-.row.spot .co .emp{color:var(--spot)}
-.row.spot .apply{background:var(--spot);box-shadow:0 0 24px rgba(79,211,255,.3)}
-.row.spot .apply:hover{background:var(--spot-2)}
-.resultbar h2 .tag{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--spot);border:1px solid rgba(79,211,255,.45);border-radius:5px;padding:2px 8px;margin-left:10px;vertical-align:2px}
+/* The spotlight areas sit right under "All areas" and glow, so a visitor finds them first.
+   .spot picks the mechanics; .cyber or .it picks the colour. */
+.spot,.spot.cyber{--sp:var(--spot-cyber);--sp-2:var(--spot-cyber-2);--sp-rgb:var(--spot-cyber-rgb)}
+.spot.it{--sp:var(--spot-it);--sp-2:var(--spot-it-2);--sp-rgb:var(--spot-it-rgb)}
+.area-list button.spot{color:var(--ink);background:rgba(var(--sp-rgb),.12);border-color:rgba(var(--sp-rgb),.45);box-shadow:0 0 18px rgba(var(--sp-rgb),.16);margin:4px 0}
+.area-list button.spot:hover{background:rgba(var(--sp-rgb),.2);border-color:var(--sp)}
+.area-list button.spot[aria-pressed="true"]{background:rgba(var(--sp-rgb),.22);border-color:var(--sp);box-shadow:0 0 22px rgba(var(--sp-rgb),.38)}
+.area-list button.spot i{color:var(--sp)}
+.area-list button.spot .tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:#04121A;background:var(--sp);border-radius:4px;padding:2px 6px;margin-left:8px;vertical-align:1px}
+.row.spot{border-color:rgba(var(--sp-rgb),.35);box-shadow:inset 3px 0 0 var(--sp)}
+.row.spot .co .emp{color:var(--sp)}
+.row.spot .apply{background:var(--sp);box-shadow:0 0 24px rgba(var(--sp-rgb),.3)}
+.row.spot .apply:hover{background:var(--sp-2)}
+.resultbar h2 .tag{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--sp);border:1px solid rgba(var(--sp-rgb),.45);border-radius:5px;padding:2px 8px;margin-left:10px;vertical-align:2px}
 
 /* filters */
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px}
@@ -148,8 +153,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .chip.pay{color:var(--amber-2);border-color:rgba(245,165,36,.4);background:var(--amber-dim)}
 .chip.flag{color:#F58B8B;border-color:rgba(245,139,139,.35);background:rgba(245,139,139,.08)}
 .chip.mode{color:#8FD3A8;border-color:rgba(143,211,168,.35);background:rgba(143,211,168,.08)}
-.chip.spot{color:var(--spot);border-color:rgba(79,211,255,.45);background:var(--spot-dim);font-weight:600}
-.chip.job{color:#04121A;background:var(--spot);border-color:var(--spot);font-weight:700}
+.chip.spot{color:var(--sp);border-color:rgba(var(--sp-rgb),.45);background:rgba(var(--sp-rgb),.12);font-weight:600}
+.chip.job{color:#04121A;background:var(--sp);border-color:var(--sp);font-weight:700}
 .row p{margin:0;font-size:14px;color:var(--mute);max-width:80ch}
 .majors{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .majors button{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:5px;background:transparent;border:1px dashed var(--rule-2);color:var(--mute)}
@@ -291,8 +296,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row:hover::before,.row:hover::after{opacity:1;animation:orbit 2.6s linear infinite}
   .row:hover h3{color:#fff}
   .row:hover .apply{box-shadow:0 0 26px rgba(0,227,123,.42)}
-  .row.spot:hover{border-color:rgba(79,211,255,.5)}
-  .row.spot:hover .apply{box-shadow:0 0 26px rgba(79,211,255,.45)}
+  .row.spot:hover{border-color:rgba(var(--sp-rgb),.5)}
+  .row.spot:hover .apply{box-shadow:0 0 26px rgba(var(--sp-rgb),.45)}
 }
 /* On a touch screen there is no hover, so a tap on the card itself (not on a link or a
    button) runs the light around once. The class comes off when the lap ends. */
@@ -306,7 +311,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .search button{color:#04120B}
 .empty button:hover,.loadmore:hover{color:#04120B}
 .area-list button[aria-pressed="true"]{border-color:rgba(0,227,123,.4)}
-.area-list button.spot[aria-pressed="true"]{border-color:var(--spot)}
+.area-list button.spot[aria-pressed="true"]{border-color:var(--sp)}
 
 
 /* ---------- sibling-site banner ---------- */
@@ -366,7 +371,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       </span>
       <div>
         <h1>Christian's <span>Opportunity Board</span></h1>
-        <div class="sub">South Florida internships · cybersecurity jobs · direct apply links · updated __DATE__</div>
+        <div class="sub">South Florida internships · entry-level cyber and IT jobs · direct apply links · updated __DATE__</div>
       </div>
     </div>
     <div class="stats">
@@ -487,13 +492,14 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   $('#st-open').textContent = DATA.length; $('#st-emp').textContent = employers.size;
   $('#st-areas').textContent = areaCounts.size; $('#st-paid').textContent = DATA.filter(d => d.pay).length;
 
-  // The spotlight area is pinned under "All areas" and drawn to stand out: it is the one
-  // area that carries entry-level jobs as well as internships.
-  const SPOT = 'Cybersecurity';
-  const AREA_ORDER = [SPOT,'Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
+  // The spotlight areas are pinned under "All areas" and drawn to stand out: they are the
+  // ones that carry entry-level jobs as well as internships. The value is the colour class.
+  const SPOTS = { 'Cybersecurity':'cyber', 'IT Support / Help Desk':'it' };
+  const spotClass = cat => SPOTS[cat] ? ` spot ${SPOTS[cat]}` : '';
+  const AREA_ORDER = [...Object.keys(SPOTS),'Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
   const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)).sort());
   const ul = $('#areas');
-  const mkArea = (label, val, n) => { const li=document.createElement('li'); const b=document.createElement('button'); b.type='button'; b.dataset.area=val; if (val===SPOT) b.className='spot'; b.innerHTML=`<span>${esc(label)}${val===SPOT?'<span class="tag">NEW</span>':''}</span><i>${n}</i>`; b.addEventListener('click',()=>{ state.area=(state.area===val?'':val); refilter(); }); li.appendChild(b); return li; };
+  const mkArea = (label, val, n) => { const li=document.createElement('li'); const b=document.createElement('button'); b.type='button'; b.dataset.area=val; b.className=spotClass(val).trim(); b.innerHTML=`<span>${esc(label)}${SPOTS[val]?'<span class="tag">NEW</span>':''}</span><i>${n}</i>`; b.addEventListener('click',()=>{ state.area=(state.area===val?'':val); refilter(); }); li.appendChild(b); return li; };
   ul.appendChild(mkArea('All areas','',DATA.length));
   areas.forEach(a => ul.appendChild(mkArea(a,a,areaCounts.get(a))));
 
@@ -536,14 +542,14 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const fmtDate = s => { const d = asDate(s||''); return d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; };
 
   function row(d){
-    const el = document.createElement('article'); el.className='row' + (d.cat===SPOT ? ' spot' : '');
+    const el = document.createElement('article'); el.className='row' + spotClass(d.cat);
     const locLine = d.locs.length===1 ? d.locs[0].loc : `${d.locs.length} locations`;
     const full = fmtDate(d.posted), age = d.days==null ? '' : ageLabel(d.days);
     // Freshness rides on the date itself: amber when days old, dimmed when half a year old.
     const ageClass = d.days==null ? '' : (d.days < 7 ? ' class="fresh"' : (d.days > 180 ? ' class="stale"' : ''));
     const chips = [];
     // Spotlight cards say what they are, since that area mixes jobs with internships.
-    if (d.cat===SPOT) chips.push(`<span class="chip spot">${esc(SPOT)}</span>`);
+    if (SPOTS[d.cat]) chips.push(`<span class="chip${spotClass(d.cat)}">${esc(d.cat)}</span>`);
     if (d.kind) chips.push(`<span class="chip${d.kind==='Job'?' job':''}">${d.kind==='Job'?'Entry-level job':'Internship'}</span>`);
     d.term.forEach(t => chips.push(`<span class="chip term">${esc(t)}</span>`));
     if (d.pay) chips.push(`<span class="chip pay">${esc(d.pay)}</span>`);
@@ -592,12 +598,13 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const list = DATA.filter(matches).sort(sortFn);
     const wrap = $('#cards'); wrap.innerHTML='';
     const qLabel = state.q ? `<em>“${esc(state.q)}”</em>` : '';
-    $('#rtitle').innerHTML = state.area ? esc(state.area) + (state.area===SPOT ? '<span class="tag">JOBS + INTERNSHIPS</span>' : '') + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
+    const jobs = list.filter(d => d.kind==='Job').length, interns = list.length - jobs;
+    const spotTag = jobs && interns ? 'JOBS + INTERNSHIPS' : (jobs ? 'ENTRY-LEVEL JOBS' : 'INTERNSHIPS');
+    $('#rtitle').innerHTML = state.area ? esc(state.area) + (SPOTS[state.area] ? `<span class="tag${spotClass(state.area)}">${spotTag}</span>` : '') + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
     const openings = list.reduce((n,d)=>n+d.count,0);
     const shown = Math.min(state.shown, list.length);
-    const jobs = list.filter(d => d.kind==='Job').length;
     const noun = jobs ? 'listing' : 'internship';
-    $('#rcount').textContent = list.length ? `${shown<list.length?`${shown} of `:''}${list.length} ${noun}${list.length===1?'':'s'}${jobs?` · ${jobs} job${jobs===1?'':'s'}, ${list.length-jobs} internship${list.length-jobs===1?'':'s'}`:''}${openings>list.length?` · ${openings} openings across locations`:''}` : 'No listings match';
+    $('#rcount').textContent = list.length ? `${shown<list.length?`${shown} of `:''}${list.length} ${noun}${list.length===1?'':'s'}${jobs && interns?` · ${jobs} job${jobs===1?'':'s'}, ${interns} internship${interns===1?'':'s'}`:(jobs?' · entry-level jobs':'')}${openings>list.length?` · ${openings} openings across locations`:''}` : 'No listings match';
     if (!list.length){
       wrap.innerHTML = `<div class="empty"><h3>Nothing matches.</h3><p>Try a broader search or clear a filter.</p><button type="button" id="empty-reset">Reset filters</button></div>`;
       $('#empty-reset').addEventListener('click', reset);
