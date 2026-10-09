@@ -67,29 +67,42 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
    and a role missing from one scrape is as likely to have been pushed out of the row cap
    as to have closed. Those cards stay until they age out.
 
-## The spotlight tabs: Cybersecurity and IT Support / Help Desk
+## The spotlight tab: Cloud & DevOps
 
-Two areas are pinned under "All areas" and drawn to stand out, each in its own colour
-with a NEW badge: Cybersecurity in cyan and IT Support / Help Desk in amber. They are the
-areas that carry entry-level **jobs** as well as internships, and every card in them says
-which it is. Their listings come from hand-made sheets rather than the Indeed export, one
-sheet per area, with the columns Posted, Company, Role, Location and Direct Apply URL,
-plus any of Type or Job Type, Experience and Salary:
+One area is pinned under "All areas" and drawn to stand out, in lavender with a NEW
+badge: Cloud & DevOps. It is the area that carries entry-level **jobs** as well as
+internships, and every card in it says which it is. Its listings come from a hand-made
+sheet rather than the Indeed export, an .xlsx or a .csv with the columns Company, Role,
+Location and Direct Apply URL, plus any of Posted, Type or Job Type, Experience, Salary,
+a summary column and a caveats column. The reader also takes the names a sheet is likely
+to use instead (Employer, Job title, Florida location, Indeed application URL, Listed pay,
+Experience requirement, Employment, "... (from posting)", Important caveats; the full list
+is `SHEET_ALIASES` in `build_data.py`):
 
-    python3 build_data.py --sheet Cybersecurity cyber.xlsx --sheet "IT Support / Help Desk" it.xlsx --merge index.html
+    python3 build_data.py --sheet "Cloud & DevOps" cloud.csv --merge index.html
 
 A Type of "Internship" (or a Role that says intern) is an internship; anything else is
 shown as an entry-level job, listed under "Entry-level job" in the Level filter, with
-Full-time or Part-time shown when the sheet says so. Every row is tagged with the area's
-major (Cybersecurity, or Information Technology), and the sheet's say on the area wins
-over the classifier when a row matches a card already on the board. Any card whose title
-names that work (the `title` rules in `SPOT_AREAS` in `build_data.py`) moves into the
-area too, including cards carried over from older exports. Sheet rows age out like any
-other posting, so rebuild with the sheets again to keep them.
+Full-time or Part-time shown when the sheet says so. A row without a Posted date is dated
+the day it is built. A pay cell that says "Not listed" is left blank. The summary and the
+experience requirement show on the card; a caveat is listed under it. Every row is tagged
+with the area's major (Information Technology), and the sheet's say on the area wins over
+the classifier when a row matches a card already on the board. Any card whose title names
+cloud work (the `title` rule in `SPOT_AREAS` in `build_data.py`: cloud, DevOps, platform
+engineer, SRE, Kubernetes, AWS, Azure, GCP) moves into the area too, including cards
+carried over from older exports. Sheet rows age out like any other posting, so rebuild
+with the sheet again to keep them.
+
+Cybersecurity and IT Support / Help Desk used to be spotlight tabs. They are retired
+(`RETIRED_AREAS`): a card still filed under either is sent back through the title
+classifier on the next build and lands where it did before the tabs existed, cyber and
+help-desk titles in Software, IT, Data & AI and "Cyber Risk Services" in Accounting, Tax
+& Audit. The entry-level jobs that came from those sheets stay on the board in those
+areas, still marked "Entry-level job".
 
 To add another spotlight area, add an entry to `SPOT_AREAS` (its title rule, the major
 to tag, and a short slug for card ids) and a matching colour class in `template.html`:
-the `--spot-*` variables in `:root`, a `.spot.<slug>` rule beside `.spot.it`, and the
+the `--spot-*` variables in `:root`, a `.spot.<slug>` rule beside `.spot.cloud`, and the
 area's name in the `SPOTS` map in the script. Each colour clears WCAG AA on both the
 page and card backgrounds.
 
@@ -188,10 +201,10 @@ only, and would leave the caret blinking.
 
 ## Mobile
 
-The page is built for phones first at 900px and below. The two spotlight tabs
-(Cybersecurity and IT Support / Help Desk) get a full-width row each above the area
-strip, so a first visit on a phone cannot miss them, and their "jobs + internships" tag
-drops onto its own line under the results title. The area list becomes a
+The page is built for phones first at 900px and below. The spotlight tab
+(Cloud & DevOps) gets a full-width row above the area strip, so a first visit on a
+phone cannot miss it, and its "jobs + internships" tag drops onto its own line under the
+results title. The area list becomes a
 side-scrolling strip with a fade at its edge, the filter panel collapses behind a
 Filters button that sticks to the top of the list while you scroll, and every control
 clears the 44px touch minimum. No text on a card is under 12px, the search field stays
