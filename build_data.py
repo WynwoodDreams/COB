@@ -6,15 +6,17 @@ Typical use (from the repo root):
     python3 build_data.py listings.xlsx            # xlsx -> data.json + index.html
     python3 build_data.py --data data.json         # re-render index.html from a saved data.json
     python3 build_data.py listings.xlsx --stats    # also print classification counters
-    python3 build_data.py --sheet Cybersecurity cyber.xlsx --merge index.html   # add a hand-made sheet
+    python3 build_data.py --sheet "Cloud & DevOps" cloud.csv --merge index.html   # add a hand-made sheet
 
 The spreadsheet needs these columns: company, positionName, location, jobType/0..3,
 postingDateParsed, externalApplyLink, salary, description, url, id.
 
 A --sheet is a hand-made list of jobs and internships for one spotlight area (SPOT_AREAS),
-with the columns Posted, Company, Role, Location, Direct Apply URL and optionally Type or
-Job Type, Experience and Salary. Every row lands in that area, and a row that is not an
-internship is shown as an entry-level job rather than left out as one.
+an .xlsx or a .csv with the columns Company, Role, Location and Direct Apply URL (or the
+names in SHEET_ALIASES: Employer, Job title, Indeed application URL...) and optionally
+Posted, Type or Job Type, Experience, Salary, a summary column and a caveats column.
+Every row lands in that area, and a row that is not an internship is shown as an
+entry-level job rather than left out as one.
 """
 import argparse, base64, collections, datetime as dt, hashlib, json, os, re, sys
 
@@ -25,17 +27,18 @@ import argparse, base64, collections, datetime as dt, hashlib, json, os, re, sys
 # opening paragraph get a say before the catch-all does.
 # Spotlight areas: each is fed by a hand-made sheet (--sheet), carries entry-level jobs
 # as well as internships, and is drawn to stand out on the page. Their title rules run
-# ahead of the Audit and Software rules that would otherwise claim "Cyber Risk Services"
-# or "IT Support Specialist", and again in finalize(), so cards carried over from older
-# builds move too. The major named here is tagged on every row of that area's sheet.
+# ahead of the Software rule that would otherwise claim "Cloud Engineer", and again in
+# finalize(), so cards carried over from older builds move too. The major named here is
+# tagged on every row of that area's sheet.
 SPOT_AREAS = collections.OrderedDict([
- ("Cybersecurity", dict(
-    title=r"cyber|information security|infosec|security analyst|security engineer|security operations|\bSOC analyst|penetration|threat|vulnerabilit",
-    major="Cybersecurity", slug="cyber")),
- ("IT Support / Help Desk", dict(
-    title=r"help ?desk|service desk|\bIT support|desktop support|tech(?:nical)? support|support (?:specialist|technician|analyst)|field service tech",
-    major="Information Technology", slug="it")),
+ ("Cloud & DevOps", dict(
+    title=r"\bcloud\b|devops|platform engineer|site reliability|\bSRE\b|kubernetes|\bAWS\b|\bazure\b|\bGCP\b",
+    major="Information Technology", slug="cloud")),
 ])
+# Areas that used to be spotlights. A card still filed under one is sent back through the
+# title classifier in finalize(), so it lands where it would have before the spotlight:
+# cyber and help-desk titles in Software, IT, Data & AI, "Cyber Risk Services" in Audit.
+RETIRED_AREAS = {"Cybersecurity", "IT Support / Help Desk"}
 JOB_LEVEL = "Entry-level job"
 CATS = [
  *[(name, spec['title']) for name, spec in SPOT_AREAS.items()],
@@ -46,7 +49,7 @@ CATS = [
  ("Finance, Banking & Insurance", r"financ|wealth|banking|capital markets|private equity|asset management|quant|trading|actuarial|multinational|lending|commercial banking|insurance|state farm agent|FRP internship|client advisory|transaction"),
  ("Human Resources & Talent", r"human resources|\bHR\b|talent acquisition|people & culture|recruit"),
  ("Civil, Structural & Environmental Engineering", r"civil|structural engineer|geotechnical|water|wastewater|transportation|surveying|environmental engineering|\bCEI\b|\bDOT\b|traffic|bridge|structures|intern engineer|engineering & estimating|engineering intern \| fort|planning intern"),
- ("Software, IT, Data & AI", r"software|developer|programmer|\bIT\b|information technology|\bdata\b|analytics|\bAI\b|machine learning|digital product|android|web develop|it infrastructure|systems engineering|app / game"),
+ ("Software, IT, Data & AI", r"software|developer|programmer|\bIT\b|information technology|\bdata\b|analytics|\bAI\b|machine learning|cyber|information security|infosec|security analyst|security engineer|security operations|\bSOC\b|penetration|threat|vulnerabilit|help ?desk|service desk|desktop support|tech(?:nical)? support|support (?:specialist|technician|analyst)|field service tech|system administrator|sys ?admin|digital product|android|web develop|it infrastructure|systems engineering|app / game"),
  ("Architecture, Construction & Design", r"architect|construction|\bBIM\b|interior design|estimating|building automation|fire & life safety|^project intern"),
  ("Mechanical, Electrical & Manufacturing Engineering", r"mechanical|electrical|electronics|\bRF\b|analog|radio|industrial engineering|manufacturing|process engineer|materials|packaging|biomedical|design engineering|engineering intern|engineering internship|engineer, intern|test technician|CAD design|advanced operations|aviation safety|technical sales|(?<!studio )\bengineers?\b"),
  ("Science, Sustainability & Environment", r"chemist|R&D|environmental|sustainab|scientist|research|\blab\b|QEHS|horticult|landscape|grower|nursery|agricultur"),
@@ -554,24 +557,54 @@ def build_items(data, upgrade=True):
 # ---------- a hand-made sheet for a spotlight area ----------
 # Not an Indeed export: one row per role, written by hand for a group that wants one
 # kind of role in one place. Jobs are welcome here, so is_internship() is not consulted.
-# Optional columns: Type or Job Type (an "Internship" is one; Full-time/Part-time is
-# shown), Experience (shown on the card), Salary.
-SHEET_COLUMNS = ["Posted", "Company", "Role", "Location", "Direct Apply URL"]
+# An .xlsx or a .csv. Each column is found under any of the headers listed for it, so a
+# sheet can say "Employer" for Company or "Job title" for Role. Only Company, Role,
+# Location and the apply link are required. Posted is optional; a row without one is
+# dated the day it is built, which is the day it joined the board. Optional: Type or Job
+# Type (an "Internship" is one; Full-time/Part-time is shown, "Full-time graduate program"
+# counts as Full-time), Experience (shown on the card), Salary, a Summary (a sentence on
+# what the role is, also shown on the card) and Caveats (listed under the card).
+SHEET_ALIASES = collections.OrderedDict([
+ ("Company", r"^(company|employer)$"),
+ ("Role", r"^(role|job title|title|position)$"),
+ ("Location", r"^(location|florida location|city)$"),
+ ("Direct Apply URL", r"^(direct apply url|apply url|application url|indeed application url|url|link)$"),
+ ("Posted", r"^(posted|date posted|posting date|date)$"),
+ ("Type", r"^(type|job type|employment|employment type)$"),
+ ("Experience", r"^(experience|experience requirement|years)$"),
+ ("Salary", r"^(salary|pay|listed pay|compensation)$"),
+ ("Summary", r"^(summary|notes?|connection|.*\(from posting\))$"),
+ ("Caveats", r"^(caveats?|important caveats|watch out)$"),
+])
+SHEET_COLUMNS = ["Company", "Role", "Location", "Direct Apply URL"]
+NO_PAY = re.compile(r"^(not (listed|stated|given|posted)|n/?a|none|unknown|-+)$", re.I)
 
 def read_sheet_rows(path):
-    try:
-        from openpyxl import load_workbook
-    except ImportError:
-        sys.exit("openpyxl is required to read spreadsheets: pip install openpyxl")
-    wb = load_workbook(path, read_only=True, data_only=True)
-    rows = wb.active.iter_rows(values_only=True)
-    try:
-        hdr = [s(h) for h in next(rows)]
-    except StopIteration:
-        sys.exit(f"{path}: spreadsheet is empty")
-    missing = [c for c in SHEET_COLUMNS if c not in hdr]
-    if missing: sys.exit(f"{path}: missing columns: {', '.join(missing)}")
-    return [dict(zip(hdr, r)) for r in rows if any(s(v) for v in r)]
+    if re.search(r"\.csv$", path, re.I):
+        import csv
+        with open(path, encoding='utf-8-sig', newline='') as f:
+            raw = list(csv.reader(f))
+    else:
+        try:
+            from openpyxl import load_workbook
+        except ImportError:
+            sys.exit("openpyxl is required to read spreadsheets: pip install openpyxl")
+        wb = load_workbook(path, read_only=True, data_only=True)
+        raw = list(wb.active.iter_rows(values_only=True))
+    if not raw: sys.exit(f"{path}: spreadsheet is empty")
+    hdr, rows = [s(h) for h in raw[0]], raw[1:]
+    names = {}   # the sheet's header -> the name build_sheet_items() reads
+    for canon, pat in SHEET_ALIASES.items():
+        for h in hdr:
+            if h not in names and re.match(pat, h, re.I): names[h] = canon; break
+    missing = [c for c in SHEET_COLUMNS if c not in names.values()]
+    if missing: sys.exit(f"{path}: missing columns: {', '.join(missing)} (headers seen: {', '.join(hdr)})")
+    out = []
+    for r in rows:
+        if not any(s(v) for v in r): continue
+        d = dict(zip(hdr, r))
+        out.append({names.get(h, h): v for h, v in d.items()})
+    return out
 
 def build_sheet_items(data, area, upgrade=True):
     spec = SPOT_AREAS[area]
@@ -581,20 +614,26 @@ def build_sheet_items(data, area, upgrade=True):
         if not title or not company: skipped += 1; continue
         apply = url_or_blank(d.get('Direct Apply URL'), upgrade)
         if not apply: skipped += 1; continue
-        jtype = s(d.get('Type')) or s(d.get('Job Type'))
+        jtype = s(d.get('Type'))
         kind = "Internship" if re.search(r"\bintern", jtype + " " + title, re.I) else "Job"
+        shift = re.match(r"(full|part)[- ]time", jtype, re.I)
         exp = s(d.get('Experience'))
         loc = clean_loc(d.get('Location'))
         majors = majors_for("", title)
         if spec['major'] not in majors: majors.insert(0, spec['major'])
+        sal = s(d.get('Salary'))
+        about = [("Entry-level job" if kind == "Job" else "Internship")]
+        if exp: about.append(f"Experience: {exp}")
+        if s(d.get('Summary')): about.append(s(d.get('Summary')))
         items.append(dict(
             id=spec['slug'] + "-" + hashlib.sha1(f"{company}|{title}|{apply}".encode('utf-8')).hexdigest()[:10],
             company=company, title=title, loc=loc, cat=area, kind=kind, majors=majors[:MAX_MAJORS],
-            term=term_for(title, ""), pay=pay_for(d.get('Salary'), ""),
+            term=term_for(title, ""), pay="" if NO_PAY.match(sal) else pay_for(sal, ""),
             level=JOB_LEVEL if kind == "Job" else level_for(title, ""), mode=work_mode(d.get('Location'), ""),
-            types=[jtype] if jtype in ("Full-time", "Part-time") else [], posted=date_str(d.get('Posted')), apply=apply, indeed="",
-            snippet=(("Entry-level job" if kind == "Job" else "Internship") + f" · Experience: {exp}") if exp else "",
-            details=[], flag="", county=county_for(loc),
+            types=[shift.group(1).title() + "-time"] if shift else [],
+            posted=date_str(d.get('Posted')) or TODAY.strftime("%Y-%m-%d"), apply=apply, indeed="",
+            snippet=" · ".join(about) if len(about) > 1 else "",
+            details=[s(d.get('Caveats'))] if s(d.get('Caveats')) else [], flag="", county=county_for(loc),
         ))
     return items, skipped
 
@@ -646,11 +685,16 @@ def finalize(out, upgrade=True):
         g['posted'] = date_str(g.get('posted'))
         for area, spec in SPOT_AREAS.items():
             if re.search(spec['title'], g['title'], re.I): g['cat'] = area; break
+        else:
+            # a card left in an area that is no longer a spotlight goes back where its title puts it
+            if g['cat'] in RETIRED_AREAS: g['cat'] = classify(g['title'], "", g['company'])
         # Only the spotlight areas mix jobs with internships, so only their cards say which they are.
         if g['cat'] in SPOT_AREAS and not g['kind']: g['kind'] = "Internship"
         # a snippet that only repeats the card's own chip says nothing
-        if g['cat'] in SPOT_AREAS and g['snippet'] in ("Entry-level job", "Internship"): g['snippet'] = ""
-        if g['cat'] not in SPOT_AREAS: g.pop('kind', None)
+        if g['snippet'] in ("Entry-level job", "Internship"): g['snippet'] = ""
+        # An entry-level job keeps its chip wherever it is filed; an internship outside a
+        # spotlight area is the default and needs none.
+        if g['cat'] not in SPOT_AREAS and g['kind'] != "Job": g.pop('kind', None)
     out.sort(key=lambda x: (x['company'].lower(), x['title'].lower()))
     out.sort(key=lambda x: x['posted'], reverse=True)   # stable: newest first, then employer A-Z
     return out
@@ -874,11 +918,10 @@ def main(argv=None):
     ap.add_argument("xlsx", nargs="?", help="spreadsheet export of the listings")
     ap.add_argument("--data", help="skip the spreadsheet and re-render from this data.json (or a built index.html)")
     ap.add_argument("--sheet", nargs=2, action="append", default=[], metavar=("AREA", "PATH"),
-                    help="a hand-made sheet of jobs and internships for one spotlight area (one of: "
-                         + "; ".join(SPOT_AREAS) + "). Columns: Posted, Company, Role, Location, Direct Apply URL, "
-                         "and optionally Type or Job Type, Experience, Salary. Every row lands in that area. "
-                         "Repeatable; can stand in for the export, or be added to one.")
-    ap.add_argument("--cyber", metavar="PATH", help="shorthand for --sheet Cybersecurity PATH")
+                    help="a hand-made .xlsx or .csv of jobs and internships for one spotlight area (one of: "
+                         + "; ".join(SPOT_AREAS) + "). Columns: Company, Role, Location, Direct Apply URL (or the "
+                         "names in SHEET_ALIASES), and optionally Posted, Type, Experience, Salary, Summary, Caveats. "
+                         "Every row lands in that area. Repeatable; can stand in for the export, or be added to one.")
     ap.add_argument("--merge", metavar="PATH",
                     help="add this build to the listings already published, instead of replacing them. "
                          "PATH is a data.json or a built index.html; a role already on the board is "
@@ -896,7 +939,6 @@ def main(argv=None):
     ap.add_argument("--stats", action="store_true", help="print classification counters")
     ap.add_argument("--check", action="store_true", help="also write check.txt, one line per card, for eyeballing categories")
     a = ap.parse_args(argv)
-    if a.cyber: a.sheet.append(["Cybersecurity", a.cyber])
     for area, _ in a.sheet:
         if area not in SPOT_AREAS: ap.error(f"--sheet: unknown area {area!r}; one of: " + "; ".join(SPOT_AREAS))
     if not a.xlsx and not a.data and not a.sheet: ap.error("give a spreadsheet path, --sheet AREA PATH or --data data.json")

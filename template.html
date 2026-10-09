@@ -35,9 +35,8 @@
   --amber:#00E37B; --amber-2:#5BF2AC; --amber-dim:rgba(0,227,123,.13); --amber-glow:rgba(0,227,123,.35);
   --glow:0 0 24px rgba(0,227,123,.28);
   /* Spotlight areas: the ones that also carry jobs. Each has its own colour, set apart from
-     the green: cyan for Cybersecurity, amber for IT Support. --sp-rgb feeds the tints. */
-  --spot-cyber:#4FD3FF; --spot-cyber-2:#9BE7FF; --spot-cyber-rgb:79,211,255;
-  --spot-it:#FFB84D; --spot-it-2:#FFD48A; --spot-it-rgb:255,184,77;
+     the green: lavender for Cloud & DevOps. --sp-rgb feeds the tints. */
+  --spot-cloud:#C9A7FF; --spot-cloud-2:#E0CCFF; --spot-cloud-rgb:201,167,255;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
@@ -96,11 +95,10 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .areas button i{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--dim);flex:none}
 .areas button[aria-pressed="true"] i{color:var(--amber)}
 /* The spotlight areas sit in their own row above the list and glow, so a visitor finds
-   them first. .spot picks the mechanics; .cyber or .it picks the colour. */
+   them first. .spot picks the mechanics; .cloud picks the colour. */
 .spots{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
 .spots:empty{display:none}
-.spot,.spot.cyber{--sp:var(--spot-cyber);--sp-2:var(--spot-cyber-2);--sp-rgb:var(--spot-cyber-rgb)}
-.spot.it{--sp:var(--spot-it);--sp-2:var(--spot-it-2);--sp-rgb:var(--spot-it-rgb)}
+.spot,.spot.cloud{--sp:var(--spot-cloud);--sp-2:var(--spot-cloud-2);--sp-rgb:var(--spot-cloud-rgb)}
 .areas button.spot{color:var(--ink);background:rgba(var(--sp-rgb),.12);border-color:rgba(var(--sp-rgb),.45);box-shadow:0 0 18px rgba(var(--sp-rgb),.16)}
 .areas button.spot:hover{background:rgba(var(--sp-rgb),.2);border-color:var(--sp)}
 .areas button.spot[aria-pressed="true"]{background:rgba(var(--sp-rgb),.22);border-color:var(--sp);box-shadow:0 0 22px rgba(var(--sp-rgb),.38)}
@@ -203,8 +201,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .search button{padding:12px}
   .layout{grid-template-columns:1fr;gap:16px}
   .areas{position:static}
-  /* The two spotlight tabs get a row each, full width, so a first visit on a phone
-     cannot miss them; the rest of the areas scroll sideways underneath. */
+  /* The spotlight tab gets its own full-width row, so a first visit on a phone
+     cannot miss it; the rest of the areas scroll sideways underneath. */
   .spots{gap:8px;margin-bottom:10px}
   .spots button{min-height:50px;padding:10px 14px;font-size:15px;white-space:normal}
   .spots button .tag{font-size:11px;padding:3px 7px}
@@ -380,7 +378,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       </span>
       <div>
         <h1>Christian's <span>Opportunity Board</span></h1>
-        <div class="sub">South Florida internships · entry-level cyber and IT jobs · direct apply links · updated __DATE__</div>
+        <div class="sub">South Florida internships · entry-level cloud jobs · direct apply links · updated __DATE__</div>
       </div>
     </div>
     <div class="stats">
@@ -504,7 +502,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 
   // The spotlight areas are pinned under "All areas" and drawn to stand out: they are the
   // ones that carry entry-level jobs as well as internships. The value is the colour class.
-  const SPOTS = { 'Cybersecurity':'cyber', 'IT Support / Help Desk':'it' };
+  const SPOTS = { 'Cloud & DevOps':'cloud' };
   const spotClass = cat => SPOTS[cat] ? ` spot ${SPOTS[cat]}` : '';
   const AREA_ORDER = [...Object.keys(SPOTS),'Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
   const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)).sort());
