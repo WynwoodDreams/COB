@@ -637,6 +637,45 @@ def build_sheet_items(data, area, upgrade=True):
         ))
     return items, skipped
 
+# ---------- swapping Indeed links for the employer's own ----------
+INDEED_JK = re.compile(r"indeed\.com/(?:viewjob\?(?:[^#]*&)?jk=|job/[^?#]*-)([0-9a-f]{16})\b", re.I)
+
+def hostOf(u):
+    m = re.match(r"https?://(?:www\.)?([^/?#]+)", s(u))
+    return m.group(1) if m else ""
+
+def indeed_jk(u):
+    m = INDEED_JK.search(s(u))
+    return m.group(1).lower() if m else ""
+
+def relink_cards(cards, data, upgrade=True):
+    """Point cards that apply through Indeed at the employer's own apply page.
+
+    A hand-made sheet often only has the Indeed link. An Indeed export carries the same
+    posting's externalApplyLink, matched here by Indeed's job id. The Indeed page stays on
+    the card as its "Original listing", and the card takes the export's posting date,
+    which is the real one; a sheet row without a date was stamped with the build day.
+    """
+    ext = {}
+    for d in data:
+        jk = s(d.get('id')).lower() or indeed_jk(d.get('url'))
+        link = url_or_blank(d.get('externalApplyLink'), upgrade)
+        if jk and link and not indeed_jk(link) and 'indeed.com' not in link.lower():
+            ext[jk] = (link, url_or_blank(d.get('url'), upgrade), date_str(d.get('postingDateParsed')))
+    changed = []
+    for g in cards:
+        hit = False
+        for l in g.get('locs') or []:
+            jk = indeed_jk(l.get('apply'))
+            if jk in ext:
+                link, indeed, posted = ext[jk]
+                if not s(g.get('indeed')): g['indeed'] = indeed or l['apply']
+                l['apply'] = link
+                if posted: g['posted'] = posted
+                hit = True
+        if hit: changed.append(g)
+    return changed
+
 def group_items(items):
     """Merge rows that are the same company + title into one card with several locations."""
     groups = collections.OrderedDict()
@@ -886,14 +925,20 @@ def security_headers(html):
         "base-uri 'none'",
         "object-src 'none'",
     ])
-    return {"headers": [{"source": "/(.*)", "headers": [
-        {"key": "Content-Security-Policy", "value": csp},
-        {"key": "X-Content-Type-Options", "value": "nosniff"},
-        {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
-        {"key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"},
-        {"key": "X-Frame-Options", "value": "DENY"},
-        {"key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains"},
-    ]}]}
+    # The CSP is written for the page's inline script and style, so it goes on the page
+    # only; a PDF or image served beside it (the guide deck) opens in the browser's own
+    # viewer, which the policy would otherwise get in the way of. The rest apply everywhere.
+    return {"headers": [
+        {"source": "/", "headers": [{"key": "Content-Security-Policy", "value": csp}]},
+        {"source": "/index.html", "headers": [{"key": "Content-Security-Policy", "value": csp}]},
+        {"source": "/(.*)", "headers": [
+            {"key": "X-Content-Type-Options", "value": "nosniff"},
+            {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
+            {"key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"},
+            {"key": "X-Frame-Options", "value": "DENY"},
+            {"key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains"},
+        ]},
+    ]}
 
 def render_html(template_path, out, date_label):
     tpl = open(template_path, encoding='utf-8').read()
@@ -922,6 +967,10 @@ def main(argv=None):
                          + "; ".join(SPOT_AREAS) + "). Columns: Company, Role, Location, Direct Apply URL (or the "
                          "names in SHEET_ALIASES), and optionally Posted, Type, Experience, Salary, Summary, Caveats. "
                          "Every row lands in that area. Repeatable; can stand in for the export, or be added to one.")
+    ap.add_argument("--relink", metavar="XLSX",
+                    help="an Indeed export: any card that applies through Indeed and whose posting is in it "
+                         "is pointed at the employer's own apply link instead, keeping the Indeed page as its "
+                         "original listing. Adds no cards.")
     ap.add_argument("--merge", metavar="PATH",
                     help="add this build to the listings already published, instead of replacing them. "
                          "PATH is a data.json or a built index.html; a role already on the board is "
@@ -989,6 +1038,11 @@ def main(argv=None):
               + ", ".join(f"{d} x{n}" for d, n in UPGRADED_HTTP.most_common(6))
               + (" ..." if len(UPGRADED_HTTP) > 6 else "")
               + " (spot-check any unfamiliar domain, or rerun with --keep-http)")
+    if a.relink:
+        changed = relink_cards(out, read_rows(a.relink), upgrade=not a.keep_http)
+        print(f"relinked {len(changed)} card(s) from Indeed to the employer's apply page using {a.relink}"
+              + (": " + "; ".join(f"{g['company']} / {g['title'][:40]} -> {hostOf(g['locs'][0]['apply'])}" for g in changed) if changed else ""))
+        out = finalize(out, upgrade=not a.keep_http)
     out, expired = drop_expired(out)
     if expired:
         print(f"dropped {len(expired)} card(s) whose only term has already ended: "
