@@ -132,6 +132,15 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .resultbar h2{font-family:var(--mono);font-weight:600;font-size:16px;margin:0}
 .resultbar h2 em{font-style:normal;color:var(--amber)}
 .resultbar .note{font-family:var(--mono);font-size:12px;color:var(--mute)}
+/* A guide pinned under a spotlight area's header: a short read for people new to that
+   work, kept until the area is retired. Filled from GUIDES in the script. */
+.guide{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 14px;padding:12px 16px;border:1px solid rgba(var(--sp-rgb),.4);border-radius:var(--radius);background:rgba(var(--sp-rgb),.08)}
+.guide[hidden]{display:none}
+.guide .lab{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:#04121A;background:var(--sp);border-radius:4px;padding:3px 7px}
+.guide p{margin:0;flex:1 1 240px;font-size:14px;color:var(--ink)}
+.guide p small{display:block;color:var(--mute);font-size:12px;margin-top:2px}
+.guide a{font-family:var(--mono);font-size:13px;font-weight:600;color:#04121A;background:var(--sp);border-radius:8px;padding:9px 14px;text-decoration:none;white-space:nowrap}
+.guide a:hover{background:var(--sp-2)}
 
 /* rows */
 .rows{display:flex;flex-direction:column;gap:8px;isolation:isolate}
@@ -210,6 +219,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .spots button .tag{font-size:11px;padding:3px 7px}
   .spots button i{font-size:13px}
   .resultbar h2 .tag{margin-left:0;margin-top:6px;display:block;width:max-content;font-size:12px}
+  .guide{padding:12px 14px}
+  .guide a{flex:1 1 100%;text-align:center;min-height:44px;line-height:26px}
   .area-list{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:6px;scrollbar-width:thin}
   .area-list li{flex:none}
   .areas button{white-space:nowrap;border-color:var(--rule);background:var(--panel);font-size:13px}
@@ -423,6 +434,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         <h2 id="rtitle">All areas</h2>
         <div class="note" id="rcount" role="status" aria-live="polite"></div>
       </div>
+      <div class="guide" id="guide" hidden></div>
       <div class="rows" id="cards"></div>
     </main>
   </div>
@@ -506,6 +518,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   // ones that carry entry-level jobs as well as internships. The value is the colour class.
   const SPOTS = { 'Cloud & DevOps':'cloud' };
   const spotClass = cat => SPOTS[cat] ? ` spot ${SPOTS[cat]}` : '';
+  // A short read pinned under a spotlight area's header while that area is up. The PDF
+  // sits next to this page in the repo; delete the entry and the file to take it down.
+  const GUIDES = { 'Cloud & DevOps': { title:'AWS Cloud Careers: the Florida job landscape', sub:'Which entry-level titles to search for, the skills employers look for, and three portfolio projects worth showing. 15 slides.', href:'aws-cloud-careers.pdf', cta:'Open the guide (PDF)' } };
   const AREA_ORDER = [...Object.keys(SPOTS),'Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
   const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)).sort());
   const ul = $('#areas'), spots = $('#spots');
@@ -612,6 +627,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const jobs = list.filter(d => d.kind==='Job').length, interns = list.length - jobs;
     const spotTag = jobs && interns ? 'JOBS + INTERNSHIPS' : (jobs ? 'ENTRY-LEVEL JOBS' : 'INTERNSHIPS');
     $('#rtitle').innerHTML = state.area ? esc(state.area) + (SPOTS[state.area] ? `<span class="tag${spotClass(state.area)}">${spotTag}</span>` : '') + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
+    const guide = state.area && GUIDES[state.area], gbox = $('#guide');
+    gbox.hidden = !guide; gbox.className = 'guide' + (guide ? spotClass(state.area) : '');
+    gbox.innerHTML = guide ? `<span class="lab">GUIDE</span><p>${esc(guide.title)}<small>${esc(guide.sub)}</small></p><a href="${esc(guide.href)}" target="_blank" rel="noopener">${esc(guide.cta)}</a>` : '';
     const openings = list.reduce((n,d)=>n+d.count,0);
     const shown = Math.min(state.shown, list.length);
     const noun = jobs ? 'listing' : 'internship';

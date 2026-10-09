@@ -93,6 +93,13 @@ engineer, SRE, Kubernetes, AWS, Azure, GCP) moves into the area too, including c
 carried over from older exports. Sheet rows age out like any other posting, so rebuild
 with the sheet again to keep them.
 
+A guide can be pinned under a spotlight area's results header: a `GUIDES` entry in the
+`template.html` script (title, a line of blurb, the file, the button text) and the file
+itself committed next to `index.html`. Cloud & DevOps carries `aws-cloud-careers.pdf`,
+a 15-slide deck on entry-level AWS roles in Florida, for as long as the tab is up. To
+take it down, delete the entry and the file and rebuild. The Content-Security-Policy in
+`vercel.json` is set on the page only, so a PDF beside it opens in the browser's viewer.
+
 Cybersecurity and IT Support / Help Desk used to be spotlight tabs. They are retired
 (`RETIRED_AREAS`): a card still filed under either is sent back through the title
 classifier on the next build and lands where it did before the tabs existed, cyber and

@@ -886,14 +886,20 @@ def security_headers(html):
         "base-uri 'none'",
         "object-src 'none'",
     ])
-    return {"headers": [{"source": "/(.*)", "headers": [
-        {"key": "Content-Security-Policy", "value": csp},
-        {"key": "X-Content-Type-Options", "value": "nosniff"},
-        {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
-        {"key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"},
-        {"key": "X-Frame-Options", "value": "DENY"},
-        {"key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains"},
-    ]}]}
+    # The CSP is written for the page's inline script and style, so it goes on the page
+    # only; a PDF or image served beside it (the guide deck) opens in the browser's own
+    # viewer, which the policy would otherwise get in the way of. The rest apply everywhere.
+    return {"headers": [
+        {"source": "/", "headers": [{"key": "Content-Security-Policy", "value": csp}]},
+        {"source": "/index.html", "headers": [{"key": "Content-Security-Policy", "value": csp}]},
+        {"source": "/(.*)", "headers": [
+            {"key": "X-Content-Type-Options", "value": "nosniff"},
+            {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
+            {"key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"},
+            {"key": "X-Frame-Options", "value": "DENY"},
+            {"key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains"},
+        ]},
+    ]}
 
 def render_html(template_path, out, date_label):
     tpl = open(template_path, encoding='utf-8').read()
