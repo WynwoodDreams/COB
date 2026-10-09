@@ -93,6 +93,17 @@ engineer, SRE, Kubernetes, AWS, Azure, GCP) moves into the area too, including c
 carried over from older exports. Sheet rows age out like any other posting, so rebuild
 with the sheet again to keep them.
 
+A sheet that only has Indeed links can be pointed at the employers' own apply pages
+with an Indeed export that contains the same postings:
+
+    python3 build_data.py --data index.html --relink export.xlsx
+
+`--relink` matches each card's Indeed link to the export by Indeed job id and swaps in
+that row's `externalApplyLink`, with tracking tags stripped. The Indeed page stays on the
+card as "Original listing", and the card takes the export's posting date. It adds no
+cards and leaves any card whose posting is not in the export alone. It also works next
+to `--sheet ... --merge`.
+
 A guide can be pinned under a spotlight area's results header: a `GUIDES` entry in the
 `template.html` script (title, a line of blurb, the file, the button text) and the file
 itself committed next to `index.html`. Cloud & DevOps carries `aws-cloud-careers.pdf`,
