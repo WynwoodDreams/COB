@@ -53,11 +53,11 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right))}
 
 /* header */
-.head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.head{display:flex;justify-content:space-between;align-items:center;gap:14px 28px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--rule)}
 .head h1{font-family:var(--mono);font-weight:600;font-size:clamp(22px,3.2vw,34px);letter-spacing:-.01em;margin:0;line-height:1.1}
 .head h1 span{color:var(--amber)}
-.head .sub{font-family:var(--mono);font-size:12px;color:var(--mute);margin-top:6px}
-.title{display:flex;align-items:center;gap:14px;min-width:0}
+.head .sub{font-family:var(--mono);font-size:12px;color:var(--mute);margin-top:5px}
+.title{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 420px}
 /* Sibling of the BuildersBench mark: glowing nodes on thin links, turning slowly. */
 .mark{flex:none;width:40px;height:40px;color:var(--amber);filter:drop-shadow(0 0 7px var(--amber-glow))}
 .mark svg{width:100%;height:100%;overflow:visible;transform-origin:50% 50%;animation:markspin 12s linear infinite}
@@ -73,17 +73,21 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .head h1::after{content:'';display:inline-block;width:.5ch;height:.86em;margin-left:.12em;vertical-align:-.08em;
   background:var(--amber);box-shadow:0 0 14px var(--amber-glow);animation:caret 1.1s steps(2,end) infinite}
 @keyframes caret{0%{opacity:1}50%{opacity:0}100%{opacity:1}}
-.stats{display:flex;gap:22px;font-family:var(--mono);font-size:12px;color:var(--mute)}
-.stats b{display:block;color:var(--ink);font-size:22px;font-weight:600;line-height:1.1}
+/* The counts sit as one quiet line under the tagline, not as a second headline. */
+.stats{display:flex;flex-wrap:wrap;gap:4px 14px;font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:3px}
+.stats b{color:var(--ink);font-weight:600;margin-right:4px}
 
 /* search */
-.search{display:flex;gap:8px;margin:20px 0 0}
-.search input{flex:1;min-width:0;background:var(--panel);border:1px solid var(--rule-2);color:var(--ink);border-radius:8px;padding:13px 16px;font-size:16px;font-family:var(--sans)}
+.search{position:relative;flex:0 1 340px;min-width:220px;margin:0}
+.search input{width:100%;min-width:0;background:var(--panel);border:1px solid var(--rule-2);color:var(--ink);border-radius:10px;padding:9px 36px 9px 36px;font-size:14px;font-family:var(--sans);line-height:1.3}
 .search input::placeholder{color:var(--dim)}
-.search input:focus{border-color:var(--amber);outline:none}
-.search button{background:var(--amber);color:#1A1200;border:0;border-radius:8px;padding:0 20px;font-family:var(--mono);font-weight:600;font-size:13px}
-.search button.clear{background:var(--panel-2);color:var(--ink);display:none}
-.search button.clear.show{display:block}
+.search input:focus{border-color:var(--amber);outline:none;box-shadow:0 0 0 3px var(--amber-dim)}
+.search input::-webkit-search-cancel-button{display:none}
+.search .icon{position:absolute;left:12px;top:50%;width:16px;height:16px;margin-top:-8px;color:var(--dim);pointer-events:none}
+.search input:focus~.icon{color:var(--amber)}
+.search button.clear{position:absolute;right:6px;top:50%;width:26px;height:26px;margin-top:-13px;display:none;align-items:center;justify-content:center;background:var(--panel-2);border:1px solid var(--rule-2);color:var(--mute);border-radius:50%;padding:0;font-size:16px;line-height:1}
+.search button.clear:hover{color:var(--ink);border-color:var(--amber)}
+.search button.clear.show{display:flex}
 
 /* layout */
 .layout{display:grid;grid-template-columns:260px 1fr;gap:26px;margin-top:22px;align-items:start}
@@ -238,8 +242,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .title{gap:11px;align-items:flex-start}
   .mark{width:32px;height:32px;margin-top:1px}
   .stats{gap:16px}
-  .search{flex-direction:column}
-  .search button{padding:12px}
+  .search{flex:1 1 100%;min-width:0}
+  .stats{gap:2px 10px;font-size:11.5px}
   .layout{grid-template-columns:1fr;gap:16px}
   .areas{position:static}
   /* The spotlight tab gets its own full-width row, so a first visit on a phone
@@ -256,7 +260,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .area-list{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:6px;scrollbar-width:thin}
   .area-list li{flex:none}
   .areas button{white-space:nowrap;border-color:var(--rule);background:var(--panel);font-size:13px}
-  .search #go{display:none}
   .fbar{display:block;margin-top:10px}
   .filters{margin-top:8px}
   .filters.collapsed{display:none}
@@ -274,8 +277,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .filters select,.filters .toggle,.filters .reset,.filters .copy{min-height:46px}
   .filters select{padding:11px 12px}
   #filter-toggle{min-height:50px}
-  .search input{min-height:50px}
-  .search button.clear{min-height:50px;padding:0 18px}
+  .search input{min-height:46px;font-size:16px}
+  .search button.clear{width:32px;height:32px;margin-top:-16px}
   .majors button{min-height:44px;padding:9px 12px}
   .row .side .apply{min-height:50px;display:flex;align-items:center;justify-content:center;padding:12px 16px}
   .more{min-height:50px;padding:12px 16px}
@@ -322,11 +325,10 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 @media (max-height:520px) and (orientation:landscape){
   .wrap{padding-top:12px}
   .head{padding-bottom:12px}
-  .search{margin-top:12px}
   .layout{margin-top:12px}
 }
 
-.row,.filters,.empty,.search input{border-radius:12px}
+.row,.filters,.empty{border-radius:12px}
 .row{border-color:#18211D;position:relative;transition:transform .22s cubic-bezier(.2,.7,.3,1),border-color .22s ease,background-color .22s ease,box-shadow .22s ease}
 /* The light: a short bright arc that orbits the card's edge while the pointer is on it,
    with a blurred twin under it for the glow. Both are a conic gradient on a pseudo-element
@@ -363,7 +365,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .head h1{font-weight:800;letter-spacing:-.03em;font-family:var(--sans)}
 .head h1 span{color:var(--amber)}
 .apply{color:#04120B;font-weight:700}
-.search button{color:#04120B}
 .empty button:hover,.loadmore:hover{color:#04120B}
 .areas button[aria-pressed="true"]{border-color:rgba(0,227,123,.4)}
 .areas button.spot[aria-pressed="true"]{border-color:var(--sp)}
@@ -426,22 +427,21 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       </span>
       <div>
         <h1>Christian's <span>Opportunity Board</span></h1>
-        <div class="sub">South Florida internships · entry-level cloud jobs · direct apply links · updated Oct 9, 2026</div>
+        <div class="sub">South Florida internships · direct apply links · updated Oct 9, 2026</div>
+        <div class="stats">
+          <span><b id="st-open">0</b>listings</span>
+          <span><b id="st-emp">0</b>employers</span>
+          <span><b id="st-areas">0</b>areas</span>
+          <span><b id="st-paid">0</b>list pay</span>
+        </div>
       </div>
     </div>
-    <div class="stats">
-      <div><b id="st-open">0</b>listings</div>
-      <div><b id="st-emp">0</b>employers</div>
-      <div><b id="st-areas">0</b>areas</div>
-      <div><b id="st-paid">0</b>list pay</div>
-    </div>
+    <form class="search" role="search">
+      <input id="q" type="search" placeholder="Search company, title, or keyword" autocomplete="off" aria-label="Search listings">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <button type="button" class="clear" id="clearq" aria-label="Clear search">&times;</button>
+    </form>
   </header>
-
-  <form class="search" role="search">
-    <input id="q" type="search" placeholder="Search by company, title, major, or keyword" autocomplete="off" aria-label="Search internships">
-    <button type="button" class="clear" id="clearq">Clear</button>
-    <button type="button" id="go">Search</button>
-  </form>
 
   <div class="layout">
     <aside class="areas" aria-label="Areas">
@@ -785,7 +785,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const setQ = v => { clearTimeout(t); state.q=v.trim(); refilter(); };
   $('#q').addEventListener('input', e => { clearTimeout(t); t=setTimeout(()=>setQ(e.target.value),180); });
   $('.search').addEventListener('submit', e => { e.preventDefault(); setQ($('#q').value); $('#q').blur(); });
-  $('#go').addEventListener('click', ()=> setQ($('#q').value));
   $('#clearq').addEventListener('click', ()=>{ $('#q').value=''; setQ(''); $('#q').focus(); });
   [['f-county','county'],['f-major','major'],['f-term','term'],['f-level','level'],['f-sort','sort']].forEach(([id,k]) => $('#'+id).addEventListener('change', e => { state[k]=e.target.value; refilter(); }));
   $('#f-paid').addEventListener('change', e => { state.paid=e.target.checked; refilter(); });
@@ -806,11 +805,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     }catch(err){ b.textContent='Press Ctrl+C'; }
   });
 
-  // The full placeholder is clipped on a narrow phone, so trade the hint for legibility.
-  const setPlaceholder = () => { $('#q').placeholder = window.innerWidth <= 480
-    ? 'Search title, company or major' : 'Search by company, title, major, or keyword'; };
-  setPlaceholder();
-  window.addEventListener('resize', setPlaceholder);
 
   window.addEventListener('hashchange', ()=>{ readHash(); syncInputs(); render(); });
   if (safeUrl(NEWSLETTER_URL)) $('#foot-join').innerHTML = ` New roles by email: <a href="${esc(NEWSLETTER_URL)}" target="_blank" rel="noopener">join the list</a>.`;
