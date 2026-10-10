@@ -579,13 +579,14 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const GUIDES = { 'Cloud & DevOps': { title:'AWS Cloud Careers: the Florida job landscape', sub:'Which entry-level titles to search for, the skills employers look for, and three portfolio projects worth showing. 15 slides.', href:'aws-cloud-careers.pdf', cta:'Open the guide (PDF)' } };
   // The tech areas point at BuildersBench, the sister site of portfolio projects: the box under
   // the area's header opens the matching career path there, and each card's "Projects for
-  // this role" opens its Career Match with the job title filled in.
+  // this role" opens its Career Match filled in with the card's title, summary and asks.
+  // Career Match reads keywords, and a bare title often carries none, so the rest goes too.
   const BENCH_URL = 'https://www.buildersbench.dev/';
   const BENCH = {
     'Cloud & DevOps': { href:BENCH_URL+'#path=cloud', title:'Build a cloud project employers want to see', cta:'Cloud projects ↗' },
     'Software, IT, Data & AI': { href:BENCH_URL, title:'Build a project that gets you past the résumé screen', cta:'Browse projects ↗' },
   };
-  const planLink = d => BENCH_URL + 'match.html?q=' + encodeURIComponent(d.title);
+  const planLink = d => BENCH_URL + 'match.html?q=' + encodeURIComponent([d.title, d.snippet, ...d.details].filter(Boolean).join('\n').slice(0, 1500));
   const AREA_ORDER = [...Object.keys(SPOTS),'Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
   const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)).sort());
   const ul = $('#areas'), spots = $('#spots');

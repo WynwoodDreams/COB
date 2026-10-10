@@ -253,8 +253,9 @@ to the site name and a Visit link under 900px. Its markup is the `.bbar` block i
 The tech areas link deeper into BuildersBench. Under the results header, Cloud & DevOps
 opens its cloud projects (`#path=cloud`) and Software, IT, Data & AI opens the full
 catalog. Each card in those areas also gets a "Projects for this role" link, which opens
-BuildersBench's Career Match with the job title filled in (`match.html?q=<title>`). The
-mapping is `BENCH` in `template.html`; add an area to it to give that area the same links.
+BuildersBench's Career Match filled in with the job's title, summary and requirements
+(`match.html?q=...`). Career Match matches on keywords, and a bare title often has none.
+The mapping is `BENCH` in `template.html`; add an area to it to give that area the same links.
 
 ## The mark, and the two things that move
 
