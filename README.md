@@ -155,6 +155,23 @@ adding or removing a placement is an edit to that file and a rebuild:
 - `featured.json` is the whole truth. A build clears every mark and sets them again from
   the file, so deleting an entry ends that placement on the next build.
 
+## Pick of the week
+
+Every Monday the page draws three listings at random (`PICK_MAX` in the template) and marks
+them PICK OF THE WEEK, with a green edge and a chip whose tooltip says the draw is random and
+unpaid. Nothing needs editing or rebuilding: the page seeds the draw with the current week,
+so every visitor sees the same three all week and a new set the next.
+
+- Only listings posted in the last 45 days (`PICK_FRESH`) with an apply link and no warning
+  flag are in the draw. Featured cards are left out, since they are already pinned.
+- Picks lead whatever view they match, right after any featured cards, under "Newest first"
+  only, the same rule featured cards follow.
+- Each card's place in the draw comes from a hash of the week and its id, so a rebuild that
+  adds or drops other listings mid-week leaves the picks alone unless a pick itself is gone.
+- They are kept apart from featured cards on purpose. The footer and the FEATURED tooltip tell
+  visitors those are paid placements; marking free, randomly chosen roles FEATURED would make
+  that claim false. The footer says in words that picks are random and not paid.
+
 ## Email list
 
 The list lives on a newsletter service (Kit, Beehiiv, Substack or similar), which handles
