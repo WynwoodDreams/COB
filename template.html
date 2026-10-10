@@ -147,24 +147,16 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .resultbar h2{font-family:var(--mono);font-weight:600;font-size:16px;margin:0}
 .resultbar h2 em{font-style:normal;color:var(--amber)}
 .resultbar .note{font-family:var(--mono);font-size:12px;color:var(--mute)}
-/* A guide pinned under a spotlight area's header: a short read for people new to that
-   work, kept until the area is retired. Filled from GUIDES in the script. */
-.guide{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 14px;padding:12px 16px;border:1px solid rgba(var(--sp-rgb),.4);border-radius:var(--radius);background:rgba(var(--sp-rgb),.08)}
-.guide[hidden]{display:none}
-.guide .lab{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:#04121A;background:var(--sp);border-radius:4px;padding:3px 7px}
-.guide p{margin:0;flex:1 1 240px;font-size:14px;color:var(--ink)}
-.guide p small{display:block;color:var(--mute);font-size:12px;margin-top:2px}
-.guide a{font-family:var(--mono);font-size:13px;font-weight:600;color:#04121A;background:var(--sp);border-radius:8px;padding:9px 14px;text-decoration:none;white-space:nowrap}
-.guide a:hover{background:var(--sp-2)}
-/* A pointer to BuildersBench under a tech area's header: portfolio projects for the roles
-   listed below it. Filled from BENCH in the script. */
-.bench{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 14px;padding:12px 16px;border:1px solid rgba(0,227,123,.4);border-radius:10px;background:var(--amber-dim)}
-.bench[hidden]{display:none}
-.bench .lab{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:#04120B;background:var(--amber);border-radius:4px;padding:3px 7px}
-.bench p{margin:0;flex:1 1 240px;font-size:14px;color:var(--ink)}
-.bench p small{display:block;color:var(--mute);font-size:12px;margin-top:2px}
-.bench a{font-family:var(--mono);font-size:13px;font-weight:600;color:#04120B;background:var(--amber);border-radius:8px;padding:9px 14px;text-decoration:none;white-space:nowrap}
-.bench a:hover{background:var(--amber-2)}
+/* Help for a tech area, as one slim row of links under its header: the area's guide and
+   its portfolio projects on BuildersBench. The longer pitch sits in each link's title. */
+.prep{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.prep[hidden]{display:none}
+.prep .lab{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-right:4px}
+.prep a{--c:var(--amber);--c-rgb:0,227,123;display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:500;color:var(--ink);text-decoration:none;border:1px solid rgba(var(--c-rgb),.35);background:rgba(var(--c-rgb),.06);border-radius:999px;padding:6px 14px 6px 11px}
+.prep a svg{width:15px;height:15px;flex:none;color:var(--c)}
+.prep a small{font-family:var(--mono);font-size:11px;color:var(--mute)}
+.prep a:hover{border-color:var(--c);background:rgba(var(--c-rgb),.14)}
+.prep.spot a.g{--c:var(--sp);--c-rgb:var(--sp-rgb)}
 
 /* rows */
 .rows{display:flex;flex-direction:column;gap:8px;isolation:isolate}
@@ -253,10 +245,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .spots button .tag{font-size:11px;padding:3px 7px}
   .spots button i{font-size:13px}
   .resultbar h2 .tag{margin-left:0;margin-top:6px;display:block;width:max-content;font-size:12px}
-  .guide{padding:12px 14px}
-  .guide a{flex:1 1 100%;text-align:center;min-height:44px;line-height:26px}
-  .bench{padding:12px 14px}
-  .bench a{flex:1 1 100%;text-align:center;min-height:44px;line-height:26px}
+  .prep .lab{flex:1 1 100%}
+  .prep a{flex:1 1 100%;min-height:44px;border-radius:10px}
+  .prep a small{margin-left:auto}
   .area-list{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:6px;scrollbar-width:thin}
   .area-list li{flex:none}
   .areas button{white-space:nowrap;border-color:var(--rule);background:var(--panel);font-size:13px}
@@ -469,8 +460,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         <h2 id="rtitle">All areas</h2>
         <div class="note" id="rcount" role="status" aria-live="polite"></div>
       </div>
-      <div class="guide" id="guide" hidden></div>
-      <div class="bench" id="bench" hidden></div>
+      <div class="prep" id="prep" hidden></div>
       <div class="rows" id="cards"></div>
     </main>
   </div>
@@ -576,15 +566,15 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const spotClass = cat => SPOTS[cat] ? ` spot ${SPOTS[cat]}` : '';
   // A short read pinned under a spotlight area's header while that area is up. The PDF
   // sits next to this page in the repo; delete the entry and the file to take it down.
-  const GUIDES = { 'Cloud & DevOps': { title:'AWS Cloud Careers: the Florida job landscape', sub:'Which entry-level titles to search for, the skills employers look for, and three portfolio projects worth showing. 15 slides.', href:'aws-cloud-careers.pdf', cta:'Open the guide (PDF)' } };
-  // The tech areas point at BuildersBench, the sister site of portfolio projects: the box under
+  const GUIDES = { 'Cloud & DevOps': { label:'Cloud careers guide', meta:'PDF', href:'aws-cloud-careers.pdf', tip:'AWS Cloud Careers: the Florida job landscape. Which entry-level titles to search for, the skills employers look for, and three portfolio projects worth showing. 15 slides.' } };
+  // The tech areas point at BuildersBench, the sister site of portfolio projects: the link under
   // the area's header opens the matching career path there, and each card's "Projects for
   // this role" opens its Career Match filled in with the card's title, summary and asks.
   // Career Match reads keywords, and a bare title often carries none, so the rest goes too.
   const BENCH_URL = 'https://www.buildersbench.dev/';
   const BENCH = {
-    'Cloud & DevOps': { href:BENCH_URL+'#path=cloud', title:'Build a cloud project employers want to see', cta:'Cloud projects ↗' },
-    'Software, IT, Data & AI': { href:BENCH_URL, title:'Build a project that gets you past the résumé screen', cta:'Browse projects ↗' },
+    'Cloud & DevOps': { href:BENCH_URL+'#path=cloud', label:'Cloud portfolio projects', tip:'Build a cloud project employers want to see: free step-by-step projects with resume bullets and interview pitches.' },
+    'Software, IT, Data & AI': { href:BENCH_URL, label:'Portfolio projects', tip:'Build a project that gets you past the résumé screen: free step-by-step projects with resume bullets and interview pitches.' },
   };
   const planLink = d => BENCH_URL + 'match.html?q=' + encodeURIComponent([d.title, d.snippet, ...d.details].filter(Boolean).join('\n').slice(0, 1500));
   const AREA_ORDER = [...Object.keys(SPOTS),'Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
@@ -642,8 +632,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const chips = [];
     if (d.feat) chips.push(`<span class="chip feat" title="The employer paid to pin this listing. It is a real opening like every other card.">FEATURED</span>`);
     else if (d.pick) chips.push(`<span class="chip pick" title="Drawn at random from this week's listings. Not a paid placement; a new set comes up every Monday.">PICK OF THE WEEK</span>`);
-    // Spotlight cards say what they are, since that area mixes jobs with internships.
-    if (SPOTS[d.cat]) chips.push(`<span class="chip${spotClass(d.cat)}">${esc(d.cat)}</span>`);
+    // Spotlight cards name their area in mixed views; inside the area the header already does.
+    if (SPOTS[d.cat] && state.area !== d.cat) chips.push(`<span class="chip${spotClass(d.cat)}">${esc(d.cat)}</span>`);
     if (d.kind) chips.push(`<span class="chip${d.kind==='Job'?' job':''}">${d.kind==='Job'?'Entry-level job':'Internship'}</span>`);
     d.term.forEach(t => chips.push(`<span class="chip term">${esc(t)}</span>`));
     if (d.pay) chips.push(`<span class="chip pay">${esc(d.pay)}</span>`);
@@ -709,16 +699,15 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const jobs = list.filter(d => d.kind==='Job').length, interns = list.length - jobs;
     const spotTag = jobs && interns ? 'JOBS + INTERNSHIPS' : (jobs ? 'ENTRY-LEVEL JOBS' : 'INTERNSHIPS');
     $('#rtitle').innerHTML = state.area ? esc(state.area) + (SPOTS[state.area] ? `<span class="tag${spotClass(state.area)}">${spotTag}</span>` : '') + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
-    const guide = state.area && GUIDES[state.area], gbox = $('#guide');
-    gbox.hidden = !guide; gbox.className = 'guide' + (guide ? spotClass(state.area) : '');
-    const bench = state.area && BENCH[state.area], bbox = $('#bench');
-    bbox.hidden = !bench;
-    bbox.innerHTML = bench ? `<span class="lab">BUILD</span><p>${esc(bench.title)}<small>Free step-by-step portfolio projects with resume bullets and interview pitches, on BuildersBench.</small></p><a href="${esc(bench.href)}" target="_blank" rel="noopener">${esc(bench.cta)}</a>` : '';
-    gbox.innerHTML = guide ? `<span class="lab">GUIDE</span><p>${esc(guide.title)}<small>${esc(guide.sub)}</small></p><a href="${esc(guide.href)}" target="_blank" rel="noopener">${esc(guide.cta)}</a>` : '';
+    const guide = state.area && GUIDES[state.area], bench = state.area && BENCH[state.area], prep = $('#prep');
+    prep.hidden = !guide && !bench; prep.className = 'prep' + (state.area ? spotClass(state.area) : '');
+    prep.innerHTML = prep.hidden ? '' : '<span class="lab">Get ready</span>'
+      + (guide ? `<a class="g" href="${esc(guide.href)}" target="_blank" rel="noopener" title="${esc(guide.tip)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>${esc(guide.label)}<small>${esc(guide.meta)}</small></a>` : '')
+      + (bench ? `<a class="b" href="${esc(bench.href)}" target="_blank" rel="noopener" title="${esc(bench.tip)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.7 6.3 3 3M4 20l4.5-1 10.2-10.2a2.1 2.1 0 0 0-3-3L5.5 16 4 20z"/></svg>${esc(bench.label)}<small>BuildersBench ↗</small></a>` : '');
     const openings = list.reduce((n,d)=>n+d.count,0);
     const shown = Math.min(state.shown, list.length);
     const noun = jobs ? 'listing' : 'internship';
-    $('#rcount').textContent = list.length ? `${shown<list.length?`${shown} of `:''}${list.length} ${noun}${list.length===1?'':'s'}${jobs && interns?` · ${jobs} job${jobs===1?'':'s'}, ${interns} internship${interns===1?'':'s'}`:(jobs?' · entry-level jobs':'')}${openings>list.length?` · ${openings} openings across locations`:''}` : 'No listings match';
+    $('#rcount').textContent = list.length ? `${shown<list.length?`${shown} of `:''}${list.length} ${noun}${list.length===1?'':'s'}${jobs && interns?` · ${jobs} job${jobs===1?'':'s'}, ${interns} internship${interns===1?'':'s'}`:''}${openings>list.length?` · ${openings} openings across locations`:''}` : 'No listings match';
     if (!list.length){
       wrap.innerHTML = `<div class="empty"><h3>Nothing matches.</h3><p>Try a broader search or clear a filter.</p><button type="button" id="empty-reset">Reset filters</button></div>`;
       $('#empty-reset').addEventListener('click', reset);
