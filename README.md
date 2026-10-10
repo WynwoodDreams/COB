@@ -104,9 +104,10 @@ card as "Original listing", and the card takes the export's posting date. It add
 cards and leaves any card whose posting is not in the export alone. It also works next
 to `--sheet ... --merge`.
 
-A guide can be pinned under a spotlight area's results header: a `GUIDES` entry in the
-`template.html` script (title, a line of blurb, the file, the button text) and the file
-itself committed next to `index.html`. Cloud & DevOps carries `aws-cloud-careers.pdf`,
+A guide can be pinned under a spotlight area's results header, as a pill in the slim
+"Get ready" row beside the area's BuildersBench projects link: a `GUIDES` entry in the
+`template.html` script (the pill label, a short tag such as PDF, the file, and a tooltip
+with the longer blurb) and the file itself committed next to `index.html`. Cloud & DevOps carries `aws-cloud-careers.pdf`,
 a 15-slide deck on entry-level AWS roles in Florida, for as long as the tab is up. To
 take it down, delete the entry and the file and rebuild. The Content-Security-Policy in
 `vercel.json` is set on the page only, so a PDF beside it opens in the browser's viewer.
