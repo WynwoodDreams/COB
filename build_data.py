@@ -871,6 +871,69 @@ def dedupe_cards(cards):
             merge_into(k, g); folded.append(g)
     return kept, folded
 
+# ---------- featured (paid) placements ----------
+# featured.json, next to this script, is the list of roles an employer has paid to pin.
+# Each entry names the card by company and title (matched the way merge_cards matches) and
+# the last day it stays featured. An entry that also gives an apply link puts the role on
+# the board even when no export carries it, so a sponsor's role need not wait for a scrape.
+# The file is the whole truth: every build clears the mark and sets it again from here.
+FEATURE_FIELDS = {"company", "title", "until", "apply", "location", "pay", "summary", "term"}
+
+def load_featured(path):
+    if not os.path.exists(path): return []
+    try:
+        entries = json.load(open(path, encoding='utf-8'))
+    except json.JSONDecodeError as e:
+        sys.exit(f"{path}: not valid JSON ({e})")
+    if not isinstance(entries, list): sys.exit(f"{path}: expected a JSON list of entries")
+    for i, e in enumerate(entries):
+        where = f"{path} entry {i+1}"
+        if not isinstance(e, dict): sys.exit(f"{where}: expected an object")
+        extra = set(e) - FEATURE_FIELDS
+        if extra: sys.exit(f"{where}: unknown field(s) {', '.join(sorted(extra))}; allowed: {', '.join(sorted(FEATURE_FIELDS))}")
+        if not s(e.get('company')) or not s(e.get('title')): sys.exit(f"{where}: needs a company and a title")
+        if not date_str(e.get('until')): sys.exit(f"{where}: 'until' must be a date like 2026-11-30")
+    return entries
+
+def apply_featured(cards, entries, upgrade=True):
+    """Mark the cards named in featured.json, adding any that carry their own apply link.
+
+    Returns (featured, added, missing, ended) for the build log.
+    """
+    for g in cards: g.pop('featured', None)
+    today = TODAY.strftime("%Y-%m-%d")
+    by_key = {}
+    for g in cards:
+        by_key.setdefault(card_key(g), g); by_key.setdefault(card_alias(g), g)
+    featured, added, missing, ended = [], [], [], []
+    for e in entries:
+        until = date_str(e['until'])
+        probe = dict(company=company_name(s(e['company'])), title=display_title(s(e['title'])), term=list(e.get('term') or []))
+        g = by_key.get(card_key(probe)) or by_key.get(card_alias(probe))
+        if until < today:
+            ended.append(e); continue
+        if g is None:
+            apply = url_or_blank(e.get('apply'), upgrade)
+            if not apply:
+                missing.append(e); continue
+            loc = clean_loc(e.get('location')) or "South Florida"
+            summary = s(e.get('summary'))
+            g = dict(
+                id="feat-" + hashlib.sha1(f"{probe['company']}|{probe['title']}|{apply}".encode('utf-8')).hexdigest()[:10],
+                company=probe['company'], title=probe['title'], cat=classify(probe['title'], summary, probe['company']),
+                majors=majors_for(summary, probe['title']), term=probe['term'] or term_for(probe['title'], summary),
+                pay=pay_for(e.get('pay'), "") if s(e.get('pay')) else "", level=level_for(probe['title'], summary),
+                mode=work_mode(e.get('location'), summary), types=[], posted=today, indeed="",
+                snippet=summary, details=[], flag="", count=1, counties=[county_for(loc)],
+                locs=[dict(loc=loc, apply=apply, county=county_for(loc))],
+            )
+            if not is_internship(probe['title'], summary): g['kind'] = "Job"; g['level'] = JOB_LEVEL
+            cards.append(g); by_key.setdefault(card_key(g), g); by_key.setdefault(card_alias(g), g)
+            added.append(g)
+        g['featured'] = until
+        featured.append(g)
+    return featured, added, missing, ended
+
 # Descriptions are written by whoever posted the job, and they land in this repo where
 # coding agents read them. None of it reaches an LLM at runtime, so this is an early
 # warning for the humans and agents who work on the repo, not a runtime defence.
@@ -985,6 +1048,8 @@ def main(argv=None):
     ap.add_argument("--keep-http", action="store_true", help="leave plain-HTTP apply links alone instead of upgrading them to HTTPS")
     ap.add_argument("--strict", action="store_true", help="exit non-zero if a listing contains text shaped like an AI instruction")
     ap.add_argument("--headers", default=None, help="where to write vercel.json with the CSP and security headers ('-' to skip)")
+    ap.add_argument("--featured", default=os.path.join(here, "featured.json"),
+                    help="paid placements to pin at the top of the board (default: featured.json next to this script)")
     ap.add_argument("--stats", action="store_true", help="print classification counters")
     ap.add_argument("--check", action="store_true", help="also write check.txt, one line per card, for eyeballing categories")
     a = ap.parse_args(argv)
@@ -1053,6 +1118,14 @@ def main(argv=None):
         print(f"folded {len(folded)} duplicate card(s) into a newer copy of the same role: "
               + "; ".join(f"{g['company']} / {g['title'][:40]} ({g['posted']})" for g in folded[:8])
               + (" ..." if len(folded) > 8 else ""))
+    feats, fadded, fmissing, fended = apply_featured(out, load_featured(a.featured), upgrade=not a.keep_http)
+    if feats or fmissing or fended:
+        print(f"featured {len(feats)} card(s) from {a.featured}"
+              + (": " + "; ".join(f"{g['company']} / {g['title'][:40]} until {g['featured']}" for g in feats) if feats else ""))
+        if fadded: print(f"  added {len(fadded)} featured role(s) no export carried: " + "; ".join(f"{g['company']} / {g['title'][:40]}" for g in fadded))
+        if fended: print(f"  {len(fended)} placement(s) already ended, take them out of {a.featured}: " + "; ".join(f"{e['company']} / {e['title'][:40]} ({e['until']})" for e in fended))
+        if fmissing: print(f"  WARNING: {len(fmissing)} featured role(s) are not on the board and give no apply link to add them with: " + "; ".join(f"{e['company']} / {e['title'][:40]}" for e in fmissing))
+        out = finalize(out, upgrade=not a.keep_http)
     hits = scan_injection(out)
     if hits:
         print(f"WARNING: {len(hits)} listing field(s) contain text shaped like an AI instruction:")

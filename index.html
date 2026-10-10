@@ -37,6 +37,8 @@
   /* Spotlight areas: the ones that also carry jobs. Each has its own colour, set apart from
      the green: lavender for Cloud & DevOps. --sp-rgb feeds the tints. */
   --spot-cloud:#C9A7FF; --spot-cloud-2:#E0CCFF; --spot-cloud-rgb:201,167,255;
+  /* Featured (paid) cards: gold, so they never read as one of the free areas. */
+  --feat:#FFC94D; --feat-2:#FFDB85; --feat-rgb:255,201,77;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
@@ -108,6 +110,12 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .row.spot .co .emp{color:var(--sp)}
 .row.spot .apply{background:var(--sp);box-shadow:0 0 24px rgba(var(--sp-rgb),.3)}
 .row.spot .apply:hover{background:var(--sp-2)}
+/* A featured card is a paid placement. It says so in words, not only in colour. */
+.row.feat{border-color:rgba(var(--feat-rgb),.45);box-shadow:inset 3px 0 0 var(--feat),0 0 22px rgba(var(--feat-rgb),.08)}
+.row.feat .co .emp{color:var(--feat)}
+.row.feat .apply{background:var(--feat);box-shadow:0 0 24px rgba(var(--feat-rgb),.3)}
+.row.feat .apply:hover{background:var(--feat-2)}
+.chip.feat{color:#1A1200;background:var(--feat);border-color:var(--feat);font-weight:700;letter-spacing:.04em}
 .resultbar h2 .tag{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--sp);border:1px solid rgba(var(--sp-rgb),.45);border-radius:5px;padding:2px 8px;margin-left:10px;vertical-align:2px}
 
 /* filters */
@@ -163,7 +171,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .chip.flag{color:#F58B8B;border-color:rgba(245,139,139,.35);background:rgba(245,139,139,.08)}
 .chip.mode{color:#8FD3A8;border-color:rgba(143,211,168,.35);background:rgba(143,211,168,.08)}
 .chip.spot{color:var(--sp);border-color:rgba(var(--sp-rgb),.45);background:rgba(var(--sp-rgb),.12);font-weight:600}
-.chip.job{color:#04121A;background:var(--sp);border-color:var(--sp);font-weight:700}
+.chip.job{color:#04121A;background:var(--sp,var(--amber));border-color:var(--sp,var(--amber));font-weight:700}
 .row p{margin:0;font-size:14px;color:var(--mute);max-width:80ch}
 .majors{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .majors button{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:5px;background:transparent;border:1px dashed var(--rule-2);color:var(--mute)}
@@ -198,6 +206,14 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .foot{margin-top:40px;border-top:1px solid var(--rule);padding-top:16px;font-family:var(--mono);font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .foot a{color:var(--mute);text-decoration:underline;text-underline-offset:3px}
 .foot a:hover{color:var(--accent)}
+.foot .paid{color:var(--feat);font-weight:600}
+/* The email-list invite: one card's width, set into the list after the first few listings. */
+.join{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 18px;border:1px dashed rgba(0,227,123,.45);border-radius:12px;background:var(--amber-dim)}
+.join p{margin:0;flex:1 1 260px;font-size:15px;font-weight:600}
+.join p small{display:block;color:var(--mute);font-size:13px;font-weight:400;margin-top:2px}
+.join a{font-family:var(--mono);font-size:13px;font-weight:700;color:#04120B;background:var(--amber);border-radius:9px;padding:10px 16px;text-decoration:none;white-space:nowrap;box-shadow:var(--glow)}
+.join a:hover{background:var(--amber-2)}
+@media (max-width:900px){.join a{flex:1 1 100%;text-align:center;min-height:50px;line-height:30px}}
 
 @media (max-width:900px){
   .wrap{padding:18px 14px 48px;
@@ -318,6 +334,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row:hover .apply{box-shadow:0 0 26px rgba(0,227,123,.42)}
   .row.spot:hover{border-color:rgba(var(--sp-rgb),.5)}
   .row.spot:hover .apply{box-shadow:0 0 26px rgba(var(--sp-rgb),.45)}
+  .row.feat:hover{border-color:rgba(var(--feat-rgb),.6)}
+  .row.feat:hover .apply{box-shadow:0 0 26px rgba(var(--feat-rgb),.45)}
 }
 /* On a touch screen there is no hover, so a tap on the card itself (not on a link or a
    button) runs the light around once. The class comes off when the lap ends. */
@@ -440,7 +458,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   </div>
 
   <footer class="foot">
-    <span>Pulled from public postings. Listings close or change without notice. Confirm on the employer's page.</span>
+    <span>Pulled from public postings. Listings close or change without notice. Confirm on the employer's page.
+      <b class="paid">Cards marked FEATURED are paid placements.</b> Hiring South Florida interns or entry-level talent? <a href="mailto:christianjort@gmail.com?subject=Feature%20a%20role%20on%20the%20Opportunity%20Board">Feature a role</a>.<span id="foot-join"></span></span>
     <span>Christian Ortega · Contact / support: <a href="mailto:christianjort@gmail.com">christianjort@gmail.com</a></span>
   </footer>
 </div>
@@ -463,7 +482,13 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     title: `Listing closed or broken: ${d.company} / ${d.title}`.slice(0, 200),
     body: `Employer: ${d.company}\nRole: ${d.title}\nCard: ${d.id}\nApply link: ${d.locs[0].apply}\n\nWhat's wrong (closed, link broken, not an internship, other):\n`,
   }).toString();
-  const PAGE = 40;
+  const PAGE = 40, FEAT_MAX = 3;
+  // The email list lives on a newsletter service (Kit, Beehiiv, Substack...), which handles
+  // sending and unsubscribes. Paste its public signup page here and rebuild; while this is
+  // empty the invite stays off the page. It links out rather than posting a form, so the
+  // page's CSP (form-action 'none') stays as strict as it is.
+  const NEWSLETTER_URL = '';
+  const JOIN_AFTER = 6;
   const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', paid:false, remote:false, sort:'new', shown:PAGE };
   const state = Object.assign({}, DEFAULTS);
 
@@ -498,6 +523,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     d.locs = (Array.isArray(d.locs) ? d.locs : []).map(l => ({ loc:String(l&&l.loc||''), apply:safeUrl(l&&l.apply)||d.indeed, county:String(l&&l.county||'') }));
     if (!d.locs.length) d.locs = [{ loc:'', apply:d.indeed, county:'' }];
     d.kind = String(d.kind||'');
+    // A placement ends at the end of its last day even if nobody rebuilds the page.
+    d.feat = /^\d{4}-\d{2}-\d{2}$/.test(d.featured||'') && NOW < asDate(d.featured).getTime() + DAY/2;
     d.count = Math.max(1, parseInt(d.count,10)||1);
     d.posted = /^\d{4}-\d{2}-\d{2}$/.test(d.posted||'') ? d.posted : '';
     d.rate = hourly(d.pay);
@@ -568,12 +595,13 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const fmtDate = s => { const d = asDate(s||''); return d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; };
 
   function row(d){
-    const el = document.createElement('article'); el.className='row' + spotClass(d.cat);
+    const el = document.createElement('article'); el.className='row' + spotClass(d.cat) + (d.feat ? ' feat' : '');
     const locLine = d.locs.length===1 ? d.locs[0].loc : `${d.locs.length} locations`;
     const full = fmtDate(d.posted), age = d.days==null ? '' : ageLabel(d.days);
     // Freshness rides on the date itself: amber when days old, dimmed when half a year old.
     const ageClass = d.days==null ? '' : (d.days < 7 ? ' class="fresh"' : (d.days > 180 ? ' class="stale"' : ''));
     const chips = [];
+    if (d.feat) chips.push(`<span class="chip feat" title="The employer paid to pin this listing. It is a real opening like every other card.">FEATURED</span>`);
     // Spotlight cards say what they are, since that area mixes jobs with internships.
     if (SPOTS[d.cat]) chips.push(`<span class="chip${spotClass(d.cat)}">${esc(d.cat)}</span>`);
     if (d.kind) chips.push(`<span class="chip${d.kind==='Job'?' job':''}">${d.kind==='Job'?'Entry-level job':'Internship'}</span>`);
@@ -617,11 +645,23 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     return el;
   }
 
+  function joinBox(){
+    if (!safeUrl(NEWSLETTER_URL)) return null;
+    const el = document.createElement('aside'); el.className = 'join';
+    el.innerHTML = `<p>Get new South Florida internships by email<small>Fresh roles, entry-level AI and tech openings, and invites to my talks. Free, unsubscribe anytime.</small></p><a href="${esc(NEWSLETTER_URL)}" target="_blank" rel="noopener">Join the list ↗</a>`;
+    return el;
+  }
   const activeCount = () => ['area','county','major','term','level'].filter(k=>state[k]).length + (state.paid?1:0) + (state.remote?1:0);
 
   function render(){
     document.querySelectorAll('.areas button[data-area]').forEach(b => { const on=b.dataset.area===state.area; b.setAttribute('aria-pressed',on?'true':'false'); if(on && state.area && window.innerWidth<=900 && b.closest('#areas')) b.scrollIntoView({block:'nearest',inline:'center'}); });
     const list = DATA.filter(matches).sort(sortFn);
+    // Featured cards that match the current view lead it, at most FEAT_MAX of them, and only
+    // under the default sort: a visitor who asks for highest pay or A to Z gets exactly that.
+    if (state.sort === 'new'){
+      const top = list.filter(d => d.feat).slice(0, FEAT_MAX);
+      if (top.length) list.splice(0, list.length, ...top, ...list.filter(d => !top.includes(d)));
+    }
     const wrap = $('#cards'); wrap.innerHTML='';
     const qLabel = state.q ? `<em>“${esc(state.q)}”</em>` : '';
     const jobs = list.filter(d => d.kind==='Job').length, interns = list.length - jobs;
@@ -638,7 +678,10 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       wrap.innerHTML = `<div class="empty"><h3>Nothing matches.</h3><p>Try a broader search or clear a filter.</p><button type="button" id="empty-reset">Reset filters</button></div>`;
       $('#empty-reset').addEventListener('click', reset);
     } else {
-      list.slice(0,state.shown).forEach(d => wrap.appendChild(row(d)));
+      list.slice(0,state.shown).forEach((d, i) => {
+        wrap.appendChild(row(d));
+        if (i === Math.min(JOIN_AFTER, list.length) - 1) { const j = joinBox(); if (j) wrap.appendChild(j); }
+      });
       if (list.length > state.shown){ const b=document.createElement('button'); b.className='loadmore'; b.type='button'; b.textContent=`Show ${Math.min(PAGE,list.length-state.shown)} more`; b.addEventListener('click',()=>{ state.shown+=PAGE; render(); }); wrap.appendChild(b); }
     }
     const n = activeCount();
@@ -725,6 +768,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   window.addEventListener('resize', setPlaceholder);
 
   window.addEventListener('hashchange', ()=>{ readHash(); syncInputs(); render(); });
+  if (safeUrl(NEWSLETTER_URL)) $('#foot-join').innerHTML = ` New roles by email: <a href="${esc(NEWSLETTER_URL)}" target="_blank" rel="noopener">join the list</a>.`;
   readHash(); syncInputs(); render();
 })();
 </script>
