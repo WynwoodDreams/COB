@@ -116,6 +116,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .row.feat .apply{background:var(--feat);box-shadow:0 0 24px rgba(var(--feat-rgb),.3)}
 .row.feat .apply:hover{background:var(--feat-2)}
 .chip.feat{color:#1A1200;background:var(--feat);border-color:var(--feat);font-weight:700;letter-spacing:.04em}
+/* Pick of the week: drawn at random, free. Green outline, never the gold of a paid card. */
+.row.pick{border-color:rgba(0,227,123,.4);box-shadow:inset 3px 0 0 var(--amber)}
+.chip.pick{color:var(--amber);border-color:rgba(0,227,123,.5);background:var(--amber-dim);font-weight:700;letter-spacing:.04em}
 .resultbar h2 .tag{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--sp);border:1px solid rgba(var(--sp-rgb),.45);border-radius:5px;padding:2px 8px;margin-left:10px;vertical-align:2px}
 
 /* filters */
@@ -459,7 +462,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 
   <footer class="foot">
     <span>Pulled from public postings. Listings close or change without notice. Confirm on the employer's page.
-      <b class="paid">Cards marked FEATURED are paid placements.</b> Hiring South Florida interns or entry-level talent? <a href="mailto:christianjort@gmail.com?subject=Feature%20a%20role%20on%20the%20Opportunity%20Board">Feature a role</a>.<span id="foot-join"></span></span>
+      <b class="paid">Cards marked FEATURED are paid placements.</b> PICK OF THE WEEK cards are drawn at random and are not paid. Hiring South Florida interns or entry-level talent? <a href="mailto:christianjort@gmail.com?subject=Feature%20a%20role%20on%20the%20Opportunity%20Board">Feature a role</a>.<span id="foot-join"></span></span>
     <span>Christian Ortega · Contact / support: <a href="mailto:christianjort@gmail.com">christianjort@gmail.com</a></span>
   </footer>
 </div>
@@ -482,7 +485,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     title: `Listing closed or broken: ${d.company} / ${d.title}`.slice(0, 200),
     body: `Employer: ${d.company}\nRole: ${d.title}\nCard: ${d.id}\nApply link: ${d.locs[0].apply}\n\nWhat's wrong (closed, link broken, not an internship, other):\n`,
   }).toString();
-  const PAGE = 40, FEAT_MAX = 3;
+  const PAGE = 40, FEAT_MAX = 3, PICK_MAX = 3, PICK_FRESH = 45;
   // The email list lives on a newsletter service (Kit, Beehiiv, Substack...), which handles
   // sending and unsubscribes. Paste its public signup page here and rebuild; while this is
   // empty the invite stays off the page. It links out rather than posting a form, so the
@@ -533,6 +536,17 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     d.days = dt ? Math.max(0, (NOW - dt.getTime()) / DAY) : null;
     d.hay = [d.company, d.title, d.cat, d.kind, d.majors.join(' '), d.locs.map(l=>l.loc).join(' '), d.counties.join(' '), d.term.join(' '), d.level, d.mode, d.pay, d.flag, d.snippet, d.details.join(' ')].join(' ').toLowerCase();
   });
+
+  // Pick of the week: PICK_MAX cards drawn at random each Monday, free, from listings posted
+  // in the last PICK_FRESH days. The draw is seeded by the week, so every visitor sees the
+  // same picks all week and a new set the next, with no rebuild. Each card's rank is a hash
+  // of the week and its id, so adding or dropping other cards does not reshuffle the picks.
+  const WEEK = (() => { const t = new Date(); return Math.floor((Date.UTC(t.getFullYear(), t.getMonth(), t.getDate()) - Date.UTC(1970,0,5)) / DAY / 7); })();
+  const fnv = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; };
+  // Freshness is measured from the week's Monday, not today, so a pick cannot age out mid-week.
+  const PICK_SINCE = new Date(Date.UTC(1970,0,5) + (WEEK*7 - PICK_FRESH) * DAY).toISOString().slice(0,10);
+  DATA.filter(d => !d.feat && !d.flag && d.locs[0].apply && d.posted && d.posted >= PICK_SINCE)
+    .map(d => [fnv(WEEK + ':' + d.id), d]).sort((a,b) => a[0]-b[0]).slice(0, PICK_MAX).forEach(([,d]) => { d.pick = true; });
 
   const count = (arr, key) => { const m = new Map(); arr.forEach(x => { const v = x[key]; (Array.isArray(v)?v:[v]).forEach(k => { if(k) m.set(k,(m.get(k)||0)+1); }); }); return m; };
   const employers = new Set(DATA.map(d => d.company.toLowerCase().replace(/[.,]/g,'').replace(/\s+-\s+.*$/,'')));
@@ -595,13 +609,14 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const fmtDate = s => { const d = asDate(s||''); return d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; };
 
   function row(d){
-    const el = document.createElement('article'); el.className='row' + spotClass(d.cat) + (d.feat ? ' feat' : '');
+    const el = document.createElement('article'); el.className='row' + spotClass(d.cat) + (d.feat ? ' feat' : (d.pick ? ' pick' : ''));
     const locLine = d.locs.length===1 ? d.locs[0].loc : `${d.locs.length} locations`;
     const full = fmtDate(d.posted), age = d.days==null ? '' : ageLabel(d.days);
     // Freshness rides on the date itself: amber when days old, dimmed when half a year old.
     const ageClass = d.days==null ? '' : (d.days < 7 ? ' class="fresh"' : (d.days > 180 ? ' class="stale"' : ''));
     const chips = [];
     if (d.feat) chips.push(`<span class="chip feat" title="The employer paid to pin this listing. It is a real opening like every other card.">FEATURED</span>`);
+    else if (d.pick) chips.push(`<span class="chip pick" title="Drawn at random from this week's listings. Not a paid placement; a new set comes up every Monday.">PICK OF THE WEEK</span>`);
     // Spotlight cards say what they are, since that area mixes jobs with internships.
     if (SPOTS[d.cat]) chips.push(`<span class="chip${spotClass(d.cat)}">${esc(d.cat)}</span>`);
     if (d.kind) chips.push(`<span class="chip${d.kind==='Job'?' job':''}">${d.kind==='Job'?'Entry-level job':'Internship'}</span>`);
@@ -656,10 +671,11 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   function render(){
     document.querySelectorAll('.areas button[data-area]').forEach(b => { const on=b.dataset.area===state.area; b.setAttribute('aria-pressed',on?'true':'false'); if(on && state.area && window.innerWidth<=900 && b.closest('#areas')) b.scrollIntoView({block:'nearest',inline:'center'}); });
     const list = DATA.filter(matches).sort(sortFn);
-    // Featured cards that match the current view lead it, at most FEAT_MAX of them, and only
-    // under the default sort: a visitor who asks for highest pay or A to Z gets exactly that.
+    // Featured cards that match the current view lead it, at most FEAT_MAX of them, then the
+    // week's picks, and only under the default sort: a visitor who asks for highest pay or
+    // A to Z gets exactly that.
     if (state.sort === 'new'){
-      const top = list.filter(d => d.feat).slice(0, FEAT_MAX);
+      const top = [...list.filter(d => d.feat).slice(0, FEAT_MAX), ...list.filter(d => d.pick)];
       if (top.length) list.splice(0, list.length, ...top, ...list.filter(d => !top.includes(d)));
     }
     const wrap = $('#cards'); wrap.innerHTML='';
