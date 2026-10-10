@@ -37,6 +37,8 @@
   /* Spotlight areas: the ones that also carry jobs. Each has its own colour, set apart from
      the green: lavender for Cloud & DevOps. --sp-rgb feeds the tints. */
   --spot-cloud:#C9A7FF; --spot-cloud-2:#E0CCFF; --spot-cloud-rgb:201,167,255;
+  /* Featured (paid) cards: gold, so they never read as one of the free areas. */
+  --feat:#FFC94D; --feat-2:#FFDB85; --feat-rgb:255,201,77;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
@@ -108,6 +110,12 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .row.spot .co .emp{color:var(--sp)}
 .row.spot .apply{background:var(--sp);box-shadow:0 0 24px rgba(var(--sp-rgb),.3)}
 .row.spot .apply:hover{background:var(--sp-2)}
+/* A featured card is a paid placement. It says so in words, not only in colour. */
+.row.feat{border-color:rgba(var(--feat-rgb),.45);box-shadow:inset 3px 0 0 var(--feat),0 0 22px rgba(var(--feat-rgb),.08)}
+.row.feat .co .emp{color:var(--feat)}
+.row.feat .apply{background:var(--feat);box-shadow:0 0 24px rgba(var(--feat-rgb),.3)}
+.row.feat .apply:hover{background:var(--feat-2)}
+.chip.feat{color:#1A1200;background:var(--feat);border-color:var(--feat);font-weight:700;letter-spacing:.04em}
 .resultbar h2 .tag{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--sp);border:1px solid rgba(var(--sp-rgb),.45);border-radius:5px;padding:2px 8px;margin-left:10px;vertical-align:2px}
 
 /* filters */
@@ -198,6 +206,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .foot{margin-top:40px;border-top:1px solid var(--rule);padding-top:16px;font-family:var(--mono);font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .foot a{color:var(--mute);text-decoration:underline;text-underline-offset:3px}
 .foot a:hover{color:var(--accent)}
+.foot .paid{color:var(--feat);font-weight:600}
 
 @media (max-width:900px){
   .wrap{padding:18px 14px 48px;
@@ -318,6 +327,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row:hover .apply{box-shadow:0 0 26px rgba(0,227,123,.42)}
   .row.spot:hover{border-color:rgba(var(--sp-rgb),.5)}
   .row.spot:hover .apply{box-shadow:0 0 26px rgba(var(--sp-rgb),.45)}
+  .row.feat:hover{border-color:rgba(var(--feat-rgb),.6)}
+  .row.feat:hover .apply{box-shadow:0 0 26px rgba(var(--feat-rgb),.45)}
 }
 /* On a touch screen there is no hover, so a tap on the card itself (not on a link or a
    button) runs the light around once. The class comes off when the lap ends. */
@@ -440,7 +451,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   </div>
 
   <footer class="foot">
-    <span>Pulled from public postings. Listings close or change without notice. Confirm on the employer's page.</span>
+    <span>Pulled from public postings. Listings close or change without notice. Confirm on the employer's page.
+      <b class="paid">Cards marked FEATURED are paid placements.</b> Hiring South Florida interns or entry-level talent? <a href="mailto:christianjort@gmail.com?subject=Feature%20a%20role%20on%20the%20Opportunity%20Board">Feature a role</a>.</span>
     <span>Christian Ortega · Contact / support: <a href="mailto:christianjort@gmail.com">christianjort@gmail.com</a></span>
   </footer>
 </div>
@@ -463,7 +475,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     title: `Listing closed or broken: ${d.company} / ${d.title}`.slice(0, 200),
     body: `Employer: ${d.company}\nRole: ${d.title}\nCard: ${d.id}\nApply link: ${d.locs[0].apply}\n\nWhat's wrong (closed, link broken, not an internship, other):\n`,
   }).toString();
-  const PAGE = 40;
+  const PAGE = 40, FEAT_MAX = 3;
   const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', paid:false, remote:false, sort:'new', shown:PAGE };
   const state = Object.assign({}, DEFAULTS);
 
@@ -498,6 +510,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     d.locs = (Array.isArray(d.locs) ? d.locs : []).map(l => ({ loc:String(l&&l.loc||''), apply:safeUrl(l&&l.apply)||d.indeed, county:String(l&&l.county||'') }));
     if (!d.locs.length) d.locs = [{ loc:'', apply:d.indeed, county:'' }];
     d.kind = String(d.kind||'');
+    // A placement ends at the end of its last day even if nobody rebuilds the page.
+    d.feat = /^\d{4}-\d{2}-\d{2}$/.test(d.featured||'') && NOW < asDate(d.featured).getTime() + DAY/2;
     d.count = Math.max(1, parseInt(d.count,10)||1);
     d.posted = /^\d{4}-\d{2}-\d{2}$/.test(d.posted||'') ? d.posted : '';
     d.rate = hourly(d.pay);
@@ -568,12 +582,13 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const fmtDate = s => { const d = asDate(s||''); return d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; };
 
   function row(d){
-    const el = document.createElement('article'); el.className='row' + spotClass(d.cat);
+    const el = document.createElement('article'); el.className='row' + spotClass(d.cat) + (d.feat ? ' feat' : '');
     const locLine = d.locs.length===1 ? d.locs[0].loc : `${d.locs.length} locations`;
     const full = fmtDate(d.posted), age = d.days==null ? '' : ageLabel(d.days);
     // Freshness rides on the date itself: amber when days old, dimmed when half a year old.
     const ageClass = d.days==null ? '' : (d.days < 7 ? ' class="fresh"' : (d.days > 180 ? ' class="stale"' : ''));
     const chips = [];
+    if (d.feat) chips.push(`<span class="chip feat" title="The employer paid to pin this listing. It is a real opening like every other card.">FEATURED</span>`);
     // Spotlight cards say what they are, since that area mixes jobs with internships.
     if (SPOTS[d.cat]) chips.push(`<span class="chip${spotClass(d.cat)}">${esc(d.cat)}</span>`);
     if (d.kind) chips.push(`<span class="chip${d.kind==='Job'?' job':''}">${d.kind==='Job'?'Entry-level job':'Internship'}</span>`);
@@ -622,6 +637,12 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   function render(){
     document.querySelectorAll('.areas button[data-area]').forEach(b => { const on=b.dataset.area===state.area; b.setAttribute('aria-pressed',on?'true':'false'); if(on && state.area && window.innerWidth<=900 && b.closest('#areas')) b.scrollIntoView({block:'nearest',inline:'center'}); });
     const list = DATA.filter(matches).sort(sortFn);
+    // Featured cards that match the current view lead it, at most FEAT_MAX of them, and only
+    // under the default sort: a visitor who asks for highest pay or A to Z gets exactly that.
+    if (state.sort === 'new'){
+      const top = list.filter(d => d.feat).slice(0, FEAT_MAX);
+      if (top.length) list.splice(0, list.length, ...top, ...list.filter(d => !top.includes(d)));
+    }
     const wrap = $('#cards'); wrap.innerHTML='';
     const qLabel = state.q ? `<em>“${esc(state.q)}”</em>` : '';
     const jobs = list.filter(d => d.kind==='Job').length, interns = list.length - jobs;

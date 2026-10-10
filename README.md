@@ -124,6 +124,37 @@ the `--spot-*` variables in `:root`, a `.spot.<slug>` rule beside `.spot.cloud`,
 area's name in the `SPOTS` map in the script. Each colour clears WCAG AA on both the
 page and card backgrounds.
 
+## Featured listings (paid placements)
+
+An employer can pay to pin a role. `featured.json` lists them; every build reads it, so
+adding or removing a placement is an edit to that file and a rebuild:
+
+    [
+      {"company": "Lennar", "title": "LTG - Cloud Engineer II", "until": "2026-11-09"},
+      {"company": "Acme AI Labs", "title": "AI Engineering Intern - Spring 2027", "until": "2026-11-09",
+       "apply": "https://acme.ai/careers/ai-intern", "location": "Miami, FL", "pay": "$25/hr",
+       "summary": "Build LLM tooling with the applied AI team."}
+    ]
+
+    python3 build_data.py --data index.html --date "Oct 9, 2026"
+
+- `company` and `title` name a card already on the board, matched the way `--merge`
+  matches (case, punctuation and city names ignored). `until` is the last day it stays featured.
+- A role that is not on the board yet needs `apply`, and can give `location`, `pay`,
+  `summary` and `term`. The build adds it as a card, posted today. A sponsor doesn't have
+  to wait for a scrape to pick their role up.
+- A featured card gets a gold border, a gold Apply button and a FEATURED chip whose tooltip
+  says the employer paid for it. The footer says the same in words, which is the disclosure
+  the FTC expects for paid placement. Keep both.
+- Up to three featured cards (`FEAT_MAX` in the template) lead whatever view they match,
+  under the default "Newest first" sort only. A visitor who sorts by pay or A to Z gets an
+  honest list.
+- The page drops the mark itself at the end of the `until` day, even if nobody rebuilds.
+  The build log names placements that have ended so they can come out of the file, and warns
+  about any entry it could not find on the board and could not add.
+- `featured.json` is the whole truth. A build clears every mark and sets them again from
+  the file, so deleting an entry ends that placement on the next build.
+
 ## How a posting is read
 
 An internship search on Indeed returns some things that are not internships: a manager
@@ -282,6 +313,7 @@ is the one place untrusted input is processed on your machine.
 
 - `template.html`: page markup, styles and the client-side filtering script. Colours live in the `:root` block. `__DATA__` and `__DATE__` are filled in by the build.
 - `build_data.py`: reads the spreadsheet, leaves out postings that are jobs rather than internships, classifies each one (area, majors, term, level, pay, work mode) as described under "How a posting is read", merges the same role across locations into one card, folds the result into the listings already published when `--merge` is given, and renders the page.
+- `featured.json`: paid placements, read by every build. See "Featured listings".
 - `index.html`: the generated page. Do not edit by hand; change the template or the script and rebuild.
 - `vercel.json`: generated security headers, including a CSP pinned to that build of `index.html`.
 - `og.png`: 1200x630 link preview image, referenced by the Open Graph tags in the template.
