@@ -250,6 +250,12 @@ A banner at the top of every page links to https://www.buildersbench.dev/. It co
 to the site name and a Visit link under 900px. Its markup is the `.bbar` block in
 `template.html`.
 
+The tech areas link deeper into BuildersBench. Under the results header, Cloud & DevOps
+opens its cloud projects (`#path=cloud`) and Software, IT, Data & AI opens the full
+catalog. Each card in those areas also gets a "Projects for this role" link, which opens
+BuildersBench's Career Match with the job title filled in (`match.html?q=<title>`). The
+mapping is `BENCH` in `template.html`; add an area to it to give that area the same links.
+
 ## The mark, and the two things that move
 
 The logo beside the title is a sibling of the BuildersBench mark, not a copy of it: the
