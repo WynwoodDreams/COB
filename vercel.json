@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-RqbE4ac6rw1+36N/PhSMX4L2n+50+1GokWE+vSIpJCo=' 'self'; style-src 'sha256-URt6Kjg3kIjJ4IzHqujAlrHKk7El43zVM7FWEQH/4fo=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-y34dTbBgmKYb8lpxfE3asppXr4K5QC0SmiZXDlhhh2E=' 'self'; style-src 'sha256-URt6Kjg3kIjJ4IzHqujAlrHKk7El43zVM7FWEQH/4fo=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
         }
       ]
     },
@@ -14,7 +14,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-RqbE4ac6rw1+36N/PhSMX4L2n+50+1GokWE+vSIpJCo=' 'self'; style-src 'sha256-URt6Kjg3kIjJ4IzHqujAlrHKk7El43zVM7FWEQH/4fo=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-y34dTbBgmKYb8lpxfE3asppXr4K5QC0SmiZXDlhhh2E=' 'self'; style-src 'sha256-URt6Kjg3kIjJ4IzHqujAlrHKk7El43zVM7FWEQH/4fo=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
         }
       ]
     },
