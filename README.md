@@ -288,15 +288,21 @@ only, and would leave the caret blinking.
 
 ## Mobile
 
-The page is built for phones first at 900px and below. The spotlight tab
-(Cloud & DevOps) gets a full-width row above the area strip, so a first visit on a
-phone cannot miss it, and its "jobs + internships" tag drops onto its own line under the
-results title. The area list becomes a
-side-scrolling strip with a fade at its edge, the filter panel collapses behind a
-Filters button that sticks to the top of the list while you scroll, and every control
-clears the 44px touch minimum. No text on a card is under 12px, the search field stays
-at 16px so iOS does not zoom on focus, and `.wrap` respects `env(safe-area-inset-*)`
-for notched phones. Checked at 320, 360, 390 and 430px wide plus landscape.
+The page is built for phones first at 900px and below, and there it is laid out like an
+app rather than a squeezed desktop. The header is one line of title and one of tagline;
+the counts are left to the desktop. The search bar stays pinned to the top of the screen
+for the whole page, with a filter button beside it that carries a badge for how many
+filters are on. Every area, Cloud & DevOps first, sits in one strip of chips that scrolls
+sideways. The filters open as a sheet that slides up from the bottom over a dimmed page,
+with a "Show N listings" button that counts the matches live; tapping outside it, the
+close button or Escape puts it away.
+
+Cards keep to the essentials on a phone: the summary is clamped to three lines, the majors
+are one swipeable row, and the posted date, original listing and report link move into
+Details, so every card ends on Apply and Details. Every primary control clears the 44px
+touch minimum, the search field stays at 16px so iOS does not zoom on focus, and `.wrap`
+respects `env(safe-area-inset-*)` for notched phones. Checked at 320, 360, 390 and 430px
+wide plus landscape, with no sideways scroll at any of them.
 
 ## Outbound links
 
