@@ -155,6 +155,19 @@ adding or removing a placement is an edit to that file and a rebuild:
 - `featured.json` is the whole truth. A build clears every mark and sets them again from
   the file, so deleting an entry ends that placement on the next build.
 
+## Email list
+
+The list lives on a newsletter service (Kit, Beehiiv, Substack or similar), which handles
+sending, unsubscribe links and the spam rules. To switch the signup on, paste the service's
+public signup page into `NEWSLETTER_URL` near the top of the script in `template.html`, then
+rebuild:
+
+    python3 build_data.py --data index.html --date "Oct 9, 2026"
+
+Once it's set, an invite card sits after the sixth listing in every view and the footer gets a
+"join the list" link. Both link out to the service, not to a form on this page, so the
+CSP's `form-action 'none'` stays as it is. Leave the URL empty and neither appears.
+
 ## How a posting is read
 
 An internship search on Indeed returns some things that are not internships: a manager

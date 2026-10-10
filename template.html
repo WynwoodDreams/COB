@@ -171,7 +171,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .chip.flag{color:#F58B8B;border-color:rgba(245,139,139,.35);background:rgba(245,139,139,.08)}
 .chip.mode{color:#8FD3A8;border-color:rgba(143,211,168,.35);background:rgba(143,211,168,.08)}
 .chip.spot{color:var(--sp);border-color:rgba(var(--sp-rgb),.45);background:rgba(var(--sp-rgb),.12);font-weight:600}
-.chip.job{color:#04121A;background:var(--sp);border-color:var(--sp);font-weight:700}
+.chip.job{color:#04121A;background:var(--sp,var(--amber));border-color:var(--sp,var(--amber));font-weight:700}
 .row p{margin:0;font-size:14px;color:var(--mute);max-width:80ch}
 .majors{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .majors button{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:5px;background:transparent;border:1px dashed var(--rule-2);color:var(--mute)}
@@ -207,6 +207,13 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .foot a{color:var(--mute);text-decoration:underline;text-underline-offset:3px}
 .foot a:hover{color:var(--accent)}
 .foot .paid{color:var(--feat);font-weight:600}
+/* The email-list invite: one card's width, set into the list after the first few listings. */
+.join{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 18px;border:1px dashed rgba(0,227,123,.45);border-radius:12px;background:var(--amber-dim)}
+.join p{margin:0;flex:1 1 260px;font-size:15px;font-weight:600}
+.join p small{display:block;color:var(--mute);font-size:13px;font-weight:400;margin-top:2px}
+.join a{font-family:var(--mono);font-size:13px;font-weight:700;color:#04120B;background:var(--amber);border-radius:9px;padding:10px 16px;text-decoration:none;white-space:nowrap;box-shadow:var(--glow)}
+.join a:hover{background:var(--amber-2)}
+@media (max-width:900px){.join a{flex:1 1 100%;text-align:center;min-height:50px;line-height:30px}}
 
 @media (max-width:900px){
   .wrap{padding:18px 14px 48px;
@@ -452,7 +459,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 
   <footer class="foot">
     <span>Pulled from public postings. Listings close or change without notice. Confirm on the employer's page.
-      <b class="paid">Cards marked FEATURED are paid placements.</b> Hiring South Florida interns or entry-level talent? <a href="mailto:christianjort@gmail.com?subject=Feature%20a%20role%20on%20the%20Opportunity%20Board">Feature a role</a>.</span>
+      <b class="paid">Cards marked FEATURED are paid placements.</b> Hiring South Florida interns or entry-level talent? <a href="mailto:christianjort@gmail.com?subject=Feature%20a%20role%20on%20the%20Opportunity%20Board">Feature a role</a>.<span id="foot-join"></span></span>
     <span>Christian Ortega · Contact / support: <a href="mailto:christianjort@gmail.com">christianjort@gmail.com</a></span>
   </footer>
 </div>
@@ -476,6 +483,12 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     body: `Employer: ${d.company}\nRole: ${d.title}\nCard: ${d.id}\nApply link: ${d.locs[0].apply}\n\nWhat's wrong (closed, link broken, not an internship, other):\n`,
   }).toString();
   const PAGE = 40, FEAT_MAX = 3;
+  // The email list lives on a newsletter service (Kit, Beehiiv, Substack...), which handles
+  // sending and unsubscribes. Paste its public signup page here and rebuild; while this is
+  // empty the invite stays off the page. It links out rather than posting a form, so the
+  // page's CSP (form-action 'none') stays as strict as it is.
+  const NEWSLETTER_URL = '';
+  const JOIN_AFTER = 6;
   const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', paid:false, remote:false, sort:'new', shown:PAGE };
   const state = Object.assign({}, DEFAULTS);
 
@@ -632,6 +645,12 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     return el;
   }
 
+  function joinBox(){
+    if (!safeUrl(NEWSLETTER_URL)) return null;
+    const el = document.createElement('aside'); el.className = 'join';
+    el.innerHTML = `<p>Get new South Florida internships by email<small>Fresh roles, entry-level AI and tech openings, and invites to my talks. Free, unsubscribe anytime.</small></p><a href="${esc(NEWSLETTER_URL)}" target="_blank" rel="noopener">Join the list ↗</a>`;
+    return el;
+  }
   const activeCount = () => ['area','county','major','term','level'].filter(k=>state[k]).length + (state.paid?1:0) + (state.remote?1:0);
 
   function render(){
@@ -659,7 +678,10 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       wrap.innerHTML = `<div class="empty"><h3>Nothing matches.</h3><p>Try a broader search or clear a filter.</p><button type="button" id="empty-reset">Reset filters</button></div>`;
       $('#empty-reset').addEventListener('click', reset);
     } else {
-      list.slice(0,state.shown).forEach(d => wrap.appendChild(row(d)));
+      list.slice(0,state.shown).forEach((d, i) => {
+        wrap.appendChild(row(d));
+        if (i === Math.min(JOIN_AFTER, list.length) - 1) { const j = joinBox(); if (j) wrap.appendChild(j); }
+      });
       if (list.length > state.shown){ const b=document.createElement('button'); b.className='loadmore'; b.type='button'; b.textContent=`Show ${Math.min(PAGE,list.length-state.shown)} more`; b.addEventListener('click',()=>{ state.shown+=PAGE; render(); }); wrap.appendChild(b); }
     }
     const n = activeCount();
@@ -746,6 +768,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   window.addEventListener('resize', setPlaceholder);
 
   window.addEventListener('hashchange', ()=>{ readHash(); syncInputs(); render(); });
+  if (safeUrl(NEWSLETTER_URL)) $('#foot-join').innerHTML = ` New roles by email: <a href="${esc(NEWSLETTER_URL)}" target="_blank" rel="noopener">join the list</a>.`;
   readHash(); syncInputs(); render();
 })();
 </script>
