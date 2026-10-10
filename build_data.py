@@ -622,7 +622,8 @@ def build_sheet_items(data, area, upgrade=True):
         majors = majors_for("", title)
         if spec['major'] not in majors: majors.insert(0, spec['major'])
         sal = s(d.get('Salary'))
-        about = [("Entry-level job" if kind == "Job" else "Internship")]
+        # The card's chip already says job or internship, so the summary does not repeat it.
+        about = []
         if exp: about.append(f"Experience: {exp}")
         if s(d.get('Summary')): about.append(s(d.get('Summary')))
         items.append(dict(
@@ -632,7 +633,7 @@ def build_sheet_items(data, area, upgrade=True):
             level=JOB_LEVEL if kind == "Job" else level_for(title, ""), mode=work_mode(d.get('Location'), ""),
             types=[shift.group(1).title() + "-time"] if shift else [],
             posted=date_str(d.get('Posted')) or TODAY.strftime("%Y-%m-%d"), apply=apply, indeed="",
-            snippet=" · ".join(about) if len(about) > 1 else "",
+            snippet=" · ".join(about),
             details=[s(d.get('Caveats'))] if s(d.get('Caveats')) else [], flag="", county=county_for(loc),
         ))
     return items, skipped
@@ -730,7 +731,8 @@ def finalize(out, upgrade=True):
         # Only the spotlight areas mix jobs with internships, so only their cards say which they are.
         if g['cat'] in SPOT_AREAS and not g['kind']: g['kind'] = "Internship"
         # a snippet that only repeats the card's own chip says nothing
-        if g['snippet'] in ("Entry-level job", "Internship"): g['snippet'] = ""
+        # (cards from older builds also carry it as a prefix, so that comes off too)
+        g['snippet'] = re.sub(r"^(?:Entry-level job|Internship)(?: · |$)", "", g['snippet'] or "")
         # An entry-level job keeps its chip wherever it is filed; an internship outside a
         # spotlight area is the default and needs none.
         if g['cat'] not in SPOT_AREAS and g['kind'] != "Job": g.pop('kind', None)
