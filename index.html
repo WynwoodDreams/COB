@@ -149,6 +149,15 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .guide p small{display:block;color:var(--mute);font-size:12px;margin-top:2px}
 .guide a{font-family:var(--mono);font-size:13px;font-weight:600;color:#04121A;background:var(--sp);border-radius:8px;padding:9px 14px;text-decoration:none;white-space:nowrap}
 .guide a:hover{background:var(--sp-2)}
+/* A pointer to BuildersBench under a tech area's header: portfolio projects for the roles
+   listed below it. Filled from BENCH in the script. */
+.bench{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 14px;padding:12px 16px;border:1px solid rgba(0,227,123,.4);border-radius:10px;background:var(--amber-dim)}
+.bench[hidden]{display:none}
+.bench .lab{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:#04120B;background:var(--amber);border-radius:4px;padding:3px 7px}
+.bench p{margin:0;flex:1 1 240px;font-size:14px;color:var(--ink)}
+.bench p small{display:block;color:var(--mute);font-size:12px;margin-top:2px}
+.bench a{font-family:var(--mono);font-size:13px;font-weight:600;color:#04120B;background:var(--amber);border-radius:8px;padding:9px 14px;text-decoration:none;white-space:nowrap}
+.bench a:hover{background:var(--amber-2)}
 
 /* rows */
 .rows{display:flex;flex-direction:column;gap:8px;isolation:isolate}
@@ -182,6 +191,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .dest{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:center;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:-2px}
 .row:hover .dest{color:var(--mute)}
+.plan{font-family:var(--mono);font-size:11.5px;color:var(--mute);text-align:center;text-decoration:none}
+.plan:hover{color:var(--amber);text-decoration:underline;text-underline-offset:3px}
 .more{background:transparent;border:1px solid var(--rule-2);color:var(--mute);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:12px}
 .more:hover,.more[aria-expanded="true"]{color:var(--ink);border-color:var(--ink)}
 .details{display:none;grid-column:1/-1;border-top:1px solid var(--rule);padding-top:12px;margin-top:4px;font-size:14px}
@@ -237,6 +248,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .resultbar h2 .tag{margin-left:0;margin-top:6px;display:block;width:max-content;font-size:12px}
   .guide{padding:12px 14px}
   .guide a{flex:1 1 100%;text-align:center;min-height:44px;line-height:26px}
+  .bench{padding:12px 14px}
+  .bench a{flex:1 1 100%;text-align:center;min-height:44px;line-height:26px}
   .area-list{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:6px;scrollbar-width:thin}
   .area-list li{flex:none}
   .areas button{white-space:nowrap;border-color:var(--rule);background:var(--panel);font-size:13px}
@@ -251,6 +264,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row .side{flex-direction:row;flex-wrap:wrap}
   .row .side .apply{flex:1}
   .row .side .dest{order:3;flex-basis:100%;font-size:12.5px;text-align:left;margin-top:2px}
+  .row .side .plan{order:4;flex-basis:100%;font-size:12.5px;min-height:44px;display:flex;align-items:center}
 
   /* --- touch targets: every control clears the 44px minimum --- */
   .areas button{min-height:44px;padding:9px 12px}
@@ -453,6 +467,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         <div class="note" id="rcount" role="status" aria-live="polite"></div>
       </div>
       <div class="guide" id="guide" hidden></div>
+      <div class="bench" id="bench" hidden></div>
       <div class="rows" id="cards"></div>
     </main>
   </div>
@@ -548,6 +563,15 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   // A short read pinned under a spotlight area's header while that area is up. The PDF
   // sits next to this page in the repo; delete the entry and the file to take it down.
   const GUIDES = { 'Cloud & DevOps': { title:'AWS Cloud Careers: the Florida job landscape', sub:'Which entry-level titles to search for, the skills employers look for, and three portfolio projects worth showing. 15 slides.', href:'aws-cloud-careers.pdf', cta:'Open the guide (PDF)' } };
+  // The tech areas point at BuildersBench, the sister site of portfolio projects: the box under
+  // the area's header opens the matching career path there, and each card's "Projects for
+  // this role" opens its Career Match with the job title filled in.
+  const BENCH_URL = 'https://www.buildersbench.dev/';
+  const BENCH = {
+    'Cloud & DevOps': { href:BENCH_URL+'#path=cloud', title:'Build a cloud project employers want to see', cta:'Cloud projects ↗' },
+    'Software, IT, Data & AI': { href:BENCH_URL, title:'Build a project that gets you past the résumé screen', cta:'Browse projects ↗' },
+  };
+  const planLink = d => BENCH_URL + 'match.html?q=' + encodeURIComponent(d.title);
   const AREA_ORDER = [...Object.keys(SPOTS),'Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
   const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)).sort());
   const ul = $('#areas'), spots = $('#spots');
@@ -632,6 +656,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       <div class="side">
         ${d.locs[0].apply ? `<a class="apply" href="${esc(d.locs[0].apply)}" target="_blank" rel="noopener" title="Opens ${esc(d.locs[0].apply)}">Apply ↗</a>` : ''}
         ${d.dest ? `<span class="dest" title="This link opens ${esc(d.dest)}">via ${esc(d.dest)}</span>` : ''}
+        ${BENCH[d.cat] ? `<a class="plan" href="${esc(planLink(d))}" target="_blank" rel="noopener" title="Opens BuildersBench: the projects to build and certs to earn for this role">Projects for this role ↗</a>` : ''}
         ${hasDetails ? `<button class="more" type="button" aria-expanded="false" aria-controls="${detId}">Details</button>` : ''}
       </div>
       ${hasDetails ? `<div class="details" id="${detId}">${details}</div>` : ''}`;
@@ -669,6 +694,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     $('#rtitle').innerHTML = state.area ? esc(state.area) + (SPOTS[state.area] ? `<span class="tag${spotClass(state.area)}">${spotTag}</span>` : '') + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
     const guide = state.area && GUIDES[state.area], gbox = $('#guide');
     gbox.hidden = !guide; gbox.className = 'guide' + (guide ? spotClass(state.area) : '');
+    const bench = state.area && BENCH[state.area], bbox = $('#bench');
+    bbox.hidden = !bench;
+    bbox.innerHTML = bench ? `<span class="lab">BUILD</span><p>${esc(bench.title)}<small>Free step-by-step portfolio projects with resume bullets and interview pitches, on BuildersBench.</small></p><a href="${esc(bench.href)}" target="_blank" rel="noopener">${esc(bench.cta)}</a>` : '';
     gbox.innerHTML = guide ? `<span class="lab">GUIDE</span><p>${esc(guide.title)}<small>${esc(guide.sub)}</small></p><a href="${esc(guide.href)}" target="_blank" rel="noopener">${esc(guide.cta)}</a>` : '';
     const openings = list.reduce((n,d)=>n+d.count,0);
     const shown = Math.min(state.shown, list.length);
