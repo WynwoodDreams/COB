@@ -145,8 +145,8 @@ adding or removing a placement is an edit to that file and a rebuild:
   `summary` and `term`. The build adds it as a card, posted today. A sponsor doesn't have
   to wait for a scrape to pick their role up.
 - A featured card gets a gold border, a gold Apply button and a FEATURED chip whose tooltip
-  says the employer paid for it. The footer says the same in words, which is the disclosure
-  the FTC expects for paid placement. Keep both.
+  says the employer paid for it. That chip is the page's only disclosure of paid placement,
+  so keep it.
 - Up to three featured cards (`FEAT_MAX` in the template) lead whatever view they match,
   under the default "Newest first" sort only. A visitor who sorts by pay or A to Z gets an
   honest list.
@@ -169,9 +169,9 @@ so every visitor sees the same three all week and a new set the next.
   only, the same rule featured cards follow.
 - Each card's place in the draw comes from a hash of the week and its id, so a rebuild that
   adds or drops other listings mid-week leaves the picks alone unless a pick itself is gone.
-- They are kept apart from featured cards on purpose. The footer and the FEATURED tooltip tell
-  visitors those are paid placements; marking free, randomly chosen roles FEATURED would make
-  that claim false. The footer says in words that picks are random and not paid.
+- They are kept apart from featured cards on purpose. The FEATURED tooltip tells visitors
+  those are paid placements; marking free, randomly chosen roles FEATURED would make that
+  claim false.
 
 ## Email list
 
@@ -182,9 +182,9 @@ rebuild:
 
     python3 build_data.py --data index.html --date "Oct 9, 2026"
 
-Once it's set, an invite card sits after the sixth listing in every view and the footer gets a
-"join the list" link. Both link out to the service, not to a form on this page, so the
-CSP's `form-action 'none'` stays as it is. Leave the URL empty and neither appears.
+Once it's set, an invite card sits after the sixth listing in every view. It links out to
+the service, not to a form on this page, so the CSP's `form-action 'none'` stays as it is.
+Leave the URL empty and it doesn't appear.
 
 ## How a posting is read
 
