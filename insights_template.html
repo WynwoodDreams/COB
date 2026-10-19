@@ -185,6 +185,30 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 /* small text links get a thumb-sized hit area without moving the line they sit on */
 .head .sub a,.read .since a,.method a{display:inline-block;padding:9px 0;margin:-9px 0}
 .empty{color:var(--dim);font-size:13px;margin:0}
+/* ---------- the trend charts ---------- */
+.spark{position:relative}
+.spark svg{display:block;width:100%;height:auto;overflow:visible}
+.spark .grid{stroke:var(--rule);stroke-width:1}
+.spark .line{fill:none;stroke:var(--amber);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.spark .fill{fill:url(#spark-fill)}
+.spark .dot{fill:var(--amber);stroke:var(--panel);stroke-width:1.5}
+.spark .dot.last{r:4;filter:drop-shadow(0 0 4px var(--amber-glow))}
+.spark text{font-family:var(--mono);font-size:10.5px;fill:var(--dim)}
+.spark text.now{fill:var(--ink);font-weight:700;font-size:13px}
+.spark .delta{position:absolute;right:0;top:-30px;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--amber)}
+.spark .delta.dn{color:var(--down)} .spark .delta.flat{color:var(--mute)}
+.qpanel{margin-top:14px}
+.tscroll{overflow-x:auto;margin:0 -6px;padding:0 6px}
+.qtable{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}
+.qtable th{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);text-align:left;padding:7px 8px;border-bottom:1px solid var(--rule-2)}
+.qtable td{padding:8px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+.qtable td.n,.qtable th.n{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.qtable td.q{font-family:var(--mono);font-weight:700;color:var(--amber)}
+.qtable td small,.qtable th small{display:block;color:var(--dim);font-size:11px;font-family:var(--mono);white-space:nowrap;letter-spacing:0;text-transform:none;font-weight:400}
+.qtable .up{color:var(--amber)} .qtable .dn{color:var(--down)} .qtable .flat{color:var(--dim)}
+.qtable td.wrap{white-space:normal;min-width:180px;color:var(--mute)}
+.qtable a{display:inline-block;text-decoration:none;padding:8px 0;margin:-8px 0} .qtable a:hover{color:var(--amber)}
+code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--panel-2);padding:1px 5px;border-radius:4px}
 .method ul{margin:10px 0 0;padding-left:18px;color:var(--mute);font-size:13.5px}
 .method li{margin:4px 0}
 .method a{color:var(--amber)}
@@ -230,6 +254,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .paxis .pticks{grid-column:1}
   .pcell{height:30px} .pbar{top:7px} .prange{top:12px} .pval{line-height:30px}
   .bars a{grid-template-columns:1fr 36px;row-gap:4px;padding:6px}
+  .qtable td.wrap{min-width:260px}
   .bars .bar{grid-column:1/-1;order:3}
 }
 </style>
@@ -287,7 +312,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   </section>
 
   <nav class="subnav" aria-label="Sections">
-    <a href="#pay">Pay</a><a href="#employers">Who's hiring</a><a href="#skills">Skills</a><a href="#where">Where &amp; when</a><a href="#method">Method</a>
+    <a href="#pay">Pay</a><a href="#employers">Who's hiring</a><a href="#skills">Skills</a><a href="#where">Where &amp; when</a><a href="#trends">Over time</a><a href="#method">Method</a>
   </nav>
 
   <section class="sec" id="pay">
@@ -332,6 +357,21 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     </div>
   </section>
 
+  <section class="sec" id="trends">
+    <h2>Over <em>time</em></h2>
+    <p class="lede" id="trend-lede"></p>
+    <div class="three">
+      <div class="panel"><h3>Open listings</h3><div class="spark" id="sp-open"></div></div>
+      <div class="panel"><h3>Median hourly pay</h3><div class="spark" id="sp-pay"></div></div>
+      <div class="panel"><h3>Employers with a role up</h3><div class="spark" id="sp-emp"></div></div>
+    </div>
+    <div class="two">
+      <div class="panel"><h3>Postings by month posted</h3><ol class="bars" id="by-month"></ol><p class="hint" id="month-note"></p></div>
+      <div class="panel"><h3>Areas, first update to now</h3><div class="tscroll"><table class="qtable" id="area-change"></table></div></div>
+    </div>
+    <div class="panel qpanel"><h3>By quarter</h3><div class="tscroll"><table class="qtable" id="quarters"></table></div><p class="hint">A quarter's listings and employers are the average across its updates; its postings are counted by the month each was posted, so they are not inflated by how often the board was updated.</p></div>
+  </section>
+
   <section class="sec method" id="method">
     <h2>How these numbers are <em>made</em></h2>
     <ul>
@@ -339,6 +379,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       <li><b>Pay</b> counts internships that quote an <b>hourly</b> figure. A range counts as its midpoint; yearly or monthly figures and entry-level jobs are left out. A group needs 5 hourly listings to get a bar.</li>
       <li><b>New</b> compares the last 14 days with the 14 before. Up or down by 15% or more moves the reading.</li>
       <li><b>Skills</b> are counted once per listing, from a fixed list, so a posting that says "Excel" three times counts once.</li>
+      <li><b>Over time</b> comes from <code>history.json</code> in the repo: every update of the board adds one line of figures, so quarters and years can be compared. It starts the day the board first went up.</li>
       <li>These describe what employers published, not what every intern earns or what every role needs.</li>
     </ul>
   </section>
@@ -480,6 +521,64 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   bars('#by-county', P.counties.filter(([k]) => k !== 'Remote'), P.open, k => link('county', k), (k, n) => `${plural(n,'listing')} in ${k}`);
   bars('#by-term', P.terms.slice(0, 6), P.open, k => link('term', k), (k, n) => `${plural(n,'listing')} for ${k}`);
   bars('#by-level', P.levels, P.open, k => link('level', k), (k, n) => `${plural(n,'listing')} open to ${k}`);
+
+  // ----- over time: drawn from history.json, one point per update of the board -----
+  const H = INS.history || { series:[], areaSeries:{}, postedByMonth:[], quarters:[], builds:0 };
+  const S = H.series;
+  const longDate = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  const shortDate = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  const monthName = m => new Date(m + '-15T12:00:00').toLocaleDateString('en-US', { month:'short', year:'2-digit' }).replace(' ', " '");
+  $('#trend-lede').textContent = S.length ? `One point per update of the board since ${longDate(H.first)}: ${plural(H.builds,'update')} so far. The picture sharpens as the quarters add up.` : 'Trends appear once the board has been updated more than once.';
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+  // The gradient under every line is defined once, on the first chart drawn.
+  let defsDone = false;
+  function spark(sel, key, fmt){
+    const box = $(sel), pts = S.filter(p => p[key] != null);
+    if (pts.length < 2){ box.innerHTML = '<p class="empty">Needs two updates to draw.</p>'; return; }
+    const W = 320, Hh = 120, padL = 34, padR = 44, padT = 14, padB = 22;
+    const xs = pts.map(p => new Date(p.date + 'T12:00:00').getTime()), ys = pts.map(p => p[key]);
+    const x0 = xs[0], x1 = xs[xs.length-1] || x0 + 1;
+    let lo = Math.min(...ys), hi = Math.max(...ys); if (hi === lo){ hi += 1; lo -= 1; } const pad = (hi - lo) * .15; lo -= pad; hi += pad; if (key !== 'medHr') lo = Math.max(0, lo);
+    const X = t => padL + (x1 === x0 ? 0 : (t - x0) / (x1 - x0)) * (W - padL - padR), Y = v => padT + (1 - (v - lo) / (hi - lo)) * (Hh - padT - padB);
+    const svg = el('svg', { viewBox:`0 0 ${W} ${Hh}`, role:'img', 'aria-label':`${pts.length} points from ${fmt(ys[0])} on ${shortDate(pts[0].date)} to ${fmt(ys[ys.length-1])} on ${shortDate(pts[pts.length-1].date)}` });
+    if (!defsDone){ const d = el('defs', {}, svg), g = el('linearGradient', { id:'spark-fill', x1:0, y1:0, x2:0, y2:1 }, d); el('stop', { offset:'0%', 'stop-color':'#00E37B', 'stop-opacity':.28 }, g); el('stop', { offset:'100%', 'stop-color':'#00E37B', 'stop-opacity':0 }, g); defsDone = true; }
+    [lo + pad, hi - pad].forEach(v => { el('line', { class:'grid', x1:padL, x2:W - padR, y1:Y(v), y2:Y(v) }, svg); const t = el('text', { x:padL - 6, y:Y(v) + 3.5, 'text-anchor':'end' }, svg); t.textContent = fmt(v); });
+    const line = pts.map((p, i) => `${X(xs[i]).toFixed(1)},${Y(ys[i]).toFixed(1)}`).join(' ');
+    el('polygon', { class:'fill', points:`${X(xs[0]).toFixed(1)},${Y(lo)} ${line} ${X(xs[xs.length-1]).toFixed(1)},${Y(lo)}` }, svg);
+    el('polyline', { class:'line', points:line }, svg);
+    pts.forEach((p, i) => { const c = el('circle', { class:'dot' + (i === pts.length-1 ? ' last' : ''), cx:X(xs[i]), cy:Y(ys[i]), r:2.5 }, svg); const t = el('title', {}, c); t.textContent = `${longDate(p.date)}: ${fmt(ys[i])}`; });
+    const now = el('text', { class:'now', x:X(x1) + 7, y:Y(ys[ys.length-1]) + 4.5 }, svg); now.textContent = fmt(ys[ys.length-1]);
+    const a = el('text', { x:padL, y:Hh - 6 }, svg); a.textContent = shortDate(pts[0].date);
+    const b = el('text', { x:W - padR, y:Hh - 6, 'text-anchor':'end' }, svg); b.textContent = shortDate(pts[pts.length-1].date);
+    box.appendChild(svg);
+    const d = ys[ys.length-1] - ys[0], delta = document.createElement('span'); delta.className = 'delta ' + (d > 0 ? 'up' : d < 0 ? 'dn' : 'flat');
+    delta.textContent = (d > 0 ? '▲ ' : d < 0 ? '▼ ' : '') + (d === 0 ? 'no change' : fmt(Math.abs(d)) + ' since ' + shortDate(pts[0].date)); box.appendChild(delta);
+  }
+  spark('#sp-open', 'open', v => String(Math.round(v)));
+  spark('#sp-pay', 'medHr', v => '$' + (Math.round(v*4)/4).toFixed(2).replace(/\.00$/, ''));
+  spark('#sp-emp', 'employers', v => String(Math.round(v)));
+
+  // postings by the month they were posted: the last 12 months the history has seen
+  const months = H.postedByMonth.filter(([m]) => m >= new Date(Date.now() - 365*DAY_MS()).toISOString().slice(0, 7)).slice(-12);
+  function DAY_MS(){ return 86400000; }
+  const monthRows = months.map(([m, n]) => [monthName(m), n]);
+  if (monthRows.length) bars('#by-month', monthRows, 0, () => BOARD, (k, n) => `${plural(n,'posting')} dated ${k}`);
+  else $('#by-month').innerHTML = '<li class="empty">No history yet.</li>';
+  const firstMonth = H.first ? H.first.slice(0, 7) : null;
+  $('#month-note').textContent = months.length ? `The current month is still filling in.${firstMonth && months[0][0] < firstMonth ? ` Months before ${monthName(firstMonth)} show only the postings still open when the board started on ${longDate(H.first)}.` : ''}` : '';
+
+  // each area, first update against the latest
+  const first = S[0], last = S[S.length-1];
+  const arrow = d => d > 0 ? `<span class="up">▲ ${d}</span>` : d < 0 ? `<span class="dn">▼ ${-d}</span>` : '<span class="flat">–</span>';
+  // An area that is gone from the board (renamed or folded into another) is left out.
+  const areaRows = Object.entries(H.areaSeries).map(([a, v]) => ({ a, from:v[0], to:v[v.length-1], d:v[v.length-1] - v[0] })).filter(r => r.to > 0).sort((x, y) => y.to - x.to);
+  $('#area-change').innerHTML = areaRows.length ? `<thead><tr><th>Area</th><th class="n">${first ? shortDate(first.date) : ''}</th><th class="n">Now</th><th class="n">Change</th></tr></thead><tbody>`
+    + areaRows.map(r => `<tr><td><a href="${link('area', r.a)}">${esc(r.a)}</a></td><td class="n">${r.from}</td><td class="n">${r.to}</td><td class="n">${arrow(r.d)}</td></tr>`).join('') + '</tbody>' : '';
+
+  // the quarters
+  $('#quarters').innerHTML = H.quarters.length ? `<thead><tr><th>Quarter</th><th class="n">Updates</th><th class="n">Open<small>avg · high</small></th><th class="n">Employers</th><th class="n">Median pay</th><th class="n">List pay</th><th class="n">Postings</th><th>Busiest areas</th><th>Most roles</th></tr></thead><tbody>`
+    + H.quarters.map(q => `<tr><td class="q">${esc(q.q)}<small>${shortDate(q.from)} – ${shortDate(q.to)}</small></td><td class="n">${q.builds}</td><td class="n">${q.openAvg}<small>high ${q.openHigh}</small></td><td class="n">${q.employersAvg}</td><td class="n">${q.medHr != null ? '$' + q.medHr : '—'}</td><td class="n">${q.payListedPct}%</td><td class="n">${q.posted}</td><td class="wrap">${esc(q.topAreas.join(' · '))}</td><td class="wrap">${esc(q.topEmployers.join(' · '))}</td></tr>`).join('') + '</tbody>' : '';
 })();
 </script>
 </body>

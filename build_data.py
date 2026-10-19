@@ -1185,6 +1185,69 @@ def insights_for(cards):
     skills = {"all": skills_in(cards), "byArea": {a: skills_in([g for g in cards if g.get("cat") == a])[:8] for a in areas}, "scanned": len(cards)}
     return {"pulse": pulse, "pay": pay, "employers": employers, "skills": skills}
 
+# ---------- history: one snapshot of the figures per build, kept in the repo ----------
+# history.json is the board's record over time: every build adds (or, on the same day,
+# replaces) one line of headline numbers, so quarters and years can be compared later. It
+# is committed with the pages, so git keeps every version and nothing needs a server.
+def snapshot_for(cards, ins):
+    P, pay = ins["pulse"], ins["pay"]
+    keep = ("open", "interns", "jobs", "openings", "employers", "new7", "new14", "new30",
+            "payListed", "hourlyN", "medHr", "remote", "bilingual")
+    snap = {"date": TODAY.isoformat()}
+    snap.update({k: P[k] for k in keep})
+    snap.update({
+        "payLo": pay["all"]["lo"] if pay["all"] else None, "payHi": pay["all"]["hi"] if pay["all"] else None,
+        "areas": dict(P["areas"]), "counties": dict(P["counties"]), "terms": dict(P["terms"]), "levels": dict(P["levels"]),
+        "payAreas": {r["area"]: r["med"] for r in pay["areas"]},
+        "topEmployers": [[e["name"], e["cards"]] for e in ins["employers"][:5]],
+        "skills": ins["skills"]["all"][:10],
+        # postings by the month they were posted, so a quarter's total survives the 90-day trim
+        "postedByMonth": dict(collections.Counter(g["posted"][:7] for g in cards if g.get("posted"))),
+    })
+    return snap
+
+def update_history(path, snap):
+    hist = json.load(open(path, encoding='utf-8')) if os.path.exists(path) else []
+    hist = sorted([h for h in hist if h["date"] != snap["date"]] + [snap], key=lambda h: h["date"])
+    with open(path, 'w', encoding='utf-8') as f:   # one snapshot per line, so diffs read
+        f.write("[\n" + ",\n".join(json.dumps(h, ensure_ascii=False, separators=(",", ":")) for h in hist) + "\n]\n")
+    return hist
+
+def quarter_of(d):
+    return f"{d[:4]} Q{(int(d[5:7]) - 1) // 3 + 1}"
+
+def history_series(hist):
+    """What the insights page draws from the history: a point per build over the last year,
+    each area's count per build, postings by month, and one row per quarter."""
+    year_ago = (TODAY - dt.timedelta(days=365)).isoformat()
+    recent = [h for h in hist if h["date"] >= year_ago]
+    series = [{k: h.get(k) for k in ("date", "open", "interns", "employers", "new7", "new14", "medHr", "payListed", "remote", "bilingual")} for h in recent]
+    area_names = sorted({a for h in recent for a in h.get("areas", {})})
+    area_series = {a: [h.get("areas", {}).get(a, 0) for h in recent] for a in area_names}
+    posted = collections.Counter()   # a month's postings: the most any build counted for it
+    for h in hist:
+        for m, n in h.get("postedByMonth", {}).items(): posted[m] = max(posted[m], n)
+    quarters = []
+    for q in sorted({quarter_of(h["date"]) for h in hist}):
+        hs = [h for h in hist if quarter_of(h["date"]) == q]
+        meds = sorted(h["medHr"] for h in hs if h.get("medHr") is not None)
+        areas = collections.Counter()
+        for h in hs: areas.update(h.get("areas", {}))
+        emps = collections.Counter()
+        for h in hs:
+            for name, n in h.get("topEmployers", []): emps[name] += n
+        quarters.append({
+            "q": q, "builds": len(hs), "from": hs[0]["date"], "to": hs[-1]["date"],
+            "openAvg": round(sum(h["open"] for h in hs) / len(hs)), "openHigh": max(h["open"] for h in hs),
+            "employersAvg": round(sum(h["employers"] for h in hs) / len(hs)),
+            "medHr": round(quant(meds, .5), 2) if meds else None,
+            "payListedPct": round(100 * sum(h["payListed"] for h in hs) / max(1, sum(h["open"] for h in hs))),
+            "posted": sum(n for m, n in posted.items() if quarter_of(m + "-01") == q),
+            "topAreas": [a for a, _ in areas.most_common(3)], "topEmployers": [a for a, _ in emps.most_common(3)],
+        })
+    return {"series": series, "areaSeries": area_series, "postedByMonth": sorted(posted.items()),
+            "quarters": quarters, "first": hist[0]["date"] if hist else None, "builds": len(hist)}
+
 def render_insights(template_path, ins, date_label):
     tpl = open(template_path, encoding='utf-8').read()
     for tok in ('__INSIGHTS__', '__DATE__'):
@@ -1282,6 +1345,7 @@ def main(argv=None):
     ap.add_argument("--template", default=os.path.join(here, "template.html"))
     ap.add_argument("--out", default=os.path.join(here, "index.html"), help="rendered page (default: index.html next to this script); '-' to skip")
     ap.add_argument("--insights-template", default=os.path.join(here, "insights_template.html"))
+    ap.add_argument("--history", default=os.path.join(here, "history.json"), help="where each build records its figures for the trends on the insights page (default: history.json next to this script); '-' to skip")
     ap.add_argument("--insights-out", default=os.path.join(here, "insights.html"), help="the insights page (default: insights.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
     ap.add_argument("--max-age", type=int, default=90, metavar="DAYS",
@@ -1405,7 +1469,12 @@ def main(argv=None):
         print(f"wrote {a.out} ({len(html):,} chars, updated {a.date})")
         pages = {"/": html, "/index.html": html}
         if a.insights_out != '-':
-            ihtml = render_insights(a.insights_template, insights_for(out), a.date)
+            ins = insights_for(out)
+            if a.history != '-':
+                hist = update_history(a.history, snapshot_for(out, ins))
+                ins["history"] = history_series(hist)
+                print(f"wrote {a.history} ({len(hist)} snapshot(s), {hist[0]['date']} to {hist[-1]['date']})")
+            ihtml = render_insights(a.insights_template, ins, a.date)
             with open(a.insights_out, 'w', encoding='utf-8') as f: f.write(ihtml)
             print(f"wrote {a.insights_out} ({len(ihtml):,} chars)")
             pages.update({"/insights": ihtml, "/insights.html": ihtml})

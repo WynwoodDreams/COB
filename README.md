@@ -263,6 +263,9 @@ listings on the board, so it needs no other data and goes stale only when the bo
   Power BI" to "tableau").
 - **Where and when**: listings by county, by term and by level.
 - A "How these numbers are made" section at the bottom says all of this in plain words.
+- **Over time**: line charts of open listings, median pay and employers, one point per
+  update; postings by the month they were posted; each area's count at the first update
+  against now; and a table with one row per quarter. See "The history file".
 
 The figures are worked out once by `insights_for` in `build_data.py`, so the page carries ten
 kilobytes of numbers rather than the listings. `insights_template.html` holds the markup, the
@@ -270,6 +273,28 @@ same tokens as `template.html` (change a colour in one and copy it to the other)
 that draws the page; `__INSIGHTS__` and `__DATE__` are filled in by the build. Every build
 writes `index.html` and `insights.html` together, and `vercel.json` carries a CSP for each
 (`/insights` and `/insights.html`), pinned to that page's inline script and style.
+
+## The history file
+
+`history.json` is the board's record over time, so quarters and years can be compared later.
+Every build adds one line to it with that day's figures (open listings, new in 7/14/30 days,
+employers, median pay, the share that list pay, counts by area, county, term and level, pay by
+area, the top employers and skills, and postings by the month they were posted). A second
+build on the same day replaces that day's line. It is committed with the pages, so git keeps
+every version and nothing needs a server or an account; the "Over time" section of the
+insights page is drawn from it, through `history_series` in `build_data.py`.
+
+- Commit `history.json` with `index.html` and `insights.html`. A build that is only a preview
+  can skip it with `--history -`.
+- The file was backfilled from every past `index.html` in git, one snapshot per day the board
+  changed, back to the first board on Sep 10, 2026, so the record starts there.
+- A quarter's "postings" counts listings by the month each was posted, taking the highest
+  count any build saw for that month, so it is not inflated by how often the board was
+  rebuilt and survives the 90-day trim.
+- When you want something it does not record, add the field in `snapshot_for`; older lines
+  simply lack it, and the page treats a missing field as "not recorded".
+- If the site ever needs figures visitors write (a poll, say), that is the point to add a
+  real database; this file is for what the build can count.
 
 ## Email list
 
@@ -447,6 +472,7 @@ is the one place untrusted input is processed on your machine.
 - `template.html`: page markup, styles and the client-side filtering script. Colours live in the `:root` block. `__DATA__` and `__DATE__` are filled in by the build.
 - `build_data.py`: reads the spreadsheet, leaves out postings that are jobs rather than internships, classifies each one (area, majors, term, level, pay, work mode) as described under "How a posting is read", merges the same role across locations into one card, folds the result into the listings already published when `--merge` is given, and renders the page.
 - `featured.json`: paid placements, read by every build. See "Featured listings".
+- `history.json`: one line of figures per build, back to the first board. See "The history file".
 - `insights_template.html`: the insights page's markup, styles and script. `__INSIGHTS__` and `__DATE__` are filled in by the build. See "The insights page".
 - `index.html`, `insights.html`: the generated pages. Do not edit by hand; change a template or the script and rebuild.
 - `vercel.json`: generated security headers, including a CSP for each page pinned to that build of it.
