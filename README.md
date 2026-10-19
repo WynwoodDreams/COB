@@ -190,19 +190,23 @@ so every visitor sees the same three all week and a new set the next.
 
 ## South Florida industries
 
-A row of pills above the results, labelled Industries, filters the board to the employers
-this region is known for: sports and media; hospitals and health systems; aviation and
-aerospace; cruise and shipping; government and public schools. The row scrolls sideways
-when it must, with a chevron at its edge; a pill's tooltip says what it covers and how many
-listings it holds.
+The employers this region is known for, gathered by name rather than by field: sports and
+media; banking and finance; real estate and construction; aviation and aerospace; cruise and
+shipping. They live on the insights page as a row of cards (listings, employers, median pay,
+the areas and employers behind each), and each card's "See listings" opens the board
+filtered to that collection. The board itself shows no industries row any more; the filter
+is reached from those cards and from shared links.
 
-- The collections are `HUBS` in the `template.html` script: an employer-name pattern (`co`)
-  and, where it helps, a title pattern (`ti`). They are matched in the page, so changing one
-  is an edit and a rebuild; no data changes.
-- A collection only shows with at least 5 listings from at least 3 employers (`MIN_HUB`,
-  `MIN_HUB_EMP`), so it can never turn into one company's page. Check each pattern's matches
-  when you add one: a pattern that is too loose files unrelated employers under it.
-- The pick is kept in the address as `#hub=<id>`, so a view can be shared.
+- The collections are `HUBS` in `build_data.py`: an employer-name pattern (`co`) and, where
+  it helps, a title pattern (`ti`). The build marks each card with the ids it matches
+  (`hubs`), so changing a pattern is an edit and a rebuild. The board only carries the
+  names, through the `__HUBS__` placeholder in `template.html`.
+- A collection appears on the insights page only with at least 5 listings from at least 3
+  employers (`MIN_HUB`, `MIN_HUB_EMP`), so it can never turn into one company's page. Check
+  each pattern's matches when you add one: a pattern that is too loose files unrelated
+  employers under it (a word like "lending" caught a therapy practice).
+- The pick is kept in the address as `#hub=<id>`, so a view can be shared. The board accepts
+  any id that at least one card carries, so a link to a small collection still works.
 
 ## Bilingual tags
 
@@ -224,24 +228,22 @@ toggle (`#bi=1`). The chip says what the posting says, nothing more.
 
 ## The pay report
 
-The "What interns earn $25/hr" button beside the subtitle opens a report of what
-internships pay: the median, and the middle half, of the hourly pay listings quote, by
-field, as bars, with the same numbers in a table. Picking a field there filters the board
-to it. The button's figure is the median across the whole board.
+What internships pay lives on the insights page, under "What interns earn": the median and
+the middle half of the hourly pay listings quote, by area, county, level and employer. The
+board's old "What interns earn" button and dialog are gone; a shared `#report=pay` link on
+the board redirects to `insights.html#pay`.
 
 - Only internships that quote an **hourly** figure count. A weekly, monthly or yearly figure
   is a different promise, and entry-level jobs (the Cloud & DevOps cards) are left out. A
   range counts as its midpoint; figures under $8 or over $120 an hour are treated as typos.
-- A field needs 5 hourly listings to appear (`MIN_PAY_N`); the note under the chart names the
-  fields that do not have enough yet.
+- A group needs 5 hourly listings to get a bar (`MIN_PAY_N` in `build_data.py`).
 - The numbers come from the listings, so they describe what employers published, not what
-  every intern earns. The note says so.
-- `#report=pay` opens the report, so it can be shared. The chart is built with DOM calls, not
-  inline `style` attributes, because the page's CSP does not allow those.
+  every intern earns. The page says so.
 
 ## The insights page
 
-`insights.html` is a second page, linked from the "Insights" pill beside the pay button: the
+`insights.html` is a second page, linked from the "Insights" pill beside the subtitle (it
+carries a "New!" badge; drop the `<b class="new">` in `template.html` when it is not new): the
 intern market in numbers, laid out like a stock screener. Everything on it is counted from the
 listings on the board, so it needs no other data and goes stale only when the board does.
 
@@ -256,6 +258,9 @@ listings on the board, so it needs no other data and goes stale only when the bo
 - **Who's hiring most**: one card per employer for the 12 with the most roles up, ranked, with
   openings, counties, pay range, newest posting, the terms they hire for, and a link to their
   listings (`#q=<employer>`).
+- **South Florida industries**: a card per collection with listings, employers, median pay,
+  the areas and employers behind it, and a link to the board filtered to it (`#hub=<id>`).
+  See "South Florida industries".
 - **What employers ask for**: how many listings name each skill, across the board and per area.
   `SKILLS` in `build_data.py` is the fixed list of skills and the pattern that finds each; a
   listing counts once per skill however often it says it. A skill links to a board search for

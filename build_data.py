@@ -779,6 +779,30 @@ def group_items(items):
         out.append(g)
     return out
 
+# South Florida industries: the employers this region is known for, found by employer name
+# (and, where it helps, title). Each card carries the ids it matches as `hubs`; the board
+# filters on them (#hub=<id>) and the insights page shows the collections with at least
+# MIN_HUB listings from MIN_HUB_EMP employers, so none can turn into one company's page.
+# Check a pattern's matches when you change one: a loose word files strangers under it.
+HUBS = [
+    dict(id="sports", label="Sports & media", note="Pro teams, stadiums, and Latin music and media companies.",
+         co=r"inter miami|miami fc|miami heat|miami dolphins|dolphins stadium|hard rock (stadium|international|live)|grand prix|florida panthers|marlins|miami open|orange bowl|live nation|escol|carbon fiber|fox corporation|fox news|univision|telemundo|sony music|warner music|universal music"),
+    dict(id="finance", label="Banking & finance", note="The banks, card companies, wealth managers and insurers of Brickell and beyond.",
+         co=r"american express|jpmorgan|j\.?p\.? ?morgan|\bciti\b|citibank|citigroup|wells fargo|bank of america|goldman|morgan stanley|\bubs\b|hsbc|santander|truist|regions bank|city national|bankunited|amerant|raymond james|blackstone|citadel|fidelity|northern trust|mufg|ita[uú]|bbva|banesco|safra|td bank|capital one|\bvisa\b|mastercard|assurant|chubb|\bbank\b|financial|investments?|wealth|asset management|credit union|loop capital"),
+    dict(id="realestate", label="Real estate & construction", note="Developers, builders, brokerages and property firms.",
+         co=r"related group|lennar|\bmoss\b|coastal construction|suffolk|turner construction|skanska|balfour beatty|kaufman lynn|moriarty|\bancon\b|\bcbre\b|\bjll\b|cushman|colliers(?! engineering)|newmark|berkadia|fortune international|swire|dezer|florida east coast|realty|real estate|propert|\bhomes?\b|builders|construction|dr horton|d\.r\. horton|pulte|toll brothers|gl homes|kolter|minto|codina|greystar|mill creek|avalonbay|hines|tishman|brookfield|prologis|regency centers|kimco"),
+    dict(id="aviation", label="Aviation & aerospace", note="Aircraft maintenance, engines, parts, airports and defense electronics.",
+         co=r"\bftai\b|ga telesis|heico|standardaero|silver wings|f&e aircraft|l3harris|pratt & whitney|embraer|boeing|lockheed|airlines|jetblue|avianca", ti=r"\baviation\b|aircraft|avionics|aerospace|airport"),
+    dict(id="cruise", label="Cruise & shipping", note="Cruise lines and ocean freight.",
+         co=r"royal caribbean|carnival|norwegian cruise|windstar|msc cruises|celebrity cruises|seabourn|blue water shipping|seaboard marine|tropical shipping|crowley|port everglades|portmiami", ti=r"\bcruise\b|maritime|shipping"),
+]
+for _h in HUBS:
+    _h["co_re"] = re.compile(_h["co"], re.I); _h["ti_re"] = re.compile(_h["ti"], re.I) if _h.get("ti") else None
+MIN_HUB, MIN_HUB_EMP = 5, 3
+
+def hubs_for(g):
+    return [h["id"] for h in HUBS if h["co_re"].search(g.get("company", "")) or (h["ti_re"] and h["ti_re"].search(g.get("title", "")))]
+
 def finalize(out, upgrade=True):
     """Idempotent clean-up applied to both fresh and re-loaded data."""
     for g in out:
@@ -796,6 +820,7 @@ def finalize(out, upgrade=True):
         for k in ('pay', 'level', 'mode', 'flag', 'snippet', 'company', 'cat', 'kind'):
             g[k] = s(g.get(k))
         g['company'] = company_name(g['company'])
+        g['hubs'] = hubs_for(g)
         g['posted'] = date_str(g.get('posted'))
         # Languages: cards from older builds no longer have their full description, so they are
         # read from the title, summary and requirement bullets they do carry. That finds less than
@@ -1182,8 +1207,19 @@ def insights_for(cards):
             "jobs": sum(1 for g in cs if g.get("kind") == "Job"), "newest": newest,
             "terms": [t for t, _ in collections.Counter(t for g in cs for t in g.get("term") or []).most_common(2)],
         })
+    hubs = []
+    for h in HUBS:
+        cs = [g for g in cards if h["id"] in (g.get("hubs") or [])]
+        emps = collections.Counter(g["company"] for g in cs)
+        if len(cs) < MIN_HUB or len(emps) < MIN_HUB_EMP: continue
+        st = pay_stats([g for g in cs if g.get("kind") != "Job"])
+        hubs.append({"id": h["id"], "label": h["label"], "note": h["note"], "n": len(cs), "employers": len(emps),
+                     "openings": sum(int(g.get("count") or 1) for g in cs), "medHr": st["med"] if st and st["n"] >= MIN_PAY_N else None, "hourlyN": st["n"] if st else 0,
+                     "areas": [a for a, _ in collections.Counter(g.get("cat") for g in cs).most_common(3)],
+                     "topEmployers": [[c, n] for c, n in emps.most_common(3)], "bilingual": sum(1 for g in cs if g.get("lang")),
+                     "paid": sum(1 for g in cs if g.get("pay") and not re.search(r"unpaid", g["pay"], re.I))})
     skills = {"all": skills_in(cards), "byArea": {a: skills_in([g for g in cards if g.get("cat") == a])[:8] for a in areas}, "scanned": len(cards)}
-    return {"pulse": pulse, "pay": pay, "employers": employers, "skills": skills}
+    return {"pulse": pulse, "pay": pay, "employers": employers, "hubs": hubs, "skills": skills}
 
 # ---------- history: one snapshot of the figures per build, kept in the repo ----------
 # history.json is the board's record over time: every build adds (or, on the same day,
@@ -1201,6 +1237,7 @@ def snapshot_for(cards, ins):
         "payAreas": {r["area"]: r["med"] for r in pay["areas"]},
         "topEmployers": [[e["name"], e["cards"]] for e in ins["employers"][:5]],
         "skills": ins["skills"]["all"][:10],
+        "hubs": {h["id"]: h["n"] for h in ins["hubs"]},
         # postings by the month they were posted, so a quarter's total survives the 90-day trim
         "postedByMonth": dict(collections.Counter(g["posted"][:7] for g in cards if g.get("posted"))),
     })
@@ -1308,9 +1345,10 @@ def security_headers(pages):
 
 def render_html(template_path, out, date_label):
     tpl = open(template_path, encoding='utf-8').read()
-    for tok in ('__DATA__', '__DATE__'):
+    for tok in ('__DATA__', '__DATE__', '__HUBS__'):
         if tpl.count(tok) != 1: sys.exit(f"{template_path}: expected exactly one {tok} placeholder")
-    return tpl.replace('__DATA__', json_for_html(out)).replace('__DATE__', date_label)
+    labels = [{"id": h["id"], "label": h["label"], "note": h["note"]} for h in HUBS]
+    return tpl.replace('__DATA__', json_for_html(out)).replace('__HUBS__', json_for_html(labels)).replace('__DATE__', date_label)
 
 def print_stats(out, items):
     print(collections.Counter(x['cat'] for x in out).most_common())
