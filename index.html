@@ -247,7 +247,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .paybtn{min-height:40px;padding:6px 14px 6px 10px;font-size:12.5px}
   .resultbar .note{margin-left:0;flex:1 1 100%}
 }
-}
 @media (max-width:560px){
   /* on a small phone the two actions keep their icons and tooltips, not their words */
   .filters .tools .tb .t{display:none}
@@ -347,6 +346,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .join p small{display:block;color:var(--mute);font-size:13px;font-weight:400;margin-top:2px}
 .join a{font-family:var(--mono);font-size:13px;font-weight:700;color:#04120B;background:var(--amber);border-radius:9px;padding:10px 16px;text-decoration:none;white-space:nowrap;box-shadow:var(--glow)}
 .join a:hover{background:var(--amber-2)}
+/* a thumb-sized hit area for the footer links without moving the line they sit on */
+@media (max-width:900px){.foot a{display:inline-block;padding:12px 0;margin:-12px 0}}
 @media (max-width:900px){.join a{flex:1 1 100%;text-align:center;min-height:50px;line-height:30px}}
 
 @media (max-width:900px){
