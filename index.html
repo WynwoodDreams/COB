@@ -108,9 +108,13 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .row.feat .apply{background:var(--feat);box-shadow:0 0 24px rgba(var(--feat-rgb),.3)}
 .row.feat .apply:hover{background:var(--feat-2)}
 .chip.feat{color:#1A1200;background:var(--feat);border-color:var(--feat);font-weight:700;letter-spacing:.04em}
-/* Pick of the week: drawn at random, free. Green outline, never the gold of a paid card. */
-.row.pick{border-color:rgba(0,227,123,.4);box-shadow:inset 3px 0 0 var(--amber)}
-.chip.pick{color:var(--amber);border-color:rgba(0,227,123,.5);background:var(--amber-dim);font-weight:700;letter-spacing:.04em}
+/* Pick of the week: neon magenta, a colour no other card uses (green is the board, gold is
+   paid). The light that other cards run around their edge on hover runs here all the time:
+   the same ring and blurred twin as .row::before/::after below, in magenta. */
+.row.pick{--pick:#FF3DCB;--pick-rgb:255,61,203;position:relative;border-color:rgba(var(--pick-rgb),.5);box-shadow:inset 3px 0 0 var(--pick),0 0 28px rgba(var(--pick-rgb),.16)}
+.row.pick::before,.row.pick::after{opacity:1;animation:orbit 3.4s linear infinite;
+  background:conic-gradient(from var(--orbit),transparent 0 55%,rgba(var(--pick-rgb),.3) 74%,var(--pick) 88%,#FFD3F2 91%,transparent 100%)}
+.chip.pick{color:var(--pick);border-color:rgba(var(--pick-rgb),.65);background:rgba(var(--pick-rgb),.12);font-weight:700;letter-spacing:.04em;text-shadow:0 0 9px rgba(var(--pick-rgb),.75);box-shadow:0 0 16px rgba(var(--pick-rgb),.28)}
 
 /* filters */
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px}
@@ -321,6 +325,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row:hover::before,.row:hover::after{opacity:1;animation:orbit 2.6s linear infinite}
   .row:hover h3{color:#fff}
   .row:hover .apply{box-shadow:0 0 26px rgba(0,227,123,.42)}
+  .row.pick:hover{border-color:rgba(var(--pick-rgb),.7)}
+  .row.pick:hover .apply{box-shadow:0 0 26px rgba(var(--pick-rgb),.4)}
   .row.feat:hover{border-color:rgba(var(--feat-rgb),.6)}
   .row.feat:hover .apply{box-shadow:0 0 26px rgba(var(--feat-rgb),.45)}
 }
@@ -328,6 +334,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
    button) runs the light around once. The class comes off when the lap ends. */
 .row.lit::before,.row.lit::after{opacity:1;animation:orbit 1.6s linear 1}
 .row:focus-within{border-color:rgba(0,227,123,.45)}
+.row.pick:focus-within{border-color:rgba(var(--pick-rgb),.7)}
 .apply{border-radius:9px;box-shadow:var(--glow)}
 .apply:hover{box-shadow:0 0 30px rgba(0,227,123,.42)}
 .head h1{font-weight:800;letter-spacing:-.03em;font-family:var(--sans)}

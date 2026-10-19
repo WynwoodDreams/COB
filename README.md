@@ -168,7 +168,8 @@ adding or removing a placement is an edit to that file and a rebuild:
 ## Pick of the week
 
 Every Monday the page draws three listings at random (`PICK_MAX` in the template) and marks
-them PICK OF THE WEEK, with a green edge and a chip whose tooltip says the draw is random and
+them PICK OF THE WEEK, in neon magenta (a colour no other card uses) with a light that runs around the
+card's edge all the time, and a chip whose tooltip says the draw is random and
 unpaid. Nothing needs editing or rebuilding: the page seeds the draw with the current week,
 so every visitor sees the same three all week and a new set the next.
 
