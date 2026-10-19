@@ -316,6 +316,17 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .empty p{color:var(--mute);margin:0 0 14px}
 .empty button,.loadmore{background:transparent;border:1px solid var(--amber);color:var(--amber);border-radius:7px;padding:11px 20px;font-family:var(--mono);font-size:13px;font-weight:600}
 .loadmore{align-self:center;margin-top:10px}
+/* page numbers under the list */
+.pager{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin:14px 0 4px}
+.pager .pg{min-width:38px;height:38px;padding:0 10px;background:var(--panel);border:1px solid var(--rule-2);color:var(--ink);border-radius:8px;font-family:var(--mono);font-size:13px}
+.pager .pg:hover:not(:disabled):not([aria-current]){border-color:var(--amber)}
+.pager .pg[aria-current="page"]{background:var(--amber);border-color:var(--amber);color:#04120B;font-weight:700;cursor:default}
+.pager .pg:disabled{opacity:.35;cursor:default}
+.pager .step{padding:0 14px}
+.pager .gap{color:var(--dim);font-family:var(--mono);padding:0 2px}
+@media (max-width:900px){.pager .pg{min-width:44px;height:44px}.pager{gap:5px}}
+@media (max-width:560px){.pager .step{padding:0 10px}.pager .w{display:none}}
+@media (max-width:340px){.pager{gap:4px}.pager .pg{min-width:40px;padding:0 6px}.pager .step{padding:0 8px}}
 .empty button:hover,.loadmore:hover{background:var(--amber);color:#1A1200}
 
 .foot{margin-top:40px;border-top:1px solid var(--rule);padding-top:16px;font-family:var(--mono);font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -625,14 +636,14 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     title: `Listing closed or broken: ${d.company} / ${d.title}`.slice(0, 200),
     body: `Employer: ${d.company}\nRole: ${d.title}\nCard: ${d.id}\nApply link: ${d.locs[0].apply}\n\nWhat's wrong (closed, link broken, not an internship, other):\n`,
   }).toString();
-  const PAGE = 40, FEAT_MAX = 3, PICK_MAX = 3, PICK_FRESH = 45;
+  const PAGE = 20, FEAT_MAX = 3, PICK_MAX = 3, PICK_FRESH = 45;
   // The email list lives on a newsletter service (Kit, Beehiiv, Substack...), which handles
   // sending and unsubscribes. Paste its public signup page here and rebuild; while this is
   // empty the invite stays off the page. It links out rather than posting a form, so the
   // page's CSP (form-action 'none') stays as strict as it is.
   const NEWSLETTER_URL = '';
   const JOIN_AFTER = 6;
-  const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', hub:'', paid:false, remote:false, bi:false, report:false, sort:'new', shown:PAGE };
+  const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', hub:'', paid:false, remote:false, bi:false, report:false, sort:'new', page:1 };
   const state = Object.assign({}, DEFAULTS);
 
   // Rough hourly value of a pay string, used only to rank listings against each other.
@@ -915,18 +926,21 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       + (guide ? `<a class="g" href="${esc(guide.href)}" target="_blank" rel="noopener" title="${esc(guide.tip)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>${esc(guide.label)}<small>${esc(guide.meta)}</small></a>` : '')
       + (bench ? `<a class="b" href="${esc(bench.href)}" target="_blank" rel="noopener" title="${esc(bench.tip)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.7 6.3 3 3M4 20l4.5-1 10.2-10.2a2.1 2.1 0 0 0-3-3L5.5 16 4 20z"/></svg>${esc(bench.label)}<small>BuildersBench ↗</small></a>` : '');
     const openings = list.reduce((n,d)=>n+d.count,0);
-    const shown = Math.min(state.shown, list.length);
+    // Twenty to a page; a page past the end (a stale link, a filter that shrank the list) clamps to the last.
+    const pages = Math.max(1, Math.ceil(list.length / PAGE));
+    state.page = Math.min(Math.max(1, state.page|0), pages);
+    const from = (state.page - 1) * PAGE, to = Math.min(from + PAGE, list.length);
     const noun = jobs ? 'listing' : 'internship';
-    $('#rcount').textContent = list.length ? `${shown<list.length?`${shown} of `:''}${list.length} ${noun}${list.length===1?'':'s'}${jobs && interns?` · ${jobs} job${jobs===1?'':'s'} · ${interns} internship${interns===1?'':'s'}`:''}${openings>list.length?` · ${openings} openings across locations`:''}` : 'No listings match';
+    $('#rcount').textContent = list.length ? `${pages>1?`${from+1}–${to} of `:''}${list.length} ${noun}${list.length===1?'':'s'}${jobs && interns?` · ${jobs} job${jobs===1?'':'s'} · ${interns} internship${interns===1?'':'s'}`:''}${openings>list.length?` · ${openings} openings across locations`:''}` : 'No listings match';
     if (!list.length){
       wrap.innerHTML = `<div class="empty"><h3>Nothing matches.</h3><p>Try a broader search or clear a filter.</p><button type="button" id="empty-reset">Reset filters</button></div>`;
       $('#empty-reset').addEventListener('click', reset);
     } else {
-      list.slice(0,state.shown).forEach((d, i) => {
+      list.slice(from, to).forEach((d, i) => {
         wrap.appendChild(row(d));
-        if (i === Math.min(JOIN_AFTER, list.length) - 1) { const j = joinBox(); if (j) wrap.appendChild(j); }
+        if (state.page === 1 && i === Math.min(JOIN_AFTER, to) - 1) { const j = joinBox(); if (j) wrap.appendChild(j); }
       });
-      if (list.length > state.shown){ const b=document.createElement('button'); b.className='loadmore'; b.type='button'; b.textContent=`Show ${Math.min(PAGE,list.length-state.shown)} more`; b.addEventListener('click',()=>{ state.shown+=PAGE; render(); }); wrap.appendChild(b); }
+      if (pages > 1) wrap.appendChild(pager(pages));
     }
     const n = activeCount();
     $('#filter-count').innerHTML = n ? `<span class="on">${n} on</span>` : (filters.classList.contains('collapsed') ? 'show' : 'hide');
@@ -954,8 +968,27 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   // without this the new list opens halfway down, or past its end on a shorter one. Only
   // scroll when the top of the list is actually out of sight, so changing a filter while
   // the list is already in view leaves the page where it is.
+  // Page numbers: always the first and last page, the current one and its neighbours, and an
+  // ellipsis for each gap, so 24 pages fit on a phone.
+  function pager(pages){
+    const nav = document.createElement('nav'); nav.className = 'pager'; nav.setAttribute('aria-label', 'Pages');
+    const go = n => { state.page = n; render(); const a = $('.resultbar'); if (a) window.scrollTo({ top: Math.max(0, window.scrollY + a.getBoundingClientRect().top - stickyInset() - 12) }); };
+    const btn = (label, n, cls, aria) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.innerHTML = label; if (aria) b.setAttribute('aria-label', aria);
+      if (n === state.page && cls === 'pg') b.setAttribute('aria-current', 'page'); else if (n < 1 || n > pages) b.disabled = true; else b.addEventListener('click', () => go(n)); nav.appendChild(b); };
+    // a narrow phone shows only the current page between the first and last, and arrows for Prev/Next
+    const narrow = window.innerWidth <= 560, near = narrow ? 0 : 1, edge = narrow ? 2 : 3;
+    btn('‹<span class="w"> Prev</span>', state.page - 1, 'pg step', 'Previous page');
+    const want = new Set([1, pages, state.page - near, state.page, state.page + near].filter(n => n >= 1 && n <= pages));
+    if (state.page <= edge) for (let n = 2; n <= edge + 1; n++) if (n <= pages) want.add(n);
+    if (state.page > pages - edge) for (let n = pages - edge; n < pages; n++) if (n >= 1) want.add(n);
+    let last = 0;
+    [...want].sort((a,b) => a-b).forEach(n => { if (n - last > 1){ const e = document.createElement('span'); e.className = 'gap'; e.textContent = '…'; nav.appendChild(e); } btn(String(n), n, 'pg', `Page ${n}`); last = n; });
+    btn('<span class="w">Next </span>›', state.page + 1, 'pg step', 'Next page');
+    return nav;
+  }
+
   function refilter(){
-    state.shown = PAGE;
+    state.page = 1;
     render();
     const anchor = $('.resultbar');
     if (!anchor) return;
@@ -968,6 +1001,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const p=new URLSearchParams();
     ['q','area','hub','county','major','term','level','sort'].forEach(k=>{ if(state[k] && !(k==='sort'&&state[k]==='new')) p.set(k,state[k]); });
     if(state.paid) p.set('paid','1'); if(state.remote) p.set('remote','1'); if(state.bi) p.set('bi','1');
+    if(state.page>1) p.set('page',String(state.page));
     if(payDlg.open) p.set('report','pay');
     const h=p.toString();
     try{ history.replaceState(null,'', location.pathname+location.search+(h?'#'+h:'')); }catch(e){}
@@ -979,6 +1013,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     state.q=(p.get('q')||'').trim().slice(0,200);
     ['area','hub','county','major','term','level','sort'].forEach(k=>{ const v=p.get(k); if(v && OPTIONS[k].has(v)) state[k]=v; });
     state.paid=p.get('paid')==='1'; state.remote=p.get('remote')==='1'; state.bi=p.get('bi')==='1'; state.report=p.get('report')==='pay';
+    state.page=Math.max(1, parseInt(p.get('page'),10)||1);
   }
 
   let t;

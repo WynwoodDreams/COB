@@ -6,6 +6,11 @@ image that shows when someone shares the link. Those two files are the whole dep
 Visitors filter by area, county, major, term and level, sort by date, pay or employer, and
 apply straight to the employer. Filter state lives in the URL, so any view can be shared.
 
+Listings show 20 to a page (`PAGE` in the template), with Prev, Next and page numbers under
+the list: the first and last page, the current one and its neighbours, and an ellipsis for each
+gap. On a phone only the current page sits between the first and last, so the row fits on one
+line. The page number is kept in the address as `#page=N`, and any filter goes back to page 1.
+
 ## Deploy to Vercel
 
 1. Create a new repo under WynwoodDreams (e.g. `opportunity-board`) and upload the contents of this folder through the GitHub web UI.
