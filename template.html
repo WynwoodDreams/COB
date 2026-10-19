@@ -36,6 +36,8 @@
   --glow:0 0 24px rgba(0,227,123,.28);
   /* Featured (paid) cards: gold, so they never read as one of the free areas. */
   --feat:#FFC94D; --feat-2:#FFDB85; --feat-rgb:255,201,77;
+  /* Language chip: cyan, quieter than a pick's magenta and the gold of a paid card. */
+  --lang:#5BD0E8; --lang-rgb:91,208,232;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
@@ -134,10 +136,105 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .fbar button i{font-style:normal;color:var(--dim);font-size:12px}
 .fbar button .on{color:var(--amber)}
 
-.resultbar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin:18px 0 10px}
+.resultbar{display:flex;align-items:baseline;gap:8px 12px;flex-wrap:wrap;margin:18px 0 10px}
 .resultbar h2{font-family:var(--mono);font-weight:600;font-size:16px;margin:0}
 .resultbar h2 em{font-style:normal;color:var(--amber)}
-.resultbar .note{font-family:var(--mono);font-size:12px;color:var(--mute)}
+.resultbar .note{font-family:var(--mono);font-size:12px;color:var(--mute);margin-left:auto}
+.chip.lang{color:var(--lang);border-color:rgba(var(--lang-rgb),.4);background:rgba(var(--lang-rgb),.09)}
+
+/* South Florida industries: a row of filters for the employers this region is known for. */
+.hubs{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin:14px 0 0}
+.hubs[hidden]{display:none}
+.hubs .lab{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);flex:none}
+.hub-list{display:flex;flex-wrap:wrap;gap:6px}
+.hub{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--rule-2);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13px}
+.hub i{font-style:normal;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.hub:hover{border-color:var(--amber)}
+.hub[aria-pressed="true"]{background:var(--amber-dim);border-color:rgba(0,227,123,.55)}
+.hub[aria-pressed="true"] i{color:var(--amber)}
+.hubnote{margin:8px 0 0;font-size:13px;color:var(--mute)}
+.hubnote[hidden]{display:none}
+.hubnote b{color:var(--ink);font-weight:600}
+
+/* The median pay of whatever is on screen, and the way into the full pay report. */
+.paypill{display:inline-flex;align-items:baseline;gap:8px;background:transparent;border:1px solid var(--rule-2);color:var(--ink);border-radius:999px;padding:3px 11px;font-family:var(--mono);font-size:12px}
+.paypill[hidden]{display:none}
+.paypill small{color:var(--mute);font-size:11.5px}
+.paypill:hover,.paypill:focus-visible{border-color:var(--amber)}
+.stats .statlink{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline dotted var(--dim);text-underline-offset:3px}
+.stats .statlink:hover{color:var(--ink)}
+.stats .statlink em{font-style:normal;color:var(--amber);margin-left:3px}
+
+/* The pay report: one colour, thin bars grown from a single baseline, the value at the bar's tip. */
+.paydlg{width:min(780px,calc(100vw - 24px));max-width:none;max-height:calc(100vh - 32px);padding:0;border:1px solid var(--rule-2);border-radius:14px;background:var(--panel);color:var(--ink);box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden}
+.paydlg::backdrop{background:rgba(4,8,6,.74);backdrop-filter:blur(3px)}
+.paybox{padding:22px 24px 18px;max-height:calc(100vh - 34px);overflow:auto}
+.pay-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.pay-head h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.pay-head p{margin:4px 0 0;color:var(--mute);font-size:13px}
+.pay-x{flex:none;width:34px;height:34px;border-radius:8px;background:transparent;border:1px solid var(--rule-2);color:var(--mute);font-size:20px;line-height:1}
+.pay-x:hover{color:var(--ink);border-color:var(--amber)}
+.pay-hero{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:16px 0 2px}
+.pay-hero b{font-size:48px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.pay-hero span{color:var(--mute);font-size:13.5px}
+.pay-tools{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:14px 0 6px}
+.seg{display:inline-flex;border:1px solid var(--rule-2);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:0;color:var(--mute);padding:6px 14px;font-family:var(--mono);font-size:12px}
+.seg button[aria-pressed="true"]{background:var(--amber-dim);color:var(--ink)}
+.pay-copy{background:transparent;border:1px solid var(--rule-2);color:var(--mute);border-radius:6px;padding:7px 12px;font-family:var(--mono);font-size:12px}
+.pay-copy:hover{color:var(--ink);border-color:var(--amber)}
+.pay-copy.done{color:var(--amber);border-color:var(--amber)}
+.pchart{--ticks:4;--ref:0%}
+.pchart[hidden],.ptable[hidden]{display:none}
+.prow,.paxis{display:grid;grid-template-columns:minmax(118px,.9fr) 2.4fr 82px;gap:0 12px;width:100%;padding:0 6px}
+.prow{align-items:center;background:transparent;border:0;border-radius:6px;color:var(--ink);font:inherit;text-align:left}
+.prow:hover,.prow:focus-visible{background:rgba(255,255,255,.045)}
+.prow .pl{font-size:13px;line-height:1.25;padding:3px 0}
+.prow .pn{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-align:right}
+.pcell{position:relative;height:34px;background:linear-gradient(to right,var(--rule) 1px,transparent 1px) 0 0/calc(100%/var(--ticks)) 100%;border-right:1px solid var(--rule)}
+.pcell::after{content:"";position:absolute;top:0;bottom:0;left:var(--ref);width:1px;background:rgba(233,241,237,.42)}
+.pbar{position:absolute;left:0;top:9px;height:16px;width:var(--w);background:var(--amber);border-radius:0 4px 4px 0}
+.pval{position:absolute;top:0;left:calc(var(--w) + 6px);line-height:34px;font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--panel);padding:0 4px;z-index:1}
+.pchart.has-sel .prow:not(.sel) .pbar{background:#566B61}
+.prow:hover .pbar,.prow:focus-visible .pbar{filter:brightness(1.12)}
+.prow:hover .pval,.prow:focus-visible .pval{background:#1b211f}
+.paxis{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.paxis .pticks{position:relative;height:18px;grid-column:2}
+.paxis .pticks span{position:absolute;top:2px;transform:translateX(-50%)}
+.paxis .pticks span:first-child{transform:none}
+.paxis.top{margin-bottom:2px;color:var(--mute)}
+.paxis.top .pticks span{transform:translateX(-50%);white-space:nowrap}
+.pay-note{margin:12px 0 0;color:var(--mute);font-size:12.5px;line-height:1.5}
+.ptable{width:100%;border-collapse:collapse;font-size:13px}
+.ptable th{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);text-align:left;padding:8px 8px;border-bottom:1px solid var(--rule-2)}
+.ptable td{padding:8px 8px;border-bottom:1px solid var(--rule)}
+.ptable td:not(:first-child),.ptable th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.ptable tr.all td{font-weight:600}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ptip{position:fixed;z-index:10;pointer-events:none;background:var(--panel-2);border:1px solid var(--rule-2);border-radius:8px;padding:8px 10px;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:12.5px;color:var(--mute);max-width:260px}
+.ptip[hidden]{display:none}
+.ptip b{display:block;font-size:15px;color:var(--ink);margin-bottom:2px}
+@media (max-width:900px){
+  .hubs{display:block}
+  .hubs .lab{display:block;margin-bottom:8px}
+  .hub-list{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px}
+  .hub{flex:none;white-space:nowrap;min-height:44px;padding:9px 14px}
+  .hubnote{font-size:13.5px}
+  .paypill{min-height:36px;padding:6px 12px}
+  .resultbar .note{margin-left:0;flex:1 1 100%}
+  .stats .statlink{min-height:24px}
+}
+@media (max-width:560px){
+  .paybox{padding:16px 14px 14px}
+  .pay-hero b{font-size:40px}
+  .prow,.paxis{grid-template-columns:1fr 96px;gap:0 8px}
+  .prow .pl{grid-column:1/-1;padding:8px 0 0}
+  .paxis .pticks{grid-column:1}
+  .pcell{height:30px}
+  .pbar{top:7px}
+  .pval{line-height:30px}
+  .seg button,.pay-copy,.pay-x{min-height:40px}
+}
 /* Help for a tech area, as one slim row of links under its header: the area's guide and
    its portfolio projects on BuildersBench. The longer pitch sits in each link's title. */
 .prep{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px}
@@ -409,7 +506,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         <span><b id="st-open">0</b>listings</span>
         <span><b id="st-emp">0</b>employers</span>
         <span><b id="st-areas">0</b>areas</span>
-        <span><b id="st-paid">0</b>list pay</span>
+        <span><button type="button" class="statlink" id="open-pay" title="See what South Florida interns earn, by field"><b id="st-paid">0</b>list pay<em aria-hidden="true">↗</em></button></span>
       </div>
       <form class="search" role="search">
         <input id="q" type="search" placeholder="Search company, title, or keyword" autocomplete="off" aria-label="Search listings">
@@ -435,13 +532,21 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         <label>Level <select id="f-level"><option value="">Any level</option></select></label>
         <label class="toggle"><input type="checkbox" id="f-paid"> Pay listed</label>
         <label class="toggle"><input type="checkbox" id="f-remote"> Remote or hybrid</label>
+        <label class="toggle" title="Postings that mention Spanish, Portuguese, Creole or bilingual skills"><input type="checkbox" id="f-lang"> Bilingual</label>
         <label>Sort <select id="f-sort"><option value="new">Newest first</option><option value="pay">Highest pay</option><option value="co">Employer A to Z</option><option value="title">Title A to Z</option></select></label>
         <button class="copy" id="copy" type="button">Copy link</button>
         <button class="reset" id="reset" type="button">Reset</button>
       </div>
 
+      <nav class="hubs" id="hubs" aria-label="South Florida industries" hidden>
+        <span class="lab">South Florida industries</span>
+        <div class="hub-list" id="hub-list"></div>
+      </nav>
+      <p class="hubnote" id="hubnote" hidden></p>
+
       <div class="resultbar">
         <h2 id="rtitle">All areas</h2>
+        <button type="button" class="paypill" id="paypill" hidden></button>
         <div class="note" id="rcount" role="status" aria-live="polite"></div>
       </div>
       <div class="prep" id="prep" hidden></div>
@@ -453,6 +558,27 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     <span>Christian Ortega · <a href="mailto:christianjort@gmail.com">christianjort@gmail.com</a></span>
   </footer>
 </div>
+
+<dialog class="paydlg" id="paydlg" aria-labelledby="pay-title">
+  <div class="paybox">
+    <div class="pay-head">
+      <div>
+        <h2 id="pay-title">What South Florida interns earn</h2>
+        <p>Hourly pay as listed by employers, by field. Click a field to see its listings.</p>
+      </div>
+      <button type="button" class="pay-x" id="pay-x" aria-label="Close">&times;</button>
+    </div>
+    <div class="pay-hero"><b id="pay-hero-v">$0</b><span id="pay-hero-s"></span></div>
+    <div class="pay-tools">
+      <div class="seg" role="group" aria-label="View"><button type="button" aria-pressed="true" data-view="chart">Chart</button><button type="button" aria-pressed="false" data-view="table">Table</button></div>
+      <button type="button" class="pay-copy" id="pay-copy">Copy link</button>
+    </div>
+    <div class="pchart" id="pchart"></div>
+    <table class="ptable" id="ptable" hidden></table>
+    <p class="pay-note" id="pay-note"></p>
+  </div>
+  <div class="ptip" id="paytip" role="tooltip" hidden></div>
+</dialog>
 
 <script id="data" type="application/json">__DATA__</script>
 <script>
@@ -479,7 +605,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   // page's CSP (form-action 'none') stays as strict as it is.
   const NEWSLETTER_URL = '';
   const JOIN_AFTER = 6;
-  const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', paid:false, remote:false, sort:'new', shown:PAGE };
+  const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', hub:'', paid:false, remote:false, bi:false, report:false, sort:'new', shown:PAGE };
   const state = Object.assign({}, DEFAULTS);
 
   // Rough hourly value of a pay string, used only to rank listings against each other.
@@ -492,6 +618,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     return isFinite(top) ? top * PER_HOUR[unit] : null;
   }
 
+  const payDlg = $('#paydlg');
   const DAY = 86400000, NOW = Date.now();
   const asDate = s => { const d = new Date(s+'T12:00:00'); return isNaN(d) ? null : d; };
   function ageLabel(days){
@@ -501,6 +628,33 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     if (days < 365) return Math.round(days/30) + 'mo ago';
     return Math.round(days/365) + 'y ago';
   }
+
+  // South Florida industries: the employers this region is known for, found by employer name
+  // (and, where it helps, title). A collection only shows with at least MIN_HUB listings from
+  // at least MIN_HUB_EMP employers, so it can never turn into one company's page.
+  const MIN_HUB = 5, MIN_HUB_EMP = 3;
+  const HUBS = [
+    { id:'sports', label:'Sports, music & media', note:'Pro teams, stadiums, and Latin music and media companies.',
+      co:/inter miami|miami fc|miami heat|miami dolphins|dolphins stadium|hard rock (stadium|international|live)|grand prix|florida panthers|marlins|miami open|orange bowl|live nation|escol|carbon fiber|fox corporation|fox news|univision|telemundo|sony music|warner music|universal music/i },
+    { id:'health', label:'Hospitals & health', note:"South Florida's hospitals and health systems.",
+      co:/baptist health|nicklaus children|memorial healthcare|mount sinai|jackson health|cleveland clinic|broward health|holy cross|tenet healthcare|uhealth|hca florida/i },
+    { id:'aviation', label:'Aviation & aerospace', note:'Aircraft maintenance, engines, parts, airports and defense electronics.',
+      co:/\bftai\b|ga telesis|heico|standardaero|silver wings|f&e aircraft|l3harris|pratt & whitney|embraer|boeing|lockheed|airlines|jetblue|avianca/i, ti:/\baviation\b|aircraft|avionics|aerospace|airport/i },
+    { id:'cruise', label:'Cruise & shipping', note:'Cruise lines and ocean freight.',
+      co:/royal caribbean|carnival|norwegian cruise|windstar|msc cruises|celebrity cruises|seabourn|blue water shipping|seaboard marine|tropical shipping|crowley|port everglades|portmiami/i, ti:/\bcruise\b|maritime|shipping/i },
+    { id:'public', label:'Government & schools', note:'City, county, state and school-district programs.',
+      co:/^(city|town|village) of |^state of florida|(miami[- ]dade|broward|palm beach) county|public schools|school board|school district|clerk of the/i },
+  ];
+  // The hourly pay a listing quotes, for the pay report: the middle of a range, hourly figures
+  // only (a weekly, monthly or yearly figure is a different promise), internships only.
+  const hourlyQuote = d => {
+    if (d.kind === 'Job' || !/\/hr\b/i.test(d.pay)) return null;
+    const nums = (d.pay.match(/\d[\d,]*\.?\d*/g) || []).map(x => parseFloat(x.replace(/,/g,''))).filter(isFinite);
+    if (!nums.length) return null;
+    const v = nums.length > 1 ? (nums[0] + nums[1]) / 2 : nums[0];
+    return v >= 8 && v <= 120 ? v : null;
+  };
+  const LANG_OK = ['Spanish','Portuguese','Haitian Creole','Bilingual'];
 
   // Normalise every record once so an odd or partial row can never break rendering,
   // and precompute the lower-cased text that keyword search runs against.
@@ -513,15 +667,19 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     d.locs = (Array.isArray(d.locs) ? d.locs : []).map(l => ({ loc:String(l&&l.loc||''), apply:safeUrl(l&&l.apply)||d.indeed, county:String(l&&l.county||'') }));
     if (!d.locs.length) d.locs = [{ loc:'', apply:d.indeed, county:'' }];
     d.kind = String(d.kind||'');
+    d.lang = (Array.isArray(d.lang) ? d.lang : []).filter(l => LANG_OK.includes(l));
+    d.langNeed = d.lang.length && (d.langNeed === 'required' || d.langNeed === 'plus') ? d.langNeed : '';
     // A placement ends at the end of its last day even if nobody rebuilds the page.
     d.feat = /^\d{4}-\d{2}-\d{2}$/.test(d.featured||'') && NOW < asDate(d.featured).getTime() + DAY/2;
     d.count = Math.max(1, parseInt(d.count,10)||1);
     d.posted = /^\d{4}-\d{2}-\d{2}$/.test(d.posted||'') ? d.posted : '';
     d.rate = hourly(d.pay);
+    d.hr = hourlyQuote(d);
+    d.hubs = HUBS.filter(h => h.co.test(d.company) || (h.ti && h.ti.test(d.title))).map(h => h.id);
     d.dest = hostOf(d.locs[0].apply);
     const dt = d.posted ? asDate(d.posted) : null;
     d.days = dt ? Math.max(0, (NOW - dt.getTime()) / DAY) : null;
-    d.hay = [d.company, d.title, d.cat, d.kind, d.majors.join(' '), d.locs.map(l=>l.loc).join(' '), d.counties.join(' '), d.term.join(' '), d.level, d.mode, d.pay, d.flag, d.snippet, d.details.join(' ')].join(' ').toLowerCase();
+    d.hay = [d.company, d.title, d.cat, d.kind, d.majors.join(' '), d.locs.map(l=>l.loc).join(' '), d.counties.join(' '), d.term.join(' '), d.level, d.mode, d.pay, d.flag, d.snippet, d.details.join(' '), d.lang.length ? 'bilingual ' + d.lang.join(' ') : ''].join(' ').toLowerCase();
   });
 
   // Pick of the week: PICK_MAX cards drawn at random each Monday, free, from listings posted
@@ -541,6 +699,33 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         levelCounts = count(DATA,'level'), countyCounts = count(DATA,'counties');
   $('#st-open').textContent = DATA.length; $('#st-emp').textContent = employers.size;
   $('#st-areas').textContent = areaCounts.size; $('#st-paid').textContent = DATA.filter(d => d.pay).length;
+
+  // Industry strip: only the collections big enough and varied enough to be worth a click.
+  const empKey = c => c.toLowerCase().replace(/[.,]/g,'').replace(/\s+-\s+.*$/,'');
+  const HUB_SHOWN = HUBS.map(h => { const m = DATA.filter(d => d.hubs.includes(h.id)); return Object.assign({}, h, { n:m.length, emp:new Set(m.map(d => empKey(d.company))).size }); })
+    .filter(h => h.n >= MIN_HUB && h.emp >= MIN_HUB_EMP);
+  const hubBox = $('#hub-list');
+  HUB_SHOWN.forEach(h => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'hub'; b.dataset.hub = h.id; b.setAttribute('aria-pressed','false');
+    b.innerHTML = `<span>${esc(h.label)}</span><i>${h.n}</i>`;
+    b.addEventListener('click', () => { state.hub = (state.hub === h.id ? '' : h.id); refilter(); });
+    hubBox.appendChild(b);
+  });
+  $('#hubs').hidden = !HUB_SHOWN.length;
+
+  // The pay report: median and middle half of the hourly pay listings quote, overall and by area.
+  const MIN_PAY_N = 5;
+  const fmt$ = v => '$' + Math.round(v);
+  const quant = (arr, q) => { const a = [...arr].sort((x,y) => x-y), i = (a.length-1)*q, lo = Math.floor(i), hi = Math.ceil(i); return a[lo] + (a[hi]-a[lo]) * (i-lo); };
+  const payStats = arr => { const v = arr.map(d => d.hr).filter(x => x != null); return v.length ? { n:v.length, med:quant(v,.5), lo:quant(v,.25), hi:quant(v,.75) } : null; };
+  const PAY = (() => {
+    const interns = DATA.filter(d => d.kind !== 'Job');
+    const byArea = new Map(); interns.forEach(d => { if (!byArea.has(d.cat)) byArea.set(d.cat, []); byArea.get(d.cat).push(d); });
+    const rows = [], thin = [];
+    byArea.forEach((arr, area) => { const st = payStats(arr); if (!st) return; (st.n >= MIN_PAY_N ? rows : thin).push(Object.assign({ area }, st)); });
+    rows.sort((a,b) => b.med - a.med || a.area.localeCompare(b.area));
+    return { all:payStats(interns), rows, thin:thin.map(r => r.area).sort(), total:interns.length };
+  })();
 
   // A guide linked under an area's header while that area is up. The PDF sits next to this
   // page in the repo; delete the entry and the file to take it down.
@@ -575,17 +760,19 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const termKey = t => { const m=/^(\w+)\s+(\d{4})$/.exec(t); return m ? (+m[2])*10 + Math.max(0,SEASONS.indexOf(m[1])) : 1e9; };
   [...termCounts.keys()].sort((a,b)=>termKey(a)-termKey(b) || a.localeCompare(b)).forEach(t => addOpt($('#f-term'), t, termCounts.get(t)));
   fill($('#f-level'), levelCounts);
-  const OPTIONS = { area:new Set(areas), county:new Set(countyCounts.keys()), major:new Set(majorCounts.keys()),
+  const OPTIONS = { area:new Set(areas), hub:new Set(HUB_SHOWN.map(h => h.id)), county:new Set(countyCounts.keys()), major:new Set(majorCounts.keys()),
                     term:new Set(termCounts.keys()), level:new Set(levelCounts.keys()), sort:new Set(['new','pay','co','title']) };
 
   function matches(d){
     if (state.area && d.cat !== state.area) return false;
+    if (state.hub && !d.hubs.includes(state.hub)) return false;
     if (state.county && !d.counties.includes(state.county)) return false;
     if (state.major && !d.majors.includes(state.major)) return false;
     if (state.term && !d.term.includes(state.term)) return false;
     if (state.level && d.level !== state.level) return false;
     if (state.paid && !d.pay) return false;
     if (state.remote && !d.mode) return false;
+    if (state.bi && !d.lang.length) return false;
     if (state.q){
       const q = state.q.toLowerCase().split(/\s+/).filter(Boolean);
       if (!q.every(w => d.hay.includes(w))) return false;
@@ -601,6 +788,16 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   }
   const fmtDate = s => { const d = asDate(s||''); return d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; };
 
+  // "Spanish required", "Spanish a plus" or "Spanish mentioned": what the posting itself says.
+  function langChip(d){
+    const who = d.lang.join(' / '), what = who === 'Bilingual' ? 'bilingual skills' : who;
+    const how = d.langNeed === 'required' ? 'required' : d.langNeed === 'plus' ? 'a plus' : 'mentioned';
+    const tip = d.langNeed === 'required' ? `The posting says ${what} is required.`
+      : d.langNeed === 'plus' ? `The posting says ${what} is preferred or a plus.`
+      : `The posting mentions ${what}. Check the posting for whether it is required.`;
+    return `<span class="chip lang" title="${esc(tip)}">${esc(who)} ${how}</span>`;
+  }
+
   function row(d){
     const el = document.createElement('article'); el.className='row' + (d.feat ? ' feat' : (d.pick ? ' pick' : ''));
     const locLine = d.locs.length===1 ? d.locs[0].loc : `${d.locs.length} locations`;
@@ -614,6 +811,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     d.term.forEach(t => chips.push(`<span class="chip term">${esc(t)}</span>`));
     if (d.pay) chips.push(`<span class="chip pay">${esc(d.pay)}</span>`);
     if (d.mode) chips.push(`<span class="chip mode">${esc(d.mode)}</span>`);
+    if (d.lang.length) chips.push(langChip(d));
     d.types.filter(t => t==='Full-time'||t==='Part-time').forEach(t => chips.push(`<span class="chip">${esc(t)}</span>`));
     if (d.level && d.level!=='Undergraduate' && d.level!=='Entry-level job') chips.push(`<span class="chip">${esc(d.level)}</span>`);
     if (d.flag) chips.push(`<span class="chip flag">${esc(d.flag)}</span>`);
@@ -658,7 +856,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     el.innerHTML = `<p>Get new South Florida internships by email<small>Fresh roles, entry-level AI and tech openings, and invites to my talks. Free, unsubscribe anytime.</small></p><a href="${esc(NEWSLETTER_URL)}" target="_blank" rel="noopener">Join the list ↗</a>`;
     return el;
   }
-  const activeCount = () => ['area','county','major','term','level'].filter(k=>state[k]).length + (state.paid?1:0) + (state.remote?1:0);
+  const activeCount = () => ['area','hub','county','major','term','level'].filter(k=>state[k]).length + (state.paid?1:0) + (state.remote?1:0) + (state.bi?1:0);
 
   function render(){
     document.querySelectorAll('.areas button[data-area]').forEach(b => { const on=b.dataset.area===state.area; b.setAttribute('aria-pressed',on?'true':'false'); if(on && state.area && window.innerWidth<=900 && b.closest('#areas')) b.scrollIntoView({block:'nearest',inline:'center'}); });
@@ -673,7 +871,23 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const wrap = $('#cards'); wrap.innerHTML='';
     const qLabel = state.q ? `<em>“${esc(state.q)}”</em>` : '';
     const jobs = list.filter(d => d.kind==='Job').length, interns = list.length - jobs;
-    $('#rtitle').innerHTML = state.area ? esc(state.area) + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
+    const hub = HUB_SHOWN.find(h => h.id === state.hub);
+    const where = state.area ? esc(state.area) + (hub ? ` · ${esc(hub.label)}` : '') : (hub ? esc(hub.label) : '');
+    $('#rtitle').innerHTML = where ? where + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
+    document.querySelectorAll('#hub-list .hub').forEach(b => b.setAttribute('aria-pressed', b.dataset.hub === state.hub ? 'true' : 'false'));
+    const hubNote = $('#hubnote');
+    hubNote.hidden = !hub;
+    if (hub){
+      const names = [...new Map(list.map(d => [empKey(d.company), d.company])).values()];
+      hubNote.innerHTML = `<b>${esc(hub.label)}.</b> ${esc(hub.note)}${names.length ? ` On the board: ${esc(names.slice(0,6).join(' · '))}${names.length > 6 ? ` · and ${names.length-6} more` : ''}.` : ''}`;
+    }
+    // The median pay of what is on screen; it opens the full report.
+    const ps = payStats(list), pill = $('#paypill');
+    pill.hidden = !(ps && ps.n >= MIN_PAY_N);
+    if (!pill.hidden){
+      pill.innerHTML = `Median ${fmt$(ps.med)}/hr <small>${ps.n} quote hourly pay</small>`;
+      pill.title = `The middle hourly pay among these results, from the ${ps.n} that quote one. Click for the pay report by field.`;
+    }
     const guide = state.area && GUIDES[state.area], bench = state.area && BENCH[state.area], prep = $('#prep');
     prep.hidden = !guide && !bench; prep.className = 'prep';
     prep.innerHTML = prep.hidden ? '' : '<span class="lab">Get ready</span>'
@@ -728,11 +942,12 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     if (top < inset) window.scrollTo({ top: Math.max(0, window.scrollY + top - inset) });
   }
   function reset(){ Object.assign(state, DEFAULTS); syncInputs(); refilter(); }
-  function syncInputs(){ $('#q').value=state.q; $('#f-county').value=state.county; $('#f-major').value=state.major; $('#f-term').value=state.term; $('#f-level').value=state.level; $('#f-paid').checked=state.paid; $('#f-remote').checked=state.remote; $('#f-sort').value=state.sort; }
+  function syncInputs(){ $('#q').value=state.q; $('#f-county').value=state.county; $('#f-major').value=state.major; $('#f-term').value=state.term; $('#f-level').value=state.level; $('#f-paid').checked=state.paid; $('#f-remote').checked=state.remote; $('#f-lang').checked=state.bi; $('#f-sort').value=state.sort; }
   function writeHash(){
     const p=new URLSearchParams();
-    ['q','area','county','major','term','level','sort'].forEach(k=>{ if(state[k] && !(k==='sort'&&state[k]==='new')) p.set(k,state[k]); });
-    if(state.paid) p.set('paid','1'); if(state.remote) p.set('remote','1');
+    ['q','area','hub','county','major','term','level','sort'].forEach(k=>{ if(state[k] && !(k==='sort'&&state[k]==='new')) p.set(k,state[k]); });
+    if(state.paid) p.set('paid','1'); if(state.remote) p.set('remote','1'); if(state.bi) p.set('bi','1');
+    if(payDlg.open) p.set('report','pay');
     const h=p.toString();
     try{ history.replaceState(null,'', location.pathname+location.search+(h?'#'+h:'')); }catch(e){}
   }
@@ -741,8 +956,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     Object.assign(state, DEFAULTS);
     let p; try{ p=new URLSearchParams(location.hash.slice(1)); }catch(e){ return; }
     state.q=(p.get('q')||'').trim().slice(0,200);
-    ['area','county','major','term','level','sort'].forEach(k=>{ const v=p.get(k); if(v && OPTIONS[k].has(v)) state[k]=v; });
-    state.paid=p.get('paid')==='1'; state.remote=p.get('remote')==='1';
+    ['area','hub','county','major','term','level','sort'].forEach(k=>{ const v=p.get(k); if(v && OPTIONS[k].has(v)) state[k]=v; });
+    state.paid=p.get('paid')==='1'; state.remote=p.get('remote')==='1'; state.bi=p.get('bi')==='1'; state.report=p.get('report')==='pay';
   }
 
   let t;
@@ -753,6 +968,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   [['f-county','county'],['f-major','major'],['f-term','term'],['f-level','level'],['f-sort','sort']].forEach(([id,k]) => $('#'+id).addEventListener('change', e => { state[k]=e.target.value; refilter(); }));
   $('#f-paid').addEventListener('change', e => { state.paid=e.target.checked; refilter(); });
   $('#f-remote').addEventListener('change', e => { state.remote=e.target.checked; refilter(); });
+  $('#f-lang').addEventListener('change', e => { state.bi=e.target.checked; refilter(); });
   $('#reset').addEventListener('click', reset);
 
   const filters = $('#filters');
@@ -770,8 +986,84 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   });
 
 
-  window.addEventListener('hashchange', ()=>{ readHash(); syncInputs(); render(); });
+  // ---- The pay report dialog ----
+  let payOpener = null, payView = 'chart';
+  function payTip(row, r, ev){
+    const tip = $('#paytip');
+    tip.innerHTML = `<b>${esc(fmt$(r.med))}/hr median</b>${esc(r.area)}<br>Middle half: ${esc(fmt$(r.lo))} to ${esc(fmt$(r.hi))}<br>${r.n} listings with an hourly rate`;
+    tip.hidden = false;
+    const box = row.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = ev && ev.clientX != null ? ev.clientX + 14 : box.left + box.width * .55, y = ev && ev.clientY != null ? ev.clientY + 14 : box.top - h - 6;
+    x = Math.max(8, Math.min(x, window.innerWidth - w - 8)); y = Math.max(8, Math.min(y, window.innerHeight - h - 8));
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  const hideTip = () => { $('#paytip').hidden = true; };
+  const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  function renderPay(){
+    const all = PAY.all;
+    $('#pay-hero-v').textContent = all ? fmt$(all.med) + '/hr' : 'No data';
+    $('#pay-hero-s').textContent = all ? `median across the ${all.n} internships that quote an hourly rate, out of ${PAY.total} on the board` : '';
+    const rows = PAY.rows, max = Math.max(...rows.map(r => r.med), all ? all.med : 0, 10);
+    const axisMax = Math.max(20, Math.ceil(max * 1.18 / 10) * 10), ticks = axisMax / 10;
+    const chart = $('#pchart'); chart.textContent = '';
+    chart.style.setProperty('--ticks', ticks); chart.style.setProperty('--ref', all ? (all.med / axisMax * 100) + '%' : '0%');
+    chart.classList.toggle('has-sel', rows.some(r => r.area === state.area));
+    const top = mk('div', 'paxis top'), tk = mk('div', 'pticks'); top.appendChild(tk);
+    if (all){ const lab = mk('span', '', `All areas ${fmt$(all.med)}`); lab.style.left = (all.med / axisMax * 100) + '%'; tk.appendChild(lab); }
+    chart.appendChild(top);
+    rows.forEach(r => {
+      const b = mk('button', 'prow' + (r.area === state.area ? ' sel' : '')); b.type = 'button'; b.dataset.area = r.area;
+      b.setAttribute('aria-label', `${r.area}: median ${fmt$(r.med)} an hour, ${r.n} listings. Show these listings.`);
+      const cell = mk('div', 'pcell'); cell.style.setProperty('--w', (r.med / axisMax * 100) + '%');
+      cell.appendChild(mk('div', 'pbar')); cell.appendChild(mk('span', 'pval', fmt$(r.med)));
+      b.appendChild(mk('div', 'pl', r.area)); b.appendChild(cell); b.appendChild(mk('div', 'pn', `${r.n} listings`));
+      b.addEventListener('click', () => { state.area = r.area; closePay(); refilter(); });
+      b.addEventListener('pointermove', ev => payTip(b, r, ev)); b.addEventListener('pointerleave', hideTip);
+      b.addEventListener('focus', () => payTip(b, r)); b.addEventListener('blur', hideTip);
+      chart.appendChild(b);
+    });
+    const ax = mk('div', 'paxis'), at = mk('div', 'pticks'); ax.appendChild(at);
+    for (let i = 0; i <= ticks; i++){ const t = mk('span', '', '$' + i*10); t.style.left = (i / ticks * 100) + '%'; at.appendChild(t); }
+    chart.appendChild(ax);
+    // the same numbers as a table, for anyone who would rather read than look
+    const tbl = $('#ptable'); tbl.textContent = '';
+    const cap = mk('caption', 'sr-only', 'Median hourly pay quoted by internship listings, by field'); tbl.appendChild(cap);
+    const hd = mk('tr'); ['Field','Median','Middle half','Listings'].forEach(h => hd.appendChild(mk('th', '', h))); tbl.appendChild(mk('thead')).appendChild(hd);
+    const body = mk('tbody');
+    const line = (name, r, cls) => { const tr = mk('tr', cls); tr.appendChild(mk('td', '', name)); tr.appendChild(mk('td', '', fmt$(r.med) + '/hr')); tr.appendChild(mk('td', '', `${fmt$(r.lo)} to ${fmt$(r.hi)}`)); tr.appendChild(mk('td', '', String(r.n))); body.appendChild(tr); };
+    if (all) line('All areas', all, 'all');
+    rows.forEach(r => line(r.area, r));
+    tbl.appendChild(body);
+    const upd = (($('.head .sub')||{}).textContent || '').match(/updated (.+)$/);
+    $('#pay-note').textContent = `Pay is what employers list in the posting, so it leaves out internships that do not quote an hourly rate. Hourly figures only; entry-level jobs are left out. The middle half is the range between the 25th and 75th percentile. A field needs ${MIN_PAY_N} or more hourly listings to appear${PAY.thin.length ? ` (not enough yet: ${PAY.thin.join(', ')})` : ''}.${upd ? ` Updated ${upd[1]}.` : ''}`;
+    document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === payView ? 'true' : 'false'));
+    chart.hidden = payView !== 'chart'; tbl.hidden = payView !== 'table';
+  }
+  function openPay(){
+    if (payDlg.open) return;
+    payOpener = document.activeElement; hideTip(); renderPay();
+    if (typeof payDlg.showModal === 'function') payDlg.showModal(); else payDlg.setAttribute('open','');
+    writeHash();
+  }
+  function closePay(){ if (typeof payDlg.close === 'function') payDlg.close(); else payDlg.removeAttribute('open'); }
+  payDlg.addEventListener('close', () => { hideTip(); writeHash(); if (payOpener && payOpener.focus) { try { payOpener.focus({ preventScroll:true }); } catch(e){} } });
+  payDlg.addEventListener('click', e => { if (e.target === payDlg) closePay(); });
+  $('#pay-x').addEventListener('click', closePay);
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { payView = b.dataset.view; renderPay(); }));
+  $('#pay-copy').addEventListener('click', async e => {
+    const b = e.currentTarget, url = location.origin + location.pathname + '#report=pay';
+    try {
+      if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(url);
+      else { const ta = document.createElement('textarea'); ta.value = url; ta.setAttribute('readonly',''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+      b.textContent = 'Copied'; b.classList.add('done'); setTimeout(() => { b.textContent = 'Copy link'; b.classList.remove('done'); }, 2000);
+    } catch(err){ b.textContent = 'Press Ctrl+C'; }
+  });
+  $('#open-pay').addEventListener('click', openPay);
+  $('#paypill').addEventListener('click', openPay);
+
+  window.addEventListener('hashchange', ()=>{ readHash(); syncInputs(); render(); if (state.report && !payDlg.open) openPay(); else if (!state.report && payDlg.open) closePay(); });
   readHash(); syncInputs(); render();
+  if (state.report) openPay();
 })();
 </script>
 </body>
