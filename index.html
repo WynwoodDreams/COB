@@ -55,7 +55,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .head{display:flex;justify-content:space-between;align-items:center;gap:14px 28px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--rule)}
 .head h1{font-family:var(--mono);font-weight:600;font-size:clamp(22px,3.2vw,34px);letter-spacing:-.01em;margin:0;line-height:1.1}
 .head h1 span{color:var(--amber)}
-.head .sub{font-family:var(--mono);font-size:12px;color:var(--mute);margin-top:5px}
+.head .sub{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;font-family:var(--mono);font-size:12px;color:var(--mute);margin-top:5px}
 .title{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 420px}
 /* Sibling of the BuildersBench mark: glowing nodes on thin links, turning slowly. */
 .mark{flex:none;width:68px;height:68px;color:var(--amber);filter:drop-shadow(0 0 7px var(--amber-glow))}
@@ -74,7 +74,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 @keyframes caret{0%{opacity:1}50%{opacity:0}100%{opacity:1}}
 /* The counts sit as one quiet line under the tagline, not as a second headline. */
 /* The right-hand column: the totals above the search box, both pinned to the right edge. */
-.head-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex:0 1 380px;min-width:220px}
+.head-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex:0 1 360px;min-width:220px}
 .head-side .search{flex:none;width:100%}
 .stats{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px 14px;font-family:var(--mono);font-size:12px;color:var(--dim)}
 .stats b{color:var(--ink);font-weight:600;margin-right:4px}
@@ -92,7 +92,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .search button.clear.show{display:flex}
 
 /* layout */
-.layout{display:grid;grid-template-columns:260px 1fr;gap:26px;margin-top:22px;align-items:start}
+.layout{display:grid;grid-template-columns:260px 1fr;gap:26px;margin-top:18px;align-items:start}
 .layout>*{min-width:0}
 /* The list is taller than most screens, so the pinned panel scrolls inside itself instead of
    running off the bottom with the last areas out of reach. */
@@ -121,14 +121,30 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 /* filters */
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px}
 .filters label{display:flex;flex-direction:column;gap:4px;min-width:0;font-family:var(--mono);font-size:11px;color:var(--mute);letter-spacing:.04em}
-.filters select{font:inherit;font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--panel-2);border:1px solid var(--rule-2);border-radius:6px;padding:8px 10px;min-width:170px;max-width:240px}
-.filters .toggle{flex-direction:row;align-items:center;gap:8px;font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--panel-2);border:1px solid var(--rule-2);border-radius:6px;padding:8px 12px;letter-spacing:0}
-.filters .toggle input{accent-color:var(--amber);width:15px;height:15px;margin:0}
-.filters .reset{margin-left:auto;background:transparent;border:1px solid var(--rule-2);color:var(--mute);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:12px}
-.filters .reset:hover{color:var(--ink);border-color:var(--amber)}
-.filters .copy{background:transparent;border:1px solid var(--rule-2);color:var(--mute);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:12px}
-.filters .copy:hover{color:var(--ink);border-color:var(--amber)}
-.filters .copy.done{color:var(--amber);border-color:var(--amber)}
+.filters>label{flex:1 1 140px}
+.filters select{font:inherit;font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--panel-2);border:1px solid var(--rule-2);border-radius:6px;padding:8px 10px;width:100%;min-width:0;text-overflow:ellipsis}
+/* Row two of the panel: three switches, then the sort and the two actions as plain text. */
+.filters .frow{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.filters .toggle{position:relative;flex-direction:row;align-items:center;gap:9px;font-family:var(--sans);font-size:13.5px;color:var(--ink);background:var(--panel-2);border:1px solid var(--rule-2);border-radius:999px;padding:6px 14px 6px 7px;letter-spacing:0;cursor:pointer;user-select:none}
+.filters .toggle input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.filters .toggle .sw{position:relative;flex:none;width:32px;height:18px;border-radius:999px;background:var(--rule-2);transition:background .15s}
+.filters .toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--mute);transition:transform .15s,background .15s}
+.filters .toggle input:checked~.sw{background:var(--amber)}
+.filters .toggle input:checked~.sw::after{transform:translateX(14px);background:#04120B}
+.filters .toggle:has(input:checked){border-color:rgba(0,227,123,.6)}
+.filters .toggle:has(input:focus-visible){outline:2px solid var(--amber);outline-offset:2px}
+.filters .toggle:hover{border-color:var(--rule-2);background:#1A2520}
+.filters .tools{margin-left:auto;display:flex;align-items:center;gap:2px}
+.filters .tools .tb{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid transparent;color:var(--mute);border-radius:6px;padding:7px 10px;font-family:var(--mono);font-size:12px;cursor:pointer}
+.filters .tools .tb:hover{color:var(--ink);background:rgba(255,255,255,.04)}
+.filters .tools svg{width:14px;height:14px;flex:none}
+.filters .tools .copy.done{color:var(--amber)}
+.filters .tools .sortw{position:relative;display:inline-flex;align-items:center;color:var(--mute)}
+.filters .tools .sortw>svg{position:absolute;left:10px;pointer-events:none}
+.filters .tools .sortw::after{content:"";position:absolute;right:9px;top:50%;width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-70%) rotate(45deg);pointer-events:none;opacity:.7}
+.filters .tools select{appearance:none;-webkit-appearance:none;background:transparent;border:1px solid transparent;color:var(--mute);border-radius:6px;padding:7px 24px 7px 30px;font-family:var(--mono);font-size:12px;min-width:0;max-width:none;cursor:pointer}
+.filters .tools .sortw:hover,.filters .tools .sortw:hover select,.filters .tools select:focus-visible{color:var(--ink)}
+.filters .tools select:hover{background:rgba(255,255,255,.04)}
 
 /* filter toggle, phones only */
 .fbar{display:none}
@@ -136,34 +152,37 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .fbar button i{font-style:normal;color:var(--dim);font-size:12px}
 .fbar button .on{color:var(--amber)}
 
-.resultbar{display:flex;align-items:baseline;gap:8px 12px;flex-wrap:wrap;margin:18px 0 10px}
+.resultbar{display:flex;align-items:baseline;gap:8px 12px;flex-wrap:wrap;margin:10px 0 8px}
 .resultbar h2{font-family:var(--mono);font-weight:600;font-size:16px;margin:0}
 .resultbar h2 em{font-style:normal;color:var(--amber)}
 .resultbar .note{font-family:var(--mono);font-size:12px;color:var(--mute);margin-left:auto}
 .chip.lang{color:var(--lang);border-color:rgba(var(--lang-rgb),.4);background:rgba(var(--lang-rgb),.09)}
 
-/* South Florida industries: a row of filters for the employers this region is known for. */
-.hubs{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin:14px 0 0}
+/* South Florida industries: one row of pills, scrolling sideways when it must, with a fade
+   and a chevron at the edge while there is more. A green dot marks each as live. */
+.hubs{display:flex;align-items:center;gap:12px;margin:10px 0 0}
 .hubs[hidden]{display:none}
-.hubs .lab{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);flex:none}
-.hub-list{display:flex;flex-wrap:wrap;gap:6px}
-.hub{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--rule-2);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13px}
-.hub i{font-style:normal;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.hubs .lab{flex:none;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.hub-wrap{position:relative;flex:1;min-width:0}
+.hub-list{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;padding:2px 44px 2px 2px;
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent)}
+.hub-list::-webkit-scrollbar{display:none}
+.hub-wrap.end .hub-list{-webkit-mask-image:none;mask-image:none}
+.hub{flex:none;display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--rule-2);color:var(--ink);border-radius:999px;padding:6px 11px 6px 12px;font-size:13px;white-space:nowrap;scroll-snap-align:start}
+.hub::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px rgba(0,227,123,.65)}
 .hub:hover{border-color:var(--amber)}
-.hub[aria-pressed="true"]{background:var(--amber-dim);border-color:rgba(0,227,123,.55)}
-.hub[aria-pressed="true"] i{color:var(--amber)}
-.hubnote{margin:8px 0 0;font-size:13px;color:var(--mute)}
-.hubnote[hidden]{display:none}
-.hubnote b{color:var(--ink);font-weight:600}
+.hub[aria-pressed="true"]{background:var(--amber-dim);border-color:rgba(0,227,123,.6)}
+.hub-more{position:absolute;right:0;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:var(--panel);border:1px solid var(--rule-2);color:var(--mute);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0 0 2px}
+.hub-more:hover{color:var(--ink);border-color:var(--amber)}
+.hub-more[hidden]{display:none}
 
-/* The median pay of whatever is on screen, and the way into the full pay report. */
-.paypill{display:inline-flex;align-items:baseline;gap:8px;background:transparent;border:1px solid var(--rule-2);color:var(--ink);border-radius:999px;padding:3px 11px;font-family:var(--mono);font-size:12px}
-.paypill[hidden]{display:none}
-.paypill small{color:var(--mute);font-size:11.5px}
-.paypill:hover,.paypill:focus-visible{border-color:var(--amber)}
-.stats .statlink{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline dotted var(--dim);text-underline-offset:3px}
-.stats .statlink:hover{color:var(--ink)}
-.stats .statlink em{font-style:normal;color:var(--amber);margin-left:3px}
+/* The way into the pay report: a pill beside the subtitle, the first thing after the title. */
+.paybtn{display:inline-flex;align-items:center;gap:7px;background:var(--amber-dim);border:1px solid rgba(0,227,123,.45);color:var(--ink);border-radius:999px;padding:4px 12px 4px 9px;font-family:var(--mono);font-size:12px;cursor:pointer;box-shadow:0 0 16px rgba(0,227,123,.12)}
+.paybtn[hidden]{display:none}
+.paybtn svg{width:15px;height:15px;color:var(--amber);flex:none}
+.paybtn b{color:var(--amber);font-weight:700}
+.paybtn small{color:var(--mute);font-size:11px}
+.paybtn:hover,.paybtn:focus-visible{border-color:var(--amber);box-shadow:0 0 22px rgba(0,227,123,.3)}
 
 /* The pay report: one colour, thin bars grown from a single baseline, the value at the bar's tip. */
 .paydlg{width:min(780px,calc(100vw - 24px));max-width:none;max-height:calc(100vh - 32px);padding:0;border:1px solid var(--rule-2);border-radius:14px;background:var(--panel);color:var(--ink);box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden}
@@ -215,16 +234,16 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .ptip[hidden]{display:none}
 .ptip b{display:block;font-size:15px;color:var(--ink);margin-bottom:2px}
 @media (max-width:900px){
-  .hubs{display:block}
-  .hubs .lab{display:block;margin-bottom:8px}
-  .hub-list{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px}
-  .hub{flex:none;white-space:nowrap;min-height:44px;padding:9px 14px}
-  .hubnote{font-size:13.5px}
-  .paypill{min-height:36px;padding:6px 12px}
+  .hub{min-height:44px;padding:9px 14px 9px 15px}
+  .hub-more{width:36px;height:36px}
+  .paybtn{min-height:40px;padding:6px 14px 6px 10px;font-size:12.5px}
   .resultbar .note{margin-left:0;flex:1 1 100%}
-  .stats .statlink{min-height:24px}
+}
 }
 @media (max-width:560px){
+  /* on a small phone the two actions keep their icons and tooltips, not their words */
+  .filters .tools .tb .t{display:none}
+  .filters .tools .tb{padding:7px 13px}
   .paybox{padding:16px 14px 14px}
   .pay-hero b{font-size:40px}
   .prow,.paxis{grid-template-columns:1fr 96px;gap:0 8px}
@@ -321,7 +340,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .head-side{flex:1 1 100%;align-items:stretch}
   /* sized so the title still fits beside the larger mark on one line, cursor and all */
   .head h1{font-size:clamp(19px,5.2vw,28px)}
-  .stats{gap:2px 10px;font-size:11.5px;justify-content:flex-start}
+  .stats{display:none}
   .search{flex:1 1 100%;min-width:0}
   .layout{grid-template-columns:1fr;gap:16px}
   .areas{position:static;max-height:none;overflow:visible;padding-right:0}
@@ -336,7 +355,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .filters.collapsed{display:none}
   .filters label{flex:1 1 calc(50% - 4px)}
   .filters select{min-width:0;width:100%;max-width:none}
-  .filters .reset,.filters .copy,.filters .toggle{flex:1 1 calc(50% - 4px);justify-content:center;margin-left:0}
+  .filters .toggle{flex:1 1 auto;justify-content:flex-start;white-space:nowrap;padding:8px 14px 8px 7px}
+  .filters .tools{flex:1 1 100%;margin-left:0;justify-content:space-between}
+  .filters .tools .tb{white-space:nowrap}
   .row{grid-template-columns:1fr}
   .row .side{flex-direction:row;flex-wrap:wrap}
   .row .side .apply{flex:1}
@@ -345,7 +366,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 
   /* --- touch targets: every control clears the 44px minimum --- */
   .areas button{min-height:44px;padding:9px 12px}
-  .filters select,.filters .toggle,.filters .reset,.filters .copy{min-height:46px}
+  .filters select,.filters .toggle{min-height:46px}
+  .filters .tools .tb,.filters .tools select{min-height:44px}
   .filters select{padding:11px 12px}
   #filter-toggle{min-height:50px}
   .search input{min-height:46px;font-size:16px}
@@ -498,7 +520,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       </span>
       <div>
         <h1>Christian's <span>Opportunity Board</span></h1>
-        <div class="sub">South Florida internships · direct apply links · updated Oct 19, 2026</div>
+        <div class="sub"><span>South Florida internships · direct apply links · updated Oct 19, 2026</span><button type="button" class="paybtn" id="open-pay" hidden title="What South Florida interns earn: the median hourly pay by field, from the listings on this board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg><span>What interns earn</span><b id="pay-med"></b></button></div>
       </div>
     </div>
     <div class="head-side">
@@ -506,7 +528,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         <span><b id="st-open">0</b>listings</span>
         <span><b id="st-emp">0</b>employers</span>
         <span><b id="st-areas">0</b>areas</span>
-        <span><button type="button" class="statlink" id="open-pay" title="See what South Florida interns earn, by field"><b id="st-paid">0</b>list pay<em aria-hidden="true">↗</em></button></span>
+        <span><b id="st-paid">0</b>list pay</span>
       </div>
       <form class="search" role="search">
         <input id="q" type="search" placeholder="Search company, title, or keyword" autocomplete="off" aria-label="Search listings">
@@ -530,23 +552,28 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         <label>Major <select id="f-major"><option value="">All majors</option></select></label>
         <label>Term <select id="f-term"><option value="">Any term</option></select></label>
         <label>Level <select id="f-level"><option value="">Any level</option></select></label>
-        <label class="toggle"><input type="checkbox" id="f-paid"> Pay listed</label>
-        <label class="toggle"><input type="checkbox" id="f-remote"> Remote or hybrid</label>
-        <label class="toggle" title="Postings that mention Spanish, Portuguese, Creole or bilingual skills"><input type="checkbox" id="f-lang"> Bilingual</label>
-        <label>Sort <select id="f-sort"><option value="new">Newest first</option><option value="pay">Highest pay</option><option value="co">Employer A to Z</option><option value="title">Title A to Z</option></select></label>
-        <button class="copy" id="copy" type="button">Copy link</button>
-        <button class="reset" id="reset" type="button">Reset</button>
+        <div class="frow">
+          <label class="toggle"><input type="checkbox" id="f-paid"><span class="sw" aria-hidden="true"></span>Pay listed</label>
+          <label class="toggle"><input type="checkbox" id="f-remote"><span class="sw" aria-hidden="true"></span>Remote or hybrid</label>
+          <label class="toggle" title="Postings that mention Spanish, Portuguese, Creole or bilingual skills"><input type="checkbox" id="f-lang"><span class="sw" aria-hidden="true"></span>Bilingual</label>
+          <div class="tools">
+            <span class="sortw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16"/></svg><select id="f-sort" aria-label="Sort"><option value="new">Sort: Newest</option><option value="pay">Sort: Highest pay</option><option value="co">Sort: Employer A–Z</option><option value="title">Sort: Title A–Z</option></select></span>
+            <button class="tb copy" id="copy" type="button" aria-label="Copy a link to this view" title="Copy a link to this view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span class="t">Copy link</span></button>
+            <button class="tb reset" id="reset" type="button" aria-label="Reset filters" title="Reset filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span class="t">Reset</span></button>
+          </div>
+        </div>
       </div>
 
       <nav class="hubs" id="hubs" aria-label="South Florida industries" hidden>
-        <span class="lab">South Florida industries</span>
-        <div class="hub-list" id="hub-list"></div>
+        <span class="lab" title="The employers South Florida is known for">Industries</span>
+        <div class="hub-wrap" id="hub-wrap">
+          <div class="hub-list" id="hub-list"></div>
+          <button type="button" class="hub-more" id="hub-more" aria-label="Scroll to more industries" hidden>&rsaquo;</button>
+        </div>
       </nav>
-      <p class="hubnote" id="hubnote" hidden></p>
 
       <div class="resultbar">
         <h2 id="rtitle">All areas</h2>
-        <button type="button" class="paypill" id="paypill" hidden></button>
         <div class="note" id="rcount" role="status" aria-live="polite"></div>
       </div>
       <div class="prep" id="prep" hidden></div>
@@ -634,7 +661,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   // at least MIN_HUB_EMP employers, so it can never turn into one company's page.
   const MIN_HUB = 5, MIN_HUB_EMP = 3;
   const HUBS = [
-    { id:'sports', label:'Sports, music & media', note:'Pro teams, stadiums, and Latin music and media companies.',
+    { id:'sports', label:'Sports & media', note:'Pro teams, stadiums, and Latin music and media companies.',
       co:/inter miami|miami fc|miami heat|miami dolphins|dolphins stadium|hard rock (stadium|international|live)|grand prix|florida panthers|marlins|miami open|orange bowl|live nation|escol|carbon fiber|fox corporation|fox news|univision|telemundo|sony music|warner music|universal music/i },
     { id:'health', label:'Hospitals & health', note:"South Florida's hospitals and health systems.",
       co:/baptist health|nicklaus children|memorial healthcare|mount sinai|jackson health|cleveland clinic|broward health|holy cross|tenet healthcare|uhealth|hca florida/i },
@@ -707,11 +734,17 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const hubBox = $('#hub-list');
   HUB_SHOWN.forEach(h => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'hub'; b.dataset.hub = h.id; b.setAttribute('aria-pressed','false');
-    b.innerHTML = `<span>${esc(h.label)}</span><i>${h.n}</i>`;
+    b.innerHTML = `<span>${esc(h.label)}</span>`;
+    b.title = `${h.note} ${h.n} listings.`; b.setAttribute('aria-label', `${h.label}, ${h.n} listings`);
     b.addEventListener('click', () => { state.hub = (state.hub === h.id ? '' : h.id); refilter(); });
     hubBox.appendChild(b);
   });
   $('#hubs').hidden = !HUB_SHOWN.length;
+  // The row scrolls sideways when it must; the fade and chevron show only while there is more.
+  const hubWrap = $('#hub-wrap'), hubMore = $('#hub-more');
+  const hubEdge = () => { const end = hubBox.scrollLeft + hubBox.clientWidth >= hubBox.scrollWidth - 2; hubWrap.classList.toggle('end', end); hubMore.hidden = end; };
+  hubBox.addEventListener('scroll', hubEdge, { passive:true }); window.addEventListener('resize', hubEdge);
+  hubMore.addEventListener('click', () => hubBox.scrollBy({ left: Math.round(hubBox.clientWidth * .7), behavior:'smooth' }));
 
   // The pay report: median and middle half of the hourly pay listings quote, overall and by area.
   const MIN_PAY_N = 5;
@@ -726,6 +759,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     rows.sort((a,b) => b.med - a.med || a.area.localeCompare(b.area));
     return { all:payStats(interns), rows, thin:thin.map(r => r.area).sort(), total:interns.length };
   })();
+  if (PAY.all && PAY.all.n >= MIN_PAY_N){ $('#pay-med').textContent = fmt$(PAY.all.med) + '/hr'; $('#open-pay').hidden = false; }
 
   // A guide linked under an area's header while that area is up. The PDF sits next to this
   // page in the repo; delete the entry and the file to take it down.
@@ -875,19 +909,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const where = state.area ? esc(state.area) + (hub ? ` · ${esc(hub.label)}` : '') : (hub ? esc(hub.label) : '');
     $('#rtitle').innerHTML = where ? where + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
     document.querySelectorAll('#hub-list .hub').forEach(b => b.setAttribute('aria-pressed', b.dataset.hub === state.hub ? 'true' : 'false'));
-    const hubNote = $('#hubnote');
-    hubNote.hidden = !hub;
-    if (hub){
-      const names = [...new Map(list.map(d => [empKey(d.company), d.company])).values()];
-      hubNote.innerHTML = `<b>${esc(hub.label)}.</b> ${esc(hub.note)}${names.length ? ` On the board: ${esc(names.slice(0,6).join(' · '))}${names.length > 6 ? ` · and ${names.length-6} more` : ''}.` : ''}`;
-    }
-    // The median pay of what is on screen; it opens the full report.
-    const ps = payStats(list), pill = $('#paypill');
-    pill.hidden = !(ps && ps.n >= MIN_PAY_N);
-    if (!pill.hidden){
-      pill.innerHTML = `Median ${fmt$(ps.med)}/hr <small>${ps.n} quote hourly pay</small>`;
-      pill.title = `The middle hourly pay among these results, from the ${ps.n} that quote one. Click for the pay report by field.`;
-    }
     const guide = state.area && GUIDES[state.area], bench = state.area && BENCH[state.area], prep = $('#prep');
     prep.hidden = !guide && !bench; prep.className = 'prep';
     prep.innerHTML = prep.hidden ? '' : '<span class="lab">Get ready</span>'
@@ -896,7 +917,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const openings = list.reduce((n,d)=>n+d.count,0);
     const shown = Math.min(state.shown, list.length);
     const noun = jobs ? 'listing' : 'internship';
-    $('#rcount').textContent = list.length ? `${shown<list.length?`${shown} of `:''}${list.length} ${noun}${list.length===1?'':'s'}${jobs && interns?` · ${jobs} job${jobs===1?'':'s'}, ${interns} internship${interns===1?'':'s'}`:''}${openings>list.length?` · ${openings} openings across locations`:''}` : 'No listings match';
+    $('#rcount').textContent = list.length ? `${shown<list.length?`${shown} of `:''}${list.length} ${noun}${list.length===1?'':'s'}${jobs && interns?` · ${jobs} job${jobs===1?'':'s'} · ${interns} internship${interns===1?'':'s'}`:''}${openings>list.length?` · ${openings} openings across locations`:''}` : 'No listings match';
     if (!list.length){
       wrap.innerHTML = `<div class="empty"><h3>Nothing matches.</h3><p>Try a broader search or clear a filter.</p><button type="button" id="empty-reset">Reset filters</button></div>`;
       $('#empty-reset').addEventListener('click', reset);
@@ -910,7 +931,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const n = activeCount();
     $('#filter-count').innerHTML = n ? `<span class="on">${n} on</span>` : (filters.classList.contains('collapsed') ? 'show' : 'hide');
     $('#clearq').classList.toggle('show', !!state.q);
-    $('#copy').classList.remove('done'); $('#copy').textContent='Copy link';
+    $('#copy').classList.remove('done'); $('#copy .t').textContent='Copy link';
     writeHash();
   }
   // How much of the top of the viewport is covered by something stuck to it. On a phone
@@ -981,8 +1002,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     try{
       if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(url);
       else { const ta=document.createElement('textarea'); ta.value=url; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
-      b.textContent='Copied'; b.classList.add('done');
-    }catch(err){ b.textContent='Press Ctrl+C'; }
+      b.querySelector('.t').textContent='Copied'; b.classList.add('done');
+    }catch(err){ b.querySelector('.t').textContent='Press Ctrl+C'; }
   });
 
 
@@ -1034,7 +1055,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     if (all) line('All areas', all, 'all');
     rows.forEach(r => line(r.area, r));
     tbl.appendChild(body);
-    const upd = (($('.head .sub')||{}).textContent || '').match(/updated (.+)$/);
+    const upd = (($('.head .sub span')||{}).textContent || '').match(/updated (.+)$/);
     $('#pay-note').textContent = `Pay is what employers list in the posting, so it leaves out internships that do not quote an hourly rate. Hourly figures only; entry-level jobs are left out. The middle half is the range between the 25th and 75th percentile. A field needs ${MIN_PAY_N} or more hourly listings to appear${PAY.thin.length ? ` (not enough yet: ${PAY.thin.join(', ')})` : ''}.${upd ? ` Updated ${upd[1]}.` : ''}`;
     document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === payView ? 'true' : 'false'));
     chart.hidden = payView !== 'chart'; tbl.hidden = payView !== 'table';
@@ -1059,10 +1080,10 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     } catch(err){ b.textContent = 'Press Ctrl+C'; }
   });
   $('#open-pay').addEventListener('click', openPay);
-  $('#paypill').addEventListener('click', openPay);
 
   window.addEventListener('hashchange', ()=>{ readHash(); syncInputs(); render(); if (state.report && !payDlg.open) openPay(); else if (!state.report && payDlg.open) closePay(); });
   readHash(); syncInputs(); render();
+  requestAnimationFrame(hubEdge);
   if (state.report) openPay();
 })();
 </script>
