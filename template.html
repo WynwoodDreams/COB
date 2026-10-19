@@ -34,9 +34,6 @@
   --ink:#E9F1ED; --mute:#8FA39B; --dim:#66796F;
   --amber:#00E37B; --amber-2:#5BF2AC; --amber-dim:rgba(0,227,123,.13); --amber-glow:rgba(0,227,123,.35);
   --glow:0 0 24px rgba(0,227,123,.28);
-  /* Spotlight areas: the ones that also carry jobs. Each has its own colour, set apart from
-     the green: lavender for Cloud & DevOps. --sp-rgb feeds the tints. */
-  --spot-cloud:#C9A7FF; --spot-cloud-2:#E0CCFF; --spot-cloud-rgb:201,167,255;
   /* Featured (paid) cards: gold, so they never read as one of the free areas. */
   --feat:#FFC94D; --feat-2:#FFDB85; --feat-rgb:255,201,77;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
@@ -100,20 +97,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .areas button[aria-pressed="true"]{color:var(--ink);background:var(--amber-dim);border-color:rgba(245,165,36,.35)}
 .areas button i{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--dim);flex:none}
 .areas button[aria-pressed="true"] i{color:var(--amber)}
-/* The spotlight areas sit in their own row above the list and glow, so a visitor finds
-   them first. .spot picks the mechanics; .cloud picks the colour. */
-.spots{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
-.spots:empty{display:none}
-.spot,.spot.cloud{--sp:var(--spot-cloud);--sp-2:var(--spot-cloud-2);--sp-rgb:var(--spot-cloud-rgb)}
-.areas button.spot{color:var(--ink);background:rgba(var(--sp-rgb),.12);border-color:rgba(var(--sp-rgb),.45);box-shadow:0 0 18px rgba(var(--sp-rgb),.16)}
-.areas button.spot:hover{background:rgba(var(--sp-rgb),.2);border-color:var(--sp)}
-.areas button.spot[aria-pressed="true"]{background:rgba(var(--sp-rgb),.22);border-color:var(--sp);box-shadow:0 0 22px rgba(var(--sp-rgb),.38)}
-.areas button.spot i{color:var(--sp)}
-.areas button.spot .tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:#04121A;background:var(--sp);border-radius:4px;padding:2px 6px;margin-left:8px;vertical-align:1px}
-.row.spot{border-color:rgba(var(--sp-rgb),.35);box-shadow:inset 3px 0 0 var(--sp)}
-.row.spot .co .emp{color:var(--sp)}
-.row.spot .apply{background:var(--sp);box-shadow:0 0 24px rgba(var(--sp-rgb),.3)}
-.row.spot .apply:hover{background:var(--sp-2)}
 /* A featured card is a paid placement. It says so in words, not only in colour. */
 .row.feat{border-color:rgba(var(--feat-rgb),.45);box-shadow:inset 3px 0 0 var(--feat),0 0 22px rgba(var(--feat-rgb),.08)}
 .row.feat .co .emp{color:var(--feat)}
@@ -123,7 +106,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 /* Pick of the week: drawn at random, free. Green outline, never the gold of a paid card. */
 .row.pick{border-color:rgba(0,227,123,.4);box-shadow:inset 3px 0 0 var(--amber)}
 .chip.pick{color:var(--amber);border-color:rgba(0,227,123,.5);background:var(--amber-dim);font-weight:700;letter-spacing:.04em}
-.resultbar h2 .tag{display:inline-block;white-space:nowrap;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--sp);border:1px solid rgba(var(--sp-rgb),.45);border-radius:5px;padding:2px 8px;margin-left:10px;vertical-align:2px}
 
 /* filters */
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px}
@@ -156,7 +138,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .prep a svg{width:15px;height:15px;flex:none;color:var(--c)}
 .prep a small{font-family:var(--mono);font-size:11px;color:var(--mute)}
 .prep a:hover{border-color:var(--c);background:rgba(var(--c-rgb),.14)}
-.prep.spot a.g{--c:var(--sp);--c-rgb:var(--sp-rgb)}
 
 /* rows */
 .rows{display:flex;flex-direction:column;gap:8px;isolation:isolate}
@@ -178,8 +159,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .chip.pay{color:var(--amber-2);border-color:rgba(245,165,36,.4);background:var(--amber-dim)}
 .chip.flag{color:#F58B8B;border-color:rgba(245,139,139,.35);background:rgba(245,139,139,.08)}
 .chip.mode{color:#8FD3A8;border-color:rgba(143,211,168,.35);background:rgba(143,211,168,.08)}
-.chip.spot{color:var(--sp);border-color:rgba(var(--sp-rgb),.45);background:rgba(var(--sp-rgb),.12);font-weight:600}
-.chip.job{color:#04121A;background:var(--sp,var(--amber));border-color:var(--sp,var(--amber));font-weight:700}
+.chip.job{color:#04121A;background:var(--amber);border-color:var(--amber);font-weight:700}
 .row p{margin:0;font-size:14px;color:var(--mute);max-width:80ch}
 .majors{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .majors button{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:5px;background:transparent;border:1px dashed var(--rule-2);color:var(--mute)}
@@ -237,13 +217,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .stats{gap:2px 10px;font-size:11.5px}
   .layout{grid-template-columns:1fr;gap:16px}
   .areas{position:static}
-  /* The spotlight tab gets its own full-width row, so a first visit on a phone
-     cannot miss it; the rest of the areas scroll sideways underneath. */
-  .spots{gap:8px;margin-bottom:10px}
-  .spots button{min-height:50px;padding:10px 14px;font-size:15px;white-space:normal}
-  .spots button .tag{font-size:11px;padding:3px 7px}
-  .spots button i{font-size:13px}
-  .resultbar h2 .tag{margin-left:0;margin-top:6px;display:block;width:max-content;font-size:12px}
   .prep .lab{flex:1 1 100%}
   .prep a{flex:1 1 100%;min-height:44px;border-radius:10px}
   .prep a small{margin-left:auto}
@@ -341,8 +314,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row:hover::before,.row:hover::after{opacity:1;animation:orbit 2.6s linear infinite}
   .row:hover h3{color:#fff}
   .row:hover .apply{box-shadow:0 0 26px rgba(0,227,123,.42)}
-  .row.spot:hover{border-color:rgba(var(--sp-rgb),.5)}
-  .row.spot:hover .apply{box-shadow:0 0 26px rgba(var(--sp-rgb),.45)}
   .row.feat:hover{border-color:rgba(var(--feat-rgb),.6)}
   .row.feat:hover .apply{box-shadow:0 0 26px rgba(var(--feat-rgb),.45)}
 }
@@ -357,7 +328,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .apply{color:#04120B;font-weight:700}
 .empty button:hover,.loadmore:hover{color:#04120B}
 .areas button[aria-pressed="true"]{border-color:rgba(0,227,123,.4)}
-.areas button.spot[aria-pressed="true"]{border-color:var(--sp)}
 
 
 /* ---------- sibling-site banner ---------- */
@@ -436,7 +406,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   <div class="layout">
     <aside class="areas" aria-label="Areas">
       <h2>Area</h2>
-      <div class="spots" id="spots"></div>
       <ul class="area-list" id="areas"></ul>
     </aside>
 
@@ -557,12 +526,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   $('#st-open').textContent = DATA.length; $('#st-emp').textContent = employers.size;
   $('#st-areas').textContent = areaCounts.size; $('#st-paid').textContent = DATA.filter(d => d.pay).length;
 
-  // The spotlight areas are pinned under "All areas" and drawn to stand out: they are the
-  // ones that carry entry-level jobs as well as internships. The value is the colour class.
-  const SPOTS = { 'Cloud & DevOps':'cloud' };
-  const spotClass = cat => SPOTS[cat] ? ` spot ${SPOTS[cat]}` : '';
-  // A short read pinned under a spotlight area's header while that area is up. The PDF
-  // sits next to this page in the repo; delete the entry and the file to take it down.
+  // A guide linked under an area's header while that area is up. The PDF sits next to this
+  // page in the repo; delete the entry and the file to take it down.
   const GUIDES = { 'Cloud & DevOps': { label:'Cloud careers guide', meta:'PDF', href:'aws-cloud-careers.pdf', tip:'AWS Cloud Careers: the Florida job landscape. Which entry-level titles to search for, the skills employers look for, and three portfolio projects worth showing. 15 slides.' } };
   // The tech areas point at BuildersBench, the sister site of portfolio projects: the link under
   // the area's header opens the matching career path there, and each card's "Projects for
@@ -574,13 +539,13 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     'Software, IT, Data & AI': { href:BENCH_URL, label:'Portfolio projects', tip:'Build a project that gets you past the résumé screen: free step-by-step projects with resume bullets and interview pitches.' },
   };
   const planLink = d => BENCH_URL + 'match.html?q=' + encodeURIComponent([d.title, d.snippet, ...d.details].filter(Boolean).join('\n').slice(0, 1500));
-  const AREA_ORDER = [...Object.keys(SPOTS),'Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
+  const AREA_ORDER = ['Accounting, Tax & Audit','Finance, Banking & Insurance','Business, Management & Operations','Sales & Business Development','Marketing, Communications & PR','Software, IT, Data & AI','Cloud & DevOps','Civil, Structural & Environmental Engineering','Mechanical, Electrical & Manufacturing Engineering','Architecture, Construction & Design','Science, Sustainability & Environment','Health Sciences & Pharmacy','Mental Health & Social Work','Legal','Human Resources & Talent','Creative: Media, Design & Production','Hospitality, Events, Sports & Entertainment','Education, Nonprofit & Community','Skilled Trades, Automotive & Aviation'];
   const areas = AREA_ORDER.filter(a => areaCounts.has(a)).concat([...areaCounts.keys()].filter(a => !AREA_ORDER.includes(a)).sort());
-  const ul = $('#areas'), spots = $('#spots');
-  const mkArea = (label, val, n) => { const b=document.createElement('button'); b.type='button'; b.dataset.area=val; b.className=spotClass(val).trim(); b.innerHTML=`<span>${esc(label)}${SPOTS[val]?'<span class="tag">NEW</span>':''}</span><i>${n}</i>`; b.addEventListener('click',()=>{ state.area=(state.area===val?'':val); refilter(); }); return b; };
+  const ul = $('#areas');
+  const mkArea = (label, val, n) => { const b=document.createElement('button'); b.type='button'; b.dataset.area=val; b.innerHTML=`<span>${esc(label)}</span><i>${n}</i>`; b.addEventListener('click',()=>{ state.area=(state.area===val?'':val); refilter(); }); return b; };
   const addToList = b => { const li=document.createElement('li'); li.appendChild(b); ul.appendChild(li); };
   addToList(mkArea('All areas','',DATA.length));
-  areas.forEach(a => (SPOTS[a] ? spots.appendChild(mkArea(a,a,areaCounts.get(a))) : addToList(mkArea(a,a,areaCounts.get(a)))));
+  areas.forEach(a => addToList(mkArea(a,a,areaCounts.get(a))));
 
   const addOpt = (sel, k, n) => { const o=document.createElement('option'); o.value=k; o.textContent=`${k} (${n})`; sel.appendChild(o); };
   const fill = (sel, map) => [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,n]) => addOpt(sel,k,n));
@@ -621,7 +586,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const fmtDate = s => { const d = asDate(s||''); return d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; };
 
   function row(d){
-    const el = document.createElement('article'); el.className='row' + spotClass(d.cat) + (d.feat ? ' feat' : (d.pick ? ' pick' : ''));
+    const el = document.createElement('article'); el.className='row' + (d.feat ? ' feat' : (d.pick ? ' pick' : ''));
     const locLine = d.locs.length===1 ? d.locs[0].loc : `${d.locs.length} locations`;
     const full = fmtDate(d.posted), age = d.days==null ? '' : ageLabel(d.days);
     // Freshness rides on the date itself: amber when days old, dimmed when half a year old.
@@ -629,8 +594,6 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const chips = [];
     if (d.feat) chips.push(`<span class="chip feat" title="The employer paid to pin this listing. It is a real opening like every other card.">FEATURED</span>`);
     else if (d.pick) chips.push(`<span class="chip pick" title="Drawn at random from this week's listings. Not a paid placement; a new set comes up every Monday.">PICK OF THE WEEK</span>`);
-    // Spotlight cards name their area in mixed views; inside the area the header already does.
-    if (SPOTS[d.cat] && state.area !== d.cat) chips.push(`<span class="chip${spotClass(d.cat)}">${esc(d.cat)}</span>`);
     if (d.kind) chips.push(`<span class="chip${d.kind==='Job'?' job':''}">${d.kind==='Job'?'Entry-level job':'Internship'}</span>`);
     d.term.forEach(t => chips.push(`<span class="chip term">${esc(t)}</span>`));
     if (d.pay) chips.push(`<span class="chip pay">${esc(d.pay)}</span>`);
@@ -694,10 +657,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const wrap = $('#cards'); wrap.innerHTML='';
     const qLabel = state.q ? `<em>“${esc(state.q)}”</em>` : '';
     const jobs = list.filter(d => d.kind==='Job').length, interns = list.length - jobs;
-    const spotTag = jobs && interns ? 'JOBS + INTERNSHIPS' : (jobs ? 'ENTRY-LEVEL JOBS' : 'INTERNSHIPS');
-    $('#rtitle').innerHTML = state.area ? esc(state.area) + (SPOTS[state.area] ? `<span class="tag${spotClass(state.area)}">${spotTag}</span>` : '') + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
+    $('#rtitle').innerHTML = state.area ? esc(state.area) + (qLabel ? ` · ${qLabel}` : '') : (qLabel ? `Results for ${qLabel}` : 'All areas');
     const guide = state.area && GUIDES[state.area], bench = state.area && BENCH[state.area], prep = $('#prep');
-    prep.hidden = !guide && !bench; prep.className = 'prep' + (state.area ? spotClass(state.area) : '');
+    prep.hidden = !guide && !bench; prep.className = 'prep';
     prep.innerHTML = prep.hidden ? '' : '<span class="lab">Get ready</span>'
       + (guide ? `<a class="g" href="${esc(guide.href)}" target="_blank" rel="noopener" title="${esc(guide.tip)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>${esc(guide.label)}<small>${esc(guide.meta)}</small></a>` : '')
       + (bench ? `<a class="b" href="${esc(bench.href)}" target="_blank" rel="noopener" title="${esc(bench.tip)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.7 6.3 3 3M4 20l4.5-1 10.2-10.2a2.1 2.1 0 0 0-3-3L5.5 16 4 20z"/></svg>${esc(bench.label)}<small>BuildersBench ↗</small></a>` : '');
