@@ -13,7 +13,7 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
 
 ## Refresh the listings
 
-1. Export a new spreadsheet with the same columns (company, positionName, location, jobType/0-3, postedAt, postingDateParsed, externalApplyLink, salary, description, url, id).
+1. Export a new spreadsheet with the same columns (company, positionName, location, postedAt, postingDateParsed, externalApplyLink, salary, description). `url`, `id` and `jobType/0-3` are optional: an export without `id` and `url` still builds, each row getting an id made from its apply link, but its cards have no "Original listing" link and no Full-time or Part-time chip.
 2. From this folder run:
 
        python3 build_data.py path/to/listings.xlsx --merge index.html
@@ -42,6 +42,15 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
    Industries Co. Ltd" for the same posting) or under the wrong arm of a firm ("Baker Tilly
    Canada" for US roles). `COMPANY_NAMES` in `build_data.py` maps each of those to the one
    name the board shows; add a line there when a new export does it again.
+
+   Review what a new export adds before publishing it: run it with `--out` and `--json`
+   pointed at scratch files, read the new cards, and check that each one's location matches
+   its description (Indeed has filed an Irvine, California job under Miami). Two lists in
+   `build_data.py` carry what you find. `EXCLUDED` holds postings kept off the board, as
+   (employer regex, title regex, reason) lines, so the next export cannot bring them back;
+   the build prints what it held back. `CATEGORY_OVERRIDES` files a posting under the right
+   area when the rules read a stray word in its description ("audit", "finance") and put it
+   somewhere wrong. Add a line to either instead of loosening a rule, which would move other cards.
 
    Terms that have already ended are dropped automatically, and a listing whose only
    advertised term has ended is removed. In September 2026, for example, "Summer 2026"
