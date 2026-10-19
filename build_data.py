@@ -1083,8 +1083,8 @@ def main(argv=None):
     ap.add_argument("--template", default=os.path.join(here, "template.html"))
     ap.add_argument("--out", default=os.path.join(here, "index.html"), help="rendered page (default: index.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
-    ap.add_argument("--max-age", type=int, default=122, metavar="DAYS",
-                    help="drop postings older than DAYS (default 122, about four months; use 0 to keep everything). "
+    ap.add_argument("--max-age", type=int, default=90, metavar="DAYS",
+                    help="drop postings older than DAYS (default 90; use 0 to keep everything). "
                          "A dead apply link costs more trust than a missing listing earns.")
     ap.add_argument("--keep-http", action="store_true", help="leave plain-HTTP apply links alone instead of upgrading them to HTTPS")
     ap.add_argument("--strict", action="store_true", help="exit non-zero if a listing contains text shaped like an AI instruction")
@@ -1103,6 +1103,12 @@ def main(argv=None):
         out = load_cards(a.data)
         items, skipped = out, 0
         print(f"loaded {len(out)} cards from {a.data}")
+        if a.max_age:
+            out, stale = drop_stale(out, cutoff)
+            if stale:
+                print(f"dropped {len(stale)} card(s) last posted before {cutoff}: "
+                      + "; ".join(f"{g['company']} / {g['title'][:40]} ({g['posted']})" for g in stale[:12])
+                      + (" ..." if len(stale) > 12 else ""))
     else:
         data, items, skipped = [], [], 0
         if a.xlsx:

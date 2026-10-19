@@ -55,12 +55,12 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
    Terms that have already ended are dropped automatically, and a listing whose only
    advertised term has ended is removed. In September 2026, for example, "Summer 2026"
    disappears from the Term filter while "Fall 2026" stays. Listings that never name a
-   term are kept. Postings more than about four months old (`--max-age`, 122 days) are
-   dropped on both sides of a merge, so the board sheds its own stale cards as it takes on
-   new ones, and an export's older rows never come back in. Useful flags:
+   term are kept. Postings more than 90 days old (`--max-age`) are
+   dropped on both sides of a merge, and again whenever the page is re-rendered with `--data`,
+   so the board sheds its own stale cards and an export's older rows never come back in. Useful flags:
 
    - `--date "Oct 1, 2026"` to set the "updated" label yourself
-   - `--max-age 0` to keep postings older than four months. The build drops them by
+   - `--max-age 0` to keep postings older than 90 days. The build drops them by
      default: the export reaches a year back, and a dead apply link costs more trust than
      a missing listing earns.
    - `--stats` to print how postings were categorised
@@ -76,10 +76,10 @@ apply straight to the employer. Filter state lives in the URL, so any view can b
    and a role missing from one scrape is as likely to have been pushed out of the row cap
    as to have closed. Those cards stay until they age out.
 
-## The spotlight tab: Cloud & DevOps
+## The Cloud & DevOps area
 
-One area is pinned under "All areas" and drawn to stand out, in lavender with a NEW
-badge: Cloud & DevOps. It is the area that carries entry-level **jobs** as well as
+Cloud & DevOps is an ordinary area in the list, between Software, IT, Data & AI and Civil.
+It has no highlight, pin or badge. It is the area that carries entry-level **jobs** as well as
 internships, and every card in it says which it is. Its listings come from a hand-made
 sheet rather than the Indeed export, an .xlsx or a .csv with the columns Company, Role,
 Location and Direct Apply URL, plus any of Posted, Type or Job Type, Experience, Salary,
@@ -113,26 +113,26 @@ card as "Original listing", and the card takes the export's posting date. It add
 cards and leaves any card whose posting is not in the export alone. It also works next
 to `--sheet ... --merge`.
 
-A guide can be pinned under a spotlight area's results header, as a pill in the slim
+A guide can be linked under an area's results header, as a pill in the slim
 "Get ready" row beside the area's BuildersBench projects link: a `GUIDES` entry in the
 `template.html` script (the pill label, a short tag such as PDF, the file, and a tooltip
 with the longer blurb) and the file itself committed next to `index.html`. Cloud & DevOps carries `aws-cloud-careers.pdf`,
-a 15-slide deck on entry-level AWS roles in Florida, for as long as the tab is up. To
+a 15-slide deck on entry-level AWS roles in Florida, for as long as the area is up. To
 take it down, delete the entry and the file and rebuild. The Content-Security-Policy in
 `vercel.json` is set on the page only, so a PDF beside it opens in the browser's viewer.
 
-Cybersecurity and IT Support / Help Desk used to be spotlight tabs. They are retired
+Cybersecurity and IT Support / Help Desk used to be sheet-fed areas. They are retired
 (`RETIRED_AREAS`): a card still filed under either is sent back through the title
 classifier on the next build and lands where it did before the tabs existed, cyber and
 help-desk titles in Software, IT, Data & AI and "Cyber Risk Services" in Accounting, Tax
 & Audit. The entry-level jobs that came from those sheets stay on the board in those
 areas, still marked "Entry-level job".
 
-To add another spotlight area, add an entry to `SPOT_AREAS` (its title rule, the major
-to tag, and a short slug for card ids) and a matching colour class in `template.html`:
-the `--spot-*` variables in `:root`, a `.spot.<slug>` rule beside `.spot.cloud`, and the
-area's name in the `SPOTS` map in the script. Each colour clears WCAG AA on both the
-page and card backgrounds.
+To add another sheet-fed area, add an entry to `SPOT_AREAS` (its title rule, the major
+to tag, and a short slug for card ids) and put the area's name in `AREA_ORDER` in the
+`template.html` script, where it takes its place in the list. Earlier versions of the page
+colour-coded these areas and pinned them above the list; that styling was removed, so the
+area needs no colour.
 
 ## Featured listings (paid placements)
 
@@ -297,10 +297,7 @@ only, and would leave the caret blinking.
 
 ## Mobile
 
-The page is built for phones first at 900px and below. The spotlight tab
-(Cloud & DevOps) gets a full-width row above the area strip, so a first visit on a
-phone cannot miss it, and its "jobs + internships" tag drops onto its own line under the
-results title. The area list becomes a
+The page is built for phones first at 900px and below. The area list becomes a
 side-scrolling strip with a fade at its edge, the filter panel collapses behind a
 Filters button that sticks to the top of the list while you scroll, and every control
 clears the 44px touch minimum. No text on a card is under 12px, the search field stays
