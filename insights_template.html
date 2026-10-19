@@ -155,6 +155,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .co-n{flex:none;font-family:var(--mono);font-size:18px;font-weight:700;color:var(--ink)}
 .co-n small{display:block;font-size:10px;font-weight:500;color:var(--dim);text-align:right;letter-spacing:.06em;text-transform:uppercase;line-height:1}
 .co-area{font-size:12.5px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:-4px}
+#hubgrid .co-area{white-space:normal}
 .score{display:flex;align-items:center;gap:10px;background:var(--amber-dim);border:1px solid rgba(0,227,123,.3);border-radius:9px;padding:9px 11px}
 .score .big{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--amber);white-space:nowrap}
 .score .big small{font-size:11px;font-weight:500;color:var(--mute);margin-left:3px}
@@ -312,7 +313,7 @@ code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--pa
   </section>
 
   <nav class="subnav" aria-label="Sections">
-    <a href="#pay">Pay</a><a href="#employers">Who's hiring</a><a href="#skills">Skills</a><a href="#where">Where &amp; when</a><a href="#trends">Over time</a><a href="#method">Method</a>
+    <a href="#pay">Pay</a><a href="#employers">Who's hiring</a><a href="#industries">Industries</a><a href="#skills">Skills</a><a href="#where">Where &amp; when</a><a href="#trends">Over time</a><a href="#method">Method</a>
   </nav>
 
   <section class="sec" id="pay">
@@ -336,6 +337,12 @@ code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--pa
     <h2>Who's <em>hiring</em> most</h2>
     <p class="lede">The employers with the most open roles on the board right now, ranked by how many they have up.</p>
     <div class="cogrid" id="cogrid"></div>
+  </section>
+
+  <section class="sec" id="industries">
+    <h2>South Florida <em>industries</em></h2>
+    <p class="lede">The employers this region is known for, gathered by name rather than by field. A collection appears once it has 5 listings from 3 employers. "See listings" opens the board filtered to it.</p>
+    <div class="cogrid" id="hubgrid"></div>
   </section>
 
   <section class="sec" id="skills">
@@ -496,6 +503,21 @@ code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--pa
       <a class="co-go" href="${link('q', e.name)}"><span>See ${plural(e.cards,'listing')}</span><span>&rarr;</span></a>
     </article>`;
   }).join('');
+
+  // ----- South Florida industries -----
+  const HICON = { sports:'🏟️', finance:'🏦', realestate:'🏗️', aviation:'✈️', cruise:'🚢' };
+  $('#hubgrid').innerHTML = (INS.hubs || []).map(h => `<article class="co">
+      <div class="co-top"><span class="ini" aria-hidden="true">${HICON[h.id] || '•'}</span><h3 class="co-name" title="${esc(h.label)}">${esc(h.label)}</h3><span class="co-n">${h.n}<small>listings</small></span></div>
+      <div class="co-area" title="${esc(h.note)}">${esc(h.note)}</div>
+      <div class="score"><span class="big">${h.medHr != null ? fmt$(h.medHr) + '/hr' : (h.paid ? 'Paid' : 'Pay not listed')}</span><span class="why">${h.medHr != null ? `median on <b>${h.hourlyN}</b> hourly listings` : h.paid ? `<b>${h.paid} of ${h.n}</b> say they pay` : `<b>0 of ${h.n}</b> list pay`}</span></div>
+      <ul class="facts">
+        <li>${ICON.roles}<span><b>${plural(h.openings,'opening')}</b> across ${plural(h.employers,'employer')}</span></li>
+        <li>${ICON.pin}<span>Mostly <b>${esc(h.areas.map(shortArea).slice(0,2).join(' and '))}</b></span></li>
+        <li>${ICON.clock}<span>Most roles: <b>${esc(h.topEmployers.map(([c, n]) => `${c} (${n})`).join(', '))}</b></span></li>
+      </ul>
+      <div class="tags">${h.bilingual ? `<span class="tag lang">Spanish a plus on ${h.bilingual}</span>` : ''}</div>
+      <a class="co-go" href="${link('hub', h.id)}"><span>See ${plural(h.n,'listing')}</span><span>&rarr;</span></a>
+    </article>`).join('') || '<p class="empty">No collection has enough listings yet.</p>';
 
   // ----- bar lists -----
   function bars(sel, rows, total, hrefFor, label){
