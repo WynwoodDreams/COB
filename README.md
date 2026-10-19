@@ -239,6 +239,63 @@ to it. The button's figure is the median across the whole board.
 - `#report=pay` opens the report, so it can be shared. The chart is built with DOM calls, not
   inline `style` attributes, because the page's CSP does not allow those.
 
+## The insights page
+
+`insights.html` is a second page, linked from the "Insights" pill beside the pay button: the
+intern market in numbers, laid out like a stock screener. Everything on it is counted from the
+listings on the board, so it needs no other data and goes stale only when the board does.
+
+- **The pulse strip** at the top: open listings, how many are new in the last 7, 14 and 30 days,
+  the median hourly pay, the share of listings that say what they pay, employers, and remote
+  or hybrid roles. Its reading, "Heating up", "Steady" or "Cooling", compares the last 14 days
+  with the 14 before: a move of 15% or more either way changes the word.
+- **What interns earn**: the pay report's bars, with a lighter band behind each for the middle
+  half, switchable between area, county, level and the top-paying employers. Each row links to
+  the board filtered to it. The same rules as the pay report: hourly figures, internships only,
+  5 listings for a bar.
+- **Who's hiring most**: one card per employer for the 12 with the most roles up, ranked, with
+  openings, counties, pay range, newest posting, the terms they hire for, and a link to their
+  listings (`#q=<employer>`).
+- **What employers ask for**: how many listings name each skill, across the board and per area.
+  `SKILLS` in `build_data.py` is the fixed list of skills and the pattern that finds each; a
+  listing counts once per skill however often it says it. A skill links to a board search for
+  its plainest word (`SKILL_Q` in the template maps the labels that are not a word, "Tableau /
+  Power BI" to "tableau").
+- **Where and when**: listings by county, by term and by level.
+- A "How these numbers are made" section at the bottom says all of this in plain words.
+- **Over time**: line charts of open listings, median pay and employers, one point per
+  update; postings by the month they were posted; each area's count at the first update
+  against now; and a table with one row per quarter. See "The history file".
+
+The figures are worked out once by `insights_for` in `build_data.py`, so the page carries ten
+kilobytes of numbers rather than the listings. `insights_template.html` holds the markup, the
+same tokens as `template.html` (change a colour in one and copy it to the other), and the script
+that draws the page; `__INSIGHTS__` and `__DATE__` are filled in by the build. Every build
+writes `index.html` and `insights.html` together, and `vercel.json` carries a CSP for each
+(`/insights` and `/insights.html`), pinned to that page's inline script and style.
+
+## The history file
+
+`history.json` is the board's record over time, so quarters and years can be compared later.
+Every build adds one line to it with that day's figures (open listings, new in 7/14/30 days,
+employers, median pay, the share that list pay, counts by area, county, term and level, pay by
+area, the top employers and skills, and postings by the month they were posted). A second
+build on the same day replaces that day's line. It is committed with the pages, so git keeps
+every version and nothing needs a server or an account; the "Over time" section of the
+insights page is drawn from it, through `history_series` in `build_data.py`.
+
+- Commit `history.json` with `index.html` and `insights.html`. A build that is only a preview
+  can skip it with `--history -`.
+- The file was backfilled from every past `index.html` in git, one snapshot per day the board
+  changed, back to the first board on Sep 10, 2026, so the record starts there.
+- A quarter's "postings" counts listings by the month each was posted, taking the highest
+  count any build saw for that month, so it is not inflated by how often the board was
+  rebuilt and survives the 90-day trim.
+- When you want something it does not record, add the field in `snapshot_for`; older lines
+  simply lack it, and the page treats a missing field as "not recorded".
+- If the site ever needs figures visitors write (a poll, say), that is the point to add a
+  real database; this file is for what the build can count.
+
 ## Email list
 
 The list lives on a newsletter service (Kit, Beehiiv, Substack or similar), which handles
@@ -415,8 +472,10 @@ is the one place untrusted input is processed on your machine.
 - `template.html`: page markup, styles and the client-side filtering script. Colours live in the `:root` block. `__DATA__` and `__DATE__` are filled in by the build.
 - `build_data.py`: reads the spreadsheet, leaves out postings that are jobs rather than internships, classifies each one (area, majors, term, level, pay, work mode) as described under "How a posting is read", merges the same role across locations into one card, folds the result into the listings already published when `--merge` is given, and renders the page.
 - `featured.json`: paid placements, read by every build. See "Featured listings".
-- `index.html`: the generated page. Do not edit by hand; change the template or the script and rebuild.
-- `vercel.json`: generated security headers, including a CSP pinned to that build of `index.html`.
+- `history.json`: one line of figures per build, back to the first board. See "The history file".
+- `insights_template.html`: the insights page's markup, styles and script. `__INSIGHTS__` and `__DATE__` are filled in by the build. See "The insights page".
+- `index.html`, `insights.html`: the generated pages. Do not edit by hand; change a template or the script and rebuild.
+- `vercel.json`: generated security headers, including a CSP for each page pinned to that build of it.
 - `og.png`: 1200x630 link preview image, referenced by the Open Graph tags in the template.
   It has no counts on it, so it does not go stale and needs regenerating only if the palette changes.
 

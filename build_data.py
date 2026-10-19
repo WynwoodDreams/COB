@@ -1066,6 +1066,194 @@ def scan_injection(cards):
                 if m: hits.append((g.get("company", ""), g.get("title", ""), f, m.group(0).strip()))
     return hits
 
+
+# ---------- the insights page ----------
+# Skills the insights page counts, by scanning each card's title, summary and requirements
+# once (a card mentions a skill or it does not, however many times it says so). Short and
+# curated on purpose: a free-text keyword count fills up with "team" and "ability".
+SKILLS = [
+    ("Excel", r"\bexcel\b"), ("PowerPoint", r"\bpowerpoint\b"), ("Microsoft Office", r"\b(microsoft|ms) office\b|\boffice suite\b|\bmicrosoft 365\b"),
+    ("Communication skills", r"\bcommunication skills?\b|\bcommunicat(e|ion) (clearly|effectively)\b|\b(written|verbal) communication"),
+    ("Data analysis", r"\bdata anal(ysis|ytics)\b|\banalyz(e|ing) data\b"), ("Project management", r"\bproject management\b"),
+    ("Customer service", r"\bcustomer service\b"), ("Social media", r"\bsocial media\b"), ("Research", r"\bresearch\b"),
+    ("Python", r"\bpython\b"), ("SQL", r"\bsql\b"), ("Java", r"\bjava\b"), ("JavaScript", r"\bjavascript\b|\btypescript\b|\breact\b|\bnode\.?js\b"),
+    ("C / C++ / C#", r"\bc\+\+|\bc#|\bc programming\b"), ("R", r"\bR\b(?= |,|\.|/)(?=.*\b(statistic|stata|spss|data)\b)"),
+    ("Tableau / Power BI", r"\btableau\b|\bpower ?bi\b"), ("AWS / Azure / GCP", r"\baws\b|\bazure\b|\bgoogle cloud\b|\bgcp\b"),
+    ("Linux", r"\blinux\b"), ("Git / GitHub", r"\bgit(hub)?\b"), ("Machine learning / AI", r"\bmachine learning\b|\bartificial intelligence\b|\bgenerative ai\b|\bllm"),
+    ("Salesforce", r"\bsalesforce\b"), ("SAP", r"\bsap\b"), ("QuickBooks", r"\bquickbooks\b"), ("Bloomberg", r"\bbloomberg\b"),
+    ("AutoCAD", r"\bautocad\b"), ("Revit", r"\brevit\b"), ("SolidWorks", r"\bsolidworks\b"), ("MATLAB", r"\bmatlab\b"), ("GIS", r"\barcgis\b|\bgis\b"),
+    ("Adobe Creative Cloud", r"\badobe\b|\bphotoshop\b|\billustrator\b|\bindesign\b|\bpremiere\b|\bafter effects\b"), ("Canva", r"\bcanva\b"), ("Figma", r"\bfigma\b"),
+    ("Spanish", r"\bspanish\b"), ("Bilingual", r"\bbilingual\b"),
+    ("GPA requirement", r"\bgpa\b"), ("Driver's license", r"\bdriver'?s? licen[sc]e\b|\bvalid licen[sc]e\b"),
+    ("Writing skills", r"\bwriting skills?\b|\bstrong writ(er|ing)\b|\bcopywriting\b"), ("Public speaking", r"\bpublic speaking\b|\bpresentation skills?\b"),
+    ("Lab experience", r"\blaborator(y|ies)\b|\bwet lab\b|\bbench work\b"), ("CPR / BLS", r"\bcpr\b|\bbls\b"),
+]
+SKILL_RE = [(label, re.compile(rx, re.I)) for label, rx in SKILLS]
+MIN_PAY_N = 5          # same bar as the pay report in template.html
+MIN_SKILL_N = 2
+TOP_EMPLOYERS = 12
+
+def hourly_quote(g):
+    """The hourly pay a card quotes, for the pay figures: the middle of a range, hourly only,
+    internships only, mirroring hourlyQuote in template.html."""
+    pay = g.get("pay") or ""
+    if g.get("kind") == "Job" or not re.search(r"/hr\b", pay, re.I): return None
+    nums = [float(x.replace(",", "")) for x in re.findall(r"\d[\d,]*\.?\d*", pay)]
+    nums = [x for x in nums if x == x]
+    if not nums: return None
+    v = (min(nums) + max(nums)) / 2
+    return v if 8 <= v <= 120 else None
+
+def quant(vals, q):
+    a = sorted(vals); i = (len(a) - 1) * q; lo = int(i // 1); hi = min(lo + 1, len(a) - 1)
+    return a[lo] + (a[hi] - a[lo]) * (i - lo)
+
+def pay_stats(cards):
+    v = [x for x in (hourly_quote(g) for g in cards) if x is not None]
+    return {"n": len(v), "med": round(quant(v, .5), 2), "lo": round(quant(v, .25), 2), "hi": round(quant(v, .75), 2)} if v else None
+
+def pay_rows(groups, key):
+    """Pay stats per group, the groups with too few hourly figures listed by name instead."""
+    rows, thin = [], []
+    for label, cards in groups.items():
+        st = pay_stats(cards)
+        if not st: continue
+        (rows if st["n"] >= MIN_PAY_N else thin).append(dict({key: label}, **st))
+    rows.sort(key=lambda r: (-r["med"], r[key]))
+    return rows, sorted(r[key] for r in thin)
+
+def card_text(g):
+    return " ".join([g.get("title", ""), g.get("snippet", "")] + list(g.get("details") or []))
+
+def skills_in(cards):
+    c = collections.Counter()
+    for g in cards:
+        t = card_text(g)
+        c.update(label for label, rx in SKILL_RE if rx.search(t))
+    return [[k, n] for k, n in c.most_common() if n >= MIN_SKILL_N]
+
+def days_since(d):
+    try: return (TODAY - dt.date.fromisoformat(d)).days
+    except (TypeError, ValueError): return None
+
+def insights_for(cards):
+    """Everything the insights page shows, worked out once here so the page itself stays
+    small: it carries these figures, not the listings."""
+    interns = [g for g in cards if g.get("kind") != "Job"]
+    ages = [a for a in (days_since(g.get("posted")) for g in cards) if a is not None]
+    new14 = sum(a <= 14 for a in ages); prev14 = sum(14 < a <= 28 for a in ages)
+    by = lambda f: collections.Counter(f(g) for g in cards if f(g))
+    multi = lambda f: collections.Counter(v for g in cards for v in (f(g) or []))
+    counties = multi(lambda g: g.get("counties"))
+    terms = multi(lambda g: g.get("term"))
+    levels = by(lambda g: g.get("level"))
+    areas = by(lambda g: g.get("cat"))
+    paid = [g for g in cards if g.get("pay")]
+    pay_all = pay_stats(interns)
+    pulse = {
+        "open": len(cards), "interns": len(interns), "jobs": len(cards) - len(interns),
+        "openings": sum(int(g.get("count") or 1) for g in cards),
+        "employers": len({g["company"] for g in cards}), "areas": len(areas),
+        "new7": sum(a <= 7 for a in ages), "new14": new14, "prev14": prev14, "new30": sum(a <= 30 for a in ages),
+        "payListed": len(paid), "hourlyN": pay_all["n"] if pay_all else 0, "medHr": pay_all["med"] if pay_all else None,
+        "remote": sum(1 for g in cards if g.get("mode")), "bilingual": sum(1 for g in cards if g.get("lang")),
+        "counties": counties.most_common(), "terms": terms.most_common(), "levels": levels.most_common(),
+        "areas": areas.most_common(),
+    }
+    group = lambda f: {k: [g for g in interns if k in (f(g) or [])] for k in {v for g in interns for v in (f(g) or [])}}
+    area_rows, area_thin = pay_rows({a: [g for g in interns if g.get("cat") == a] for a in areas}, "area")
+    county_rows, _ = pay_rows(group(lambda g: g.get("counties")), "county")
+    level_rows, _ = pay_rows({l: [g for g in interns if g.get("level") == l] for l in levels}, "level")
+    emp_rows, _ = pay_rows({c: [g for g in interns if g["company"] == c] for c in {g["company"] for g in interns}}, "employer")
+    pay = {"all": pay_all, "areas": area_rows, "thin": area_thin, "counties": county_rows, "levels": level_rows, "employers": emp_rows[:10]}
+
+    employers = []
+    for name, n in collections.Counter(g["company"] for g in cards).most_common(TOP_EMPLOYERS):
+        cs = [g for g in cards if g["company"] == name]
+        rates = [x for x in (hourly_quote(g) for g in cs) if x is not None]
+        cats = collections.Counter(g.get("cat") for g in cs).most_common()
+        newest = min((a for a in (days_since(g.get("posted")) for g in cs) if a is not None), default=None)
+        employers.append({
+            "name": name, "cards": n, "openings": sum(int(g.get("count") or 1) for g in cs),
+            "areas": [c for c, _ in cats], "counties": [c for c, _ in collections.Counter(c for g in cs for c in g.get("counties") or []).most_common()],
+            "payLo": round(min(rates)) if rates else None, "payHi": round(max(rates)) if rates else None,
+            "paid": sum(1 for g in cs if g.get("pay") and not re.search(r"unpaid", g["pay"], re.I)),
+            "bilingual": any(g.get("lang") for g in cs), "remote": any(g.get("mode") for g in cs),
+            "jobs": sum(1 for g in cs if g.get("kind") == "Job"), "newest": newest,
+            "terms": [t for t, _ in collections.Counter(t for g in cs for t in g.get("term") or []).most_common(2)],
+        })
+    skills = {"all": skills_in(cards), "byArea": {a: skills_in([g for g in cards if g.get("cat") == a])[:8] for a in areas}, "scanned": len(cards)}
+    return {"pulse": pulse, "pay": pay, "employers": employers, "skills": skills}
+
+# ---------- history: one snapshot of the figures per build, kept in the repo ----------
+# history.json is the board's record over time: every build adds (or, on the same day,
+# replaces) one line of headline numbers, so quarters and years can be compared later. It
+# is committed with the pages, so git keeps every version and nothing needs a server.
+def snapshot_for(cards, ins):
+    P, pay = ins["pulse"], ins["pay"]
+    keep = ("open", "interns", "jobs", "openings", "employers", "new7", "new14", "new30",
+            "payListed", "hourlyN", "medHr", "remote", "bilingual")
+    snap = {"date": TODAY.isoformat()}
+    snap.update({k: P[k] for k in keep})
+    snap.update({
+        "payLo": pay["all"]["lo"] if pay["all"] else None, "payHi": pay["all"]["hi"] if pay["all"] else None,
+        "areas": dict(P["areas"]), "counties": dict(P["counties"]), "terms": dict(P["terms"]), "levels": dict(P["levels"]),
+        "payAreas": {r["area"]: r["med"] for r in pay["areas"]},
+        "topEmployers": [[e["name"], e["cards"]] for e in ins["employers"][:5]],
+        "skills": ins["skills"]["all"][:10],
+        # postings by the month they were posted, so a quarter's total survives the 90-day trim
+        "postedByMonth": dict(collections.Counter(g["posted"][:7] for g in cards if g.get("posted"))),
+    })
+    return snap
+
+def update_history(path, snap):
+    hist = json.load(open(path, encoding='utf-8')) if os.path.exists(path) else []
+    hist = sorted([h for h in hist if h["date"] != snap["date"]] + [snap], key=lambda h: h["date"])
+    with open(path, 'w', encoding='utf-8') as f:   # one snapshot per line, so diffs read
+        f.write("[\n" + ",\n".join(json.dumps(h, ensure_ascii=False, separators=(",", ":")) for h in hist) + "\n]\n")
+    return hist
+
+def quarter_of(d):
+    return f"{d[:4]} Q{(int(d[5:7]) - 1) // 3 + 1}"
+
+def history_series(hist):
+    """What the insights page draws from the history: a point per build over the last year,
+    each area's count per build, postings by month, and one row per quarter."""
+    year_ago = (TODAY - dt.timedelta(days=365)).isoformat()
+    recent = [h for h in hist if h["date"] >= year_ago]
+    series = [{k: h.get(k) for k in ("date", "open", "interns", "employers", "new7", "new14", "medHr", "payListed", "remote", "bilingual")} for h in recent]
+    area_names = sorted({a for h in recent for a in h.get("areas", {})})
+    area_series = {a: [h.get("areas", {}).get(a, 0) for h in recent] for a in area_names}
+    posted = collections.Counter()   # a month's postings: the most any build counted for it
+    for h in hist:
+        for m, n in h.get("postedByMonth", {}).items(): posted[m] = max(posted[m], n)
+    quarters = []
+    for q in sorted({quarter_of(h["date"]) for h in hist}):
+        hs = [h for h in hist if quarter_of(h["date"]) == q]
+        meds = sorted(h["medHr"] for h in hs if h.get("medHr") is not None)
+        areas = collections.Counter()
+        for h in hs: areas.update(h.get("areas", {}))
+        emps = collections.Counter()
+        for h in hs:
+            for name, n in h.get("topEmployers", []): emps[name] += n
+        quarters.append({
+            "q": q, "builds": len(hs), "from": hs[0]["date"], "to": hs[-1]["date"],
+            "openAvg": round(sum(h["open"] for h in hs) / len(hs)), "openHigh": max(h["open"] for h in hs),
+            "employersAvg": round(sum(h["employers"] for h in hs) / len(hs)),
+            "medHr": round(quant(meds, .5), 2) if meds else None,
+            "payListedPct": round(100 * sum(h["payListed"] for h in hs) / max(1, sum(h["open"] for h in hs))),
+            "posted": sum(n for m, n in posted.items() if quarter_of(m + "-01") == q),
+            "topAreas": [a for a, _ in areas.most_common(3)], "topEmployers": [a for a, _ in emps.most_common(3)],
+        })
+    return {"series": series, "areaSeries": area_series, "postedByMonth": sorted(posted.items()),
+            "quarters": quarters, "first": hist[0]["date"] if hist else None, "builds": len(hist)}
+
+def render_insights(template_path, ins, date_label):
+    tpl = open(template_path, encoding='utf-8').read()
+    for tok in ('__INSIGHTS__', '__DATE__'):
+        if tpl.count(tok) != 1: sys.exit(f"{template_path}: expected exactly one {tok} placeholder")
+    return tpl.replace('__INSIGHTS__', json_for_html(ins)).replace('__DATE__', date_label)
+
 def json_for_html(out):
     """JSON that is safe to inline inside a <script type="application/json"> block."""
     return json.dumps(out, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
@@ -1073,8 +1261,11 @@ def json_for_html(out):
 def sha256_b64(text):
     return "sha256-" + base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode()
 
-def security_headers(html):
-    """Build a Content-Security-Policy that fits this exact page.
+def security_headers(pages):
+    """Build a Content-Security-Policy that fits each page exactly.
+
+    `pages` maps a route to the HTML served there (the board at "/" and "/index.html", the
+    insights page at "/insights" and "/insights.html").
 
     Both the app script and the stylesheet are inline, so they are allowed by hash
     rather than by 'unsafe-inline'. That means an injected script cannot run even if
@@ -1082,29 +1273,30 @@ def security_headers(html):
     so index.html and vercel.json must be regenerated together; hand-editing index.html
     will stop its script from running.
     """
-    scripts = re.findall(r"<script(?![^>]*\btype=)[^>]*>(.*?)</script>", html, re.S)
-    styles = re.findall(r"<style[^>]*>(.*?)</style>", html, re.S)
-    if not scripts: sys.exit("no inline script found: refusing to write a policy that would break the page")
-    csp = "; ".join([
-        "default-src 'none'",
-        "script-src " + " ".join(f"'{sha256_b64(x)}'" for x in scripts) + " 'self'",
-        "style-src " + " ".join(f"'{sha256_b64(x)}'" for x in styles) + " https://fonts.googleapis.com",
-        "font-src https://fonts.gstatic.com",
-        "img-src 'self' data:",
-        # Vercel Analytics posts page views to a same-origin /_vercel/insights/* path, so
-        # 'self' is what actually matters here; the vitals host covers Speed Insights.
-        "connect-src 'self' https://vitals.vercel-insights.com",
-        "form-action 'none'",
-        "frame-ancestors 'none'",
-        "base-uri 'none'",
+    def csp_for(route, html):
+        scripts = re.findall(r"<script(?![^>]*\btype=)[^>]*>(.*?)</script>", html, re.S)
+        styles = re.findall(r"<style[^>]*>(.*?)</style>", html, re.S)
+        if not scripts: sys.exit(f"{route}: no inline script found: refusing to write a policy that would break the page")
+        return "; ".join([
+            "default-src 'none'",
+            "script-src " + " ".join(f"'{sha256_b64(x)}'" for x in scripts) + " 'self'",
+            "style-src " + " ".join(f"'{sha256_b64(x)}'" for x in styles) + " https://fonts.googleapis.com",
+            "font-src https://fonts.gstatic.com",
+            "img-src 'self' data:",
+            # Vercel Analytics posts page views to a same-origin /_vercel/insights/* path, so
+            # 'self' is what actually matters here; the vitals host covers Speed Insights.
+            "connect-src 'self' https://vitals.vercel-insights.com",
+            "form-action 'none'",
+            "frame-ancestors 'none'",
+            "base-uri 'none'",
         "object-src 'none'",
-    ])
-    # The CSP is written for the page's inline script and style, so it goes on the page
-    # only; a PDF or image served beside it (the guide deck) opens in the browser's own
+        ])
+    # The CSP is written for each page's inline script and style, so it goes on the pages
+    # only; a PDF or image served beside them (the guide deck) opens in the browser's own
     # viewer, which the policy would otherwise get in the way of. The rest apply everywhere.
     return {"headers": [
-        {"source": "/", "headers": [{"key": "Content-Security-Policy", "value": csp}]},
-        {"source": "/index.html", "headers": [{"key": "Content-Security-Policy", "value": csp}]},
+        {"source": route, "headers": [{"key": "Content-Security-Policy", "value": csp_for(route, html)}]} for route, html in pages.items()
+    ] + [
         {"source": "/(.*)", "headers": [
             {"key": "X-Content-Type-Options", "value": "nosniff"},
             {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
@@ -1152,6 +1344,9 @@ def main(argv=None):
     ap.add_argument("--json", default=os.path.join(here, "data.json"), help="where to write data.json (default: next to this script)")
     ap.add_argument("--template", default=os.path.join(here, "template.html"))
     ap.add_argument("--out", default=os.path.join(here, "index.html"), help="rendered page (default: index.html next to this script); '-' to skip")
+    ap.add_argument("--insights-template", default=os.path.join(here, "insights_template.html"))
+    ap.add_argument("--history", default=os.path.join(here, "history.json"), help="where each build records its figures for the trends on the insights page (default: history.json next to this script); '-' to skip")
+    ap.add_argument("--insights-out", default=os.path.join(here, "insights.html"), help="the insights page (default: insights.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
     ap.add_argument("--max-age", type=int, default=90, metavar="DAYS",
                     help="drop postings older than DAYS (default 90; use 0 to keep everything). "
@@ -1272,11 +1467,22 @@ def main(argv=None):
         html = render_html(a.template, out, a.date)
         with open(a.out, 'w', encoding='utf-8') as f: f.write(html)
         print(f"wrote {a.out} ({len(html):,} chars, updated {a.date})")
+        pages = {"/": html, "/index.html": html}
+        if a.insights_out != '-':
+            ins = insights_for(out)
+            if a.history != '-':
+                hist = update_history(a.history, snapshot_for(out, ins))
+                ins["history"] = history_series(hist)
+                print(f"wrote {a.history} ({len(hist)} snapshot(s), {hist[0]['date']} to {hist[-1]['date']})")
+            ihtml = render_insights(a.insights_template, ins, a.date)
+            with open(a.insights_out, 'w', encoding='utf-8') as f: f.write(ihtml)
+            print(f"wrote {a.insights_out} ({len(ihtml):,} chars)")
+            pages.update({"/insights": ihtml, "/insights.html": ihtml})
         headers_path = a.headers or os.path.join(os.path.dirname(os.path.abspath(a.out)), 'vercel.json')
         if headers_path != '-':
             with open(headers_path, 'w', encoding='utf-8') as f:
-                json.dump(security_headers(html), f, indent=2); f.write("\n")
-            print(f"wrote {headers_path} (CSP pinned to this build's inline script and style)")
+                json.dump(security_headers(pages), f, indent=2); f.write("\n")
+            print(f"wrote {headers_path} (CSP pinned to each page's inline script and style)")
 
 
 if __name__ == "__main__":
