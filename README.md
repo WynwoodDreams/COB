@@ -293,6 +293,7 @@ insights page is drawn from it, through `history_series` in `build_data.py`.
   can skip it with `--history -`.
 - The file was backfilled from every past `index.html` in git, one snapshot per day the board
   changed, back to the first board on Sep 10, 2026, so the record starts there.
+- A build that should not add a line (the weekly visits job) passes `--no-snapshot`.
 - A quarter's "postings" counts listings by the month each was posted, taking the highest
   count any build saw for that month, so it is not inflated by how often the board was
   rebuilt and survives the 90-day trim.
@@ -300,6 +301,38 @@ insights page is drawn from it, through `history_series` in `build_data.py`.
   simply lack it, and the page treats a missing field as "not recorded".
 - If the site ever needs figures visitors write (a poll, say), that is the point to add a
   real database; this file is for what the build can count.
+
+## Visits
+
+`visits.json` records the site's page views, so traffic has the same long record as the
+listings: Vercel's free plan keeps a month of analytics, this file keeps all of it. The
+insights page draws "Visits by month" from it (all pages, with the insights page's share
+drawn over each bar) and shows each quarter's visits in the table.
+
+- `record_visits.py` asks the Vercel Web Analytics API for the last 28 days of page views by
+  day and page, and merges them into `visits.json`. A day already on file is overwritten by
+  the fresh figure for it, because Vercel's count for a recent day can still grow. Nothing is
+  deleted. Paths count as `board` (`/`, `/index.html`), `insights` (`/insights.html`) or `other`.
+- `.github/workflows/visits.yml` runs it every Monday at 8:17 ET on GitHub's servers, then
+  rebuilds `insights.html` with `--no-snapshot` (the board's "updated" date and the history
+  file are left as they are, since no listing changed) and commits. The Actions tab shows
+  each run with the week's numbers in its summary, and GitHub emails you if a run fails.
+
+Setting it up, once:
+
+1. In Vercel, open the `cob` project, then **Analytics**, and click **Enable**. Counting starts
+   then; the API answers "Web Analytics not found" until this is done.
+2. In Vercel, **Account Settings → Tokens → Create**: name it `cob visits`, scope it to the
+   team "Christian's projects", pick an expiry you will remember to renew (a year is fine).
+   Copy the token; Vercel shows it once.
+3. In GitHub, the COB repo, **Settings → Secrets and variables → Actions → New repository
+   secret**: name `VERCEL_TOKEN`, value the token.
+4. **Actions → Record visits → Run workflow** to run it now rather than waiting for Monday.
+   The run's summary shows the last 7 days; the commit it makes updates the insights page.
+
+If the token expires, the run fails with "Vercel refused the token" and GitHub emails you:
+make a new token and replace the secret. The project and team ids are defaults in
+`record_visits.py` (`VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` override them).
 
 ## Email list
 
@@ -478,6 +511,7 @@ is the one place untrusted input is processed on your machine.
 - `build_data.py`: reads the spreadsheet, leaves out postings that are jobs rather than internships, classifies each one (area, majors, term, level, pay, work mode) as described under "How a posting is read", merges the same role across locations into one card, folds the result into the listings already published when `--merge` is given, and renders the page.
 - `featured.json`: paid placements, read by every build. See "Featured listings".
 - `history.json`: one line of figures per build, back to the first board. See "The history file".
+- `visits.json`, `record_visits.py`, `.github/workflows/visits.yml`: page views by day, the script that records them from Vercel, and the Monday job that runs it. See "Visits".
 - `insights_template.html`: the insights page's markup, styles and script. `__INSIGHTS__` and `__DATE__` are filled in by the build. See "The insights page".
 - `index.html`, `insights.html`: the generated pages. Do not edit by hand; change a template or the script and rebuild.
 - `vercel.json`: generated security headers, including a CSP for each page pinned to that build of it.

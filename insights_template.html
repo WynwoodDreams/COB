@@ -199,6 +199,11 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .spark .delta{position:absolute;right:0;top:-30px;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--amber)}
 .spark .delta.dn{color:var(--down)} .spark .delta.flat{color:var(--mute)}
 .qpanel{margin-top:14px}
+.panel h3 .key{margin-left:auto;display:inline-flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim)}
+.panel h3 .key i{width:10px;height:10px;border-radius:2px;background:var(--amber)}
+.panel h3 .key i.b2{background:rgba(0,227,123,.45)}
+/* two bars in one row: all pages, and the insights page over it */
+.bars .bar i.b2{position:absolute;left:0;top:0}
 .tscroll{overflow-x:auto;margin:0 -6px;padding:0 6px}
 .qtable{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}
 .qtable th{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);text-align:left;padding:7px 8px;border-bottom:1px solid var(--rule-2)}
@@ -208,6 +213,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .qtable td small,.qtable th small{display:block;color:var(--dim);font-size:11px;font-family:var(--mono);white-space:nowrap;letter-spacing:0;text-transform:none;font-weight:400}
 .qtable .up{color:var(--amber)} .qtable .dn{color:var(--down)} .qtable .flat{color:var(--dim)}
 .qtable td.wrap{white-space:normal;min-width:180px;color:var(--mute)}
+#area-change td:first-child{white-space:normal}
+#area-change{table-layout:auto}
 .qtable a{display:inline-block;text-decoration:none;padding:8px 0;margin:-8px 0} .qtable a:hover{color:var(--amber)}
 code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--panel-2);padding:1px 5px;border-radius:4px}
 .method ul{margin:10px 0 0;padding-left:18px;color:var(--mute);font-size:13.5px}
@@ -374,8 +381,9 @@ code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--pa
     </div>
     <div class="two">
       <div class="panel"><h3>Postings by month posted</h3><ol class="bars" id="by-month"></ol><p class="hint" id="month-note"></p></div>
-      <div class="panel"><h3>Areas, first update to now</h3><div class="tscroll"><table class="qtable" id="area-change"></table></div></div>
+      <div class="panel"><h3><span>Visits by month</span><span class="key"><i></i>all pages <i class="b2"></i>Insights</span></h3><ol class="bars" id="visits-month"></ol><p class="hint" id="visits-note"></p></div>
     </div>
+    <div class="panel qpanel"><h3>Areas, first update to now</h3><div class="tscroll"><table class="qtable" id="area-change"></table></div></div>
     <div class="panel qpanel"><h3>By quarter</h3><div class="tscroll"><table class="qtable" id="quarters"></table></div><p class="hint">A quarter's listings and employers are the average across its updates; its postings are counted by the month each was posted, so they are not inflated by how often the board was updated.</p></div>
   </section>
 
@@ -590,6 +598,19 @@ code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--pa
   const firstMonth = H.first ? H.first.slice(0, 7) : null;
   $('#month-note').textContent = months.length ? `The current month is still filling in.${firstMonth && months[0][0] < firstMonth ? ` Months before ${monthName(firstMonth)} show only the postings still open when the board started on ${longDate(H.first)}.` : ''}` : '';
 
+  // visits by month, from visits.json: the whole site, with the insights page's share drawn over it
+  const V = H.visits;
+  if (V && V.months.length){
+    const vm = $('#visits-month'), max = Math.max(...V.months.map(m => m[1]), 1);
+    vm.innerHTML = V.months.map(([m, all, ins], i) => `<li class="${i === V.months.length-1 ? 'top' : ''}"><a href="./" title="${all} page views in ${monthName(m)}, ${ins} of them on Insights"><span class="lbl">${monthName(m)}</span><span class="bar"><i></i><i class="b2"></i></span><span class="n">${all}</span></a></li>`).join('');
+    vm.querySelectorAll('li').forEach((li, i) => { li.querySelector('.bar i').style.setProperty('--w', (V.months[i][1] / max * 100) + '%'); li.querySelector('.bar i.b2').style.setProperty('--w', (V.months[i][2] / max * 100) + '%'); });
+    const lastWk = V.weeks[V.weeks.length-1];
+    $('#visits-note').textContent = `Page views, production only, recorded from Vercel each Monday since ${longDate(V.first)}. Latest week: ${lastWk[1]} views, ${lastWk[2]} on Insights. The current month is still filling in.`;
+  } else {
+    $('#visits-month').innerHTML = '<li class="empty">No visits recorded yet.</li>';
+    $('#visits-note').textContent = 'Visits appear once Web Analytics is on in Vercel and the weekly job has run (README: "Visits").';
+  }
+
   // each area, first update against the latest
   const first = S[0], last = S[S.length-1];
   const arrow = d => d > 0 ? `<span class="up">▲ ${d}</span>` : d < 0 ? `<span class="dn">▼ ${-d}</span>` : '<span class="flat">–</span>';
@@ -599,8 +620,8 @@ code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--pa
     + areaRows.map(r => `<tr><td><a href="${link('area', r.a)}">${esc(r.a)}</a></td><td class="n">${r.from}</td><td class="n">${r.to}</td><td class="n">${arrow(r.d)}</td></tr>`).join('') + '</tbody>' : '';
 
   // the quarters
-  $('#quarters').innerHTML = H.quarters.length ? `<thead><tr><th>Quarter</th><th class="n">Updates</th><th class="n">Open<small>avg · high</small></th><th class="n">Employers</th><th class="n">Median pay</th><th class="n">List pay</th><th class="n">Postings</th><th>Busiest areas</th><th>Most roles</th></tr></thead><tbody>`
-    + H.quarters.map(q => `<tr><td class="q">${esc(q.q)}<small>${shortDate(q.from)} – ${shortDate(q.to)}</small></td><td class="n">${q.builds}</td><td class="n">${q.openAvg}<small>high ${q.openHigh}</small></td><td class="n">${q.employersAvg}</td><td class="n">${q.medHr != null ? '$' + q.medHr : '—'}</td><td class="n">${q.payListedPct}%</td><td class="n">${q.posted}</td><td class="wrap">${esc(q.topAreas.join(' · '))}</td><td class="wrap">${esc(q.topEmployers.join(' · '))}</td></tr>`).join('') + '</tbody>' : '';
+  $('#quarters').innerHTML = H.quarters.length ? `<thead><tr><th>Quarter</th><th class="n">Updates</th><th class="n">Open<small>avg · high</small></th><th class="n">Employers</th><th class="n">Median pay</th><th class="n">List pay</th><th class="n">Postings</th><th class="n">Visits</th><th>Busiest areas</th><th>Most roles</th></tr></thead><tbody>`
+    + H.quarters.map(q => `<tr><td class="q">${esc(q.q)}<small>${shortDate(q.from)} – ${shortDate(q.to)}</small></td><td class="n">${q.builds}</td><td class="n">${q.openAvg}<small>high ${q.openHigh}</small></td><td class="n">${q.employersAvg}</td><td class="n">${q.medHr != null ? '$' + q.medHr : '—'}</td><td class="n">${q.payListedPct}%</td><td class="n">${q.posted}</td><td class="n">${q.visits != null ? q.visits : '—'}</td><td class="wrap">${esc(q.topAreas.join(' · '))}</td><td class="wrap">${esc(q.topEmployers.join(' · '))}</td></tr>`).join('') + '</tbody>' : '';
 })();
 </script>
 </body>

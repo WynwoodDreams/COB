@@ -1,0 +1,46 @@
+# Every Monday morning: pull the last four weeks of page views from Vercel Web Analytics into
+# visits.json, redraw the insights page from it, and commit. Runs on GitHub's servers; it needs
+# one secret, VERCEL_TOKEN (see README, "Visits"). "Run workflow" in the Actions tab runs it now.
+name: Record visits
+
+on:
+  schedule:
+    - cron: "17 12 * * 1"   # Mondays 12:17 UTC, 8:17 ET
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: record-visits
+  cancel-in-progress: false
+
+jobs:
+  visits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch page views from Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: python3 record_visits.py
+
+      - name: Redraw the insights page
+        # The board's "updated" date stays as it was: this run changes no listings, so the
+        # label is read back from the page and passed in, and no history snapshot is added.
+        run: |
+          DATE=$(python3 -c "import re;print(re.search(r'updated ([A-Z][a-z]{2} \d{1,2}, \d{4})', open('index.html', encoding='utf-8').read()).group(1))")
+          python3 build_data.py --data index.html --date "$DATE" --no-snapshot
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add visits.json index.html insights.html vercel.json
+          if git diff --cached --quiet; then echo "nothing new to commit"; exit 0; fi
+          git commit -m "Record visits through $(date -u +%Y-%m-%d)"
+          git push

@@ -1253,9 +1253,31 @@ def update_history(path, snap):
 def quarter_of(d):
     return f"{d[:4]} Q{(int(d[5:7]) - 1) // 3 + 1}"
 
-def history_series(hist):
+def load_visits(path):
+    """visits.json, written by record_visits.py from Vercel Web Analytics: page views per day
+    and page. Missing or empty means the weekly job has not run yet."""
+    if not path or path == '-' or not os.path.exists(path): return {}
+    try: return json.load(open(path, encoding='utf-8')).get("days") or {}
+    except (json.JSONDecodeError, AttributeError): return {}
+
+def visits_series(days):
+    """Views by month and by week (all pages, and the insights page on its own)."""
+    if not days: return None
+    by_month, by_week = {}, {}
+    for d, v in sorted(days.items()):
+        m = d[:7]
+        wk = (dt.date.fromisoformat(d) - dt.timedelta(days=dt.date.fromisoformat(d).weekday())).isoformat()  # that week's Monday
+        for key, bucket in ((m, by_month), (wk, by_week)):
+            b = bucket.setdefault(key, {"all": 0, "insights": 0})
+            b["all"] += int(v.get("board", 0)) + int(v.get("insights", 0)) + int(v.get("other", 0))
+            b["insights"] += int(v.get("insights", 0))
+    return {"months": [[m, b["all"], b["insights"]] for m, b in sorted(by_month.items())][-12:],
+            "weeks": [[w, b["all"], b["insights"]] for w, b in sorted(by_week.items())][-16:],
+            "first": min(days), "last": max(days), "days": len(days)}
+
+def history_series(hist, visits=None):
     """What the insights page draws from the history: a point per build over the last year,
-    each area's count per build, postings by month, and one row per quarter."""
+    each area's count per build, postings by month, visits, and one row per quarter."""
     year_ago = (TODAY - dt.timedelta(days=365)).isoformat()
     recent = [h for h in hist if h["date"] >= year_ago]
     series = [{k: h.get(k) for k in ("date", "open", "interns", "employers", "new7", "new14", "medHr", "payListed", "remote", "bilingual")} for h in recent]
@@ -1282,7 +1304,10 @@ def history_series(hist):
             "posted": sum(n for m, n in posted.items() if quarter_of(m + "-01") == q),
             "topAreas": [a for a, _ in areas.most_common(3)], "topEmployers": [a for a, _ in emps.most_common(3)],
         })
-    return {"series": series, "areaSeries": area_series, "postedByMonth": sorted(posted.items()),
+    for q in quarters:   # a quarter's visits, where the record has them
+        qd = [v for d, v in (visits or {}).items() if quarter_of(d) == q["q"]]
+        q["visits"] = sum(int(v.get("board", 0)) + int(v.get("insights", 0)) + int(v.get("other", 0)) for v in qd) if qd else None
+    return {"series": series, "areaSeries": area_series, "postedByMonth": sorted(posted.items()), "visits": visits_series(visits),
             "quarters": quarters, "first": hist[0]["date"] if hist else None, "builds": len(hist)}
 
 def render_insights(template_path, ins, date_label):
@@ -1384,6 +1409,8 @@ def main(argv=None):
     ap.add_argument("--out", default=os.path.join(here, "index.html"), help="rendered page (default: index.html next to this script); '-' to skip")
     ap.add_argument("--insights-template", default=os.path.join(here, "insights_template.html"))
     ap.add_argument("--history", default=os.path.join(here, "history.json"), help="where each build records its figures for the trends on the insights page (default: history.json next to this script); '-' to skip")
+    ap.add_argument("--visits", default=os.path.join(here, "visits.json"), help="page views recorded by record_visits.py, for the insights page ('-' to skip)")
+    ap.add_argument("--no-snapshot", action="store_true", help="redraw the pages from the history as it is, without adding today's snapshot (the weekly visits job)")
     ap.add_argument("--insights-out", default=os.path.join(here, "insights.html"), help="the insights page (default: insights.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
     ap.add_argument("--max-age", type=int, default=90, metavar="DAYS",
@@ -1509,9 +1536,14 @@ def main(argv=None):
         if a.insights_out != '-':
             ins = insights_for(out)
             if a.history != '-':
-                hist = update_history(a.history, snapshot_for(out, ins))
-                ins["history"] = history_series(hist)
-                print(f"wrote {a.history} ({len(hist)} snapshot(s), {hist[0]['date']} to {hist[-1]['date']})")
+                if a.no_snapshot:
+                    hist = json.load(open(a.history, encoding='utf-8')) if os.path.exists(a.history) else []
+                else:
+                    hist = update_history(a.history, snapshot_for(out, ins))
+                    print(f"wrote {a.history} ({len(hist)} snapshot(s), {hist[0]['date']} to {hist[-1]['date']})")
+                visits = load_visits(a.visits)
+                ins["history"] = history_series(hist, visits)
+                if visits: print(f"read {len(visits)} day(s) of visits from {a.visits}")
             ihtml = render_insights(a.insights_template, ins, a.date)
             with open(a.insights_out, 'w', encoding='utf-8') as f: f.write(ihtml)
             print(f"wrote {a.insights_out} ({len(ihtml):,} chars)")
