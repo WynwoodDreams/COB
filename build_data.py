@@ -362,6 +362,55 @@ def flag_for(title, desc, pay=""):
     if re.search(r"for current|returning intern|previous hntb interns", title, re.I): return "Returning interns only"
     return ""
 
+# ---------- languages ----------
+# Which languages a posting asks for, and how hard it asks. South Florida postings often ask
+# for Spanish, and "a plus" and "required" mean very different things to a student, so the
+# wording around each mention is read one clause at a time and the cue nearest the language
+# decides. A mention with no cue stays unclassified: the card says "mentioned", not "required".
+LANGS = collections.OrderedDict([
+ ("Spanish", r"spanish|espa[nñ]ol"),
+ ("Portuguese", r"portugu[eê]se?s?\b"),
+ ("Haitian Creole", r"creole|krey[oò]l"),
+])
+BILINGUAL = r"\bbi-?\s?lingual\b|\bbiling[uü]e\b"
+OTHER_LANGS = r"mandarin|chinese|cantonese|french|german|russian|arabic|hindi|japanese|korean|vietnamese|italian|hebrew|polish|turkish"
+# Boilerplate that names Spanish without asking for it: an E-Verify poster "in English or Spanish",
+# a street or a river.
+LANG_NOISE = re.compile(r"e-?verify|right to work|poster|notice|click here|equal opportunity|\beeo\b|accommodat|translat|spanish river|spanish (?:trail|wells|springs)", re.I)
+LANG_SOFT = re.compile(r"preferred|prefer\b|a plus|\bplus\b|pluses|highly valued|\bvalued\b|bonus|nice to have|desirable|desired|an asset|helpful|ideal|advantage|stand out|not (?:required|mandatory|necessary)|but not|optional|encouraged", re.I)
+LANG_HARD = re.compile(r"required|requirement|\bmust\b|mandatory|essential|necessary|needs? to|a must|fully bilingual|(?:seeking|looking for|hiring)\b[^.\n]{0,60}\bbi-?\s?lingual", re.I)
+LANG_CLAUSE = re.compile(r"[\n\r\u2022\u00b7*|;]+|(?<=[.!?])\s+|,\s+(?=[A-Za-z(])")
+LANG_RANK = {"": 0, "plus": 1, "required": 2}
+
+def langs_for(title, desc):
+    """Return ([languages], need) for a posting; need is "required", "plus" or "" (mentioned)."""
+    text = (title or "") + "\n" + (desc or "")[:8000]
+    found, need = [], ""
+    def add(lang, n):
+        nonlocal need
+        if lang not in found: found.append(lang)
+        if LANG_RANK[n] > LANG_RANK[need]: need = n
+    named = any(re.search(rx, text, re.I) and not LANG_NOISE.search(text[max(0, m.start()-60):m.end()+60])
+                for rx in LANGS.values() for m in re.finditer(rx, text, re.I))
+    for i, clause in enumerate(LANG_CLAUSE.split(text)):
+        if not clause or LANG_NOISE.search(clause): continue
+        hits = [(lang, m) for lang, rx in LANGS.items() for m in [re.search(rx, clause, re.I)] if m]
+        if not hits:
+            m = re.search(BILINGUAL, clause, re.I)
+            # "bilingual" with no language named anywhere is not known to mean Spanish
+            if not m or named or re.search(OTHER_LANGS, text, re.I): continue
+            hits = [("Bilingual", m)]
+        mention = min(m.start() for _, m in hits); end = max(m.end() for _, m in hits)
+        def gap(c): return max(c.start() - end, mention - c.end(), 0)
+        soft = min((gap(c) for c in LANG_SOFT.finditer(clause)), default=None)
+        hard = min((gap(c) for c in LANG_HARD.finditer(clause)), default=None)
+        n = ""
+        if soft is not None and (hard is None or soft <= hard): n = "plus"
+        elif hard is not None: n = "required"
+        elif i == 0 and re.search(BILINGUAL, clause, re.I): n = "required"   # "Intern (Bilingual English/Spanish)"
+        for lang, _ in hits: add(lang, n)
+    return found, need
+
 # Well-known municipalities. These are also stripped from titles, so keep them to names that
 # would not plausibly be an ordinary word in a job title.
 COUNTY = {
@@ -573,6 +622,7 @@ def build_items(data, upgrade=True):
             apply=url_or_blank(d.get('externalApplyLink'), upgrade) or indeed, indeed=indeed,
             snippet=snippet_for(desc), details=details_for(desc), flag=flag_for(title, desc, pay), county=county_for(loc),
         ))
+        items[-1]['lang'], items[-1]['langNeed'] = langs_for(title, desc)
     return items, skipped
 
 # ---------- a hand-made sheet for a spotlight area ----------
@@ -720,6 +770,9 @@ def group_items(items):
                 if m not in g['majors']: g['majors'].append(m)
             for t in it['term']:
                 if t not in g['term']: g['term'].append(t)
+            for l in it.get('lang') or []:
+                if l not in g.setdefault('lang', []): g['lang'].append(l)
+            if LANG_RANK.get(it.get('langNeed') or "", 0) > LANG_RANK.get(g.get('langNeed') or "", 0): g['langNeed'] = it['langNeed']
     out = []
     for g in groups.values():
         for k in ('loc', 'apply', 'county'): g.pop(k, None)
@@ -744,6 +797,20 @@ def finalize(out, upgrade=True):
             g[k] = s(g.get(k))
         g['company'] = company_name(g['company'])
         g['posted'] = date_str(g.get('posted'))
+        # Languages: cards from older builds no longer have their full description, so they are
+        # read from the title, summary and requirement bullets they do carry. That finds less than
+        # the full posting would, and never contradicts it: a fresh build adds to this, never removes.
+        langs, need = langs_for(g['title'], "\n".join([g.get('snippet') or ""] + list(g.get('details') or [])))
+        have = [l for l in (g.get('lang') or []) if l in (*LANGS, "Bilingual")]
+        for l in langs:
+            if l not in have: have.append(l)
+        if "Bilingual" in have and len(have) > 1: have.remove("Bilingual")   # a named language says it better
+        old = g.get('langNeed') if g.get('langNeed') in LANG_RANK else ""
+        need = need if LANG_RANK[need] > LANG_RANK[old] else old
+        if have: g['lang'] = have
+        else: g.pop('lang', None)
+        if have and need: g['langNeed'] = need
+        else: g.pop('langNeed', None)
         for area, spec in SPOT_AREAS.items():
             if re.search(spec['title'], g['title'], re.I): g['cat'] = area; break
         else:
@@ -860,6 +927,9 @@ def merge_into(g, n):
     if s(n.get('cat')) in SPOT_AREAS and s(n.get('kind')):
         g['cat'] = n['cat']; g['kind'] = n['kind']
     if not (g.get('details') or []) and n.get('details'): g['details'] = list(n['details'])
+    for l in n.get('lang') or []:
+        if l not in g.setdefault('lang', []): g['lang'].append(l)
+    if LANG_RANK.get(n.get('langNeed') or "", 0) > LANG_RANK.get(g.get('langNeed') or "", 0): g['langNeed'] = n['langNeed']
     if s(n.get('posted')) > s(g.get('posted')): g['posted'] = n['posted']
     g['count'] = max(int(g.get('count') or 1), int(n.get('count') or 1), len(g.get('locs') or []))
     return json.dumps(g, sort_keys=True, ensure_ascii=False) != before

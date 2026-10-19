@@ -183,6 +183,56 @@ so every visitor sees the same three all week and a new set the next.
   those are paid placements; marking free, randomly chosen roles FEATURED would make that
   claim false.
 
+## South Florida industries
+
+A row of pills above the results filters the board to the employers this region is known for:
+sports, music and media; hospitals and health systems; aviation and aerospace; cruise and
+shipping; government and public schools. A pill shows its count, and with one picked a line
+under the row says what it covers and names the employers on the board.
+
+- The collections are `HUBS` in the `template.html` script: an employer-name pattern (`co`)
+  and, where it helps, a title pattern (`ti`). They are matched in the page, so changing one
+  is an edit and a rebuild; no data changes.
+- A collection only shows with at least 5 listings from at least 3 employers (`MIN_HUB`,
+  `MIN_HUB_EMP`), so it can never turn into one company's page. Check each pattern's matches
+  when you add one: a pattern that is too loose files unrelated employers under it.
+- The pick is kept in the address as `#hub=<id>`, so a view can be shared.
+
+## Bilingual tags
+
+A card that mentions Spanish, Portuguese or Haitian Creole carries a cyan chip, "Spanish
+required", "Spanish a plus" or "Spanish mentioned", and the filter panel has a Bilingual
+toggle (`#bi=1`). The chip says what the posting says, nothing more.
+
+- `langs_for()` in `build_data.py` reads each clause around a mention and lets the nearest
+  cue decide: "preferred", "a plus", "(Preferred)" make it a plus; "required", "must",
+  "(Required)", or "Bilingual" in the title make it required; no cue leaves it "mentioned".
+  It skips boilerplate that names Spanish without asking for it (an E-Verify poster "in
+  English or Spanish", Spanish River Boulevard).
+- The result is stored on each card as `lang` (a list) and `langNeed`. A fresh export reads
+  the full description. Cards from older builds no longer have theirs, so they are read from
+  the title, summary and requirement bullets they carry; that finds less, and a later export
+  that matches the card adds to it and never removes.
+- "Bilingual" with no language named is kept as "Bilingual", unless the posting names another
+  language (Mandarin, French...) anywhere, in which case it is dropped.
+
+## The pay report
+
+"296 list pay" in the header, and the "Median $25/hr" pill beside the results title, open a
+report of what internships pay: the median, and the middle half, of the hourly pay listings
+quote, by field, as bars, with the same numbers in a table. Picking a field there filters the
+board to it, and the pill always shows the median of whatever is on screen.
+
+- Only internships that quote an **hourly** figure count. A weekly, monthly or yearly figure
+  is a different promise, and entry-level jobs (the Cloud & DevOps cards) are left out. A
+  range counts as its midpoint; figures under $8 or over $120 an hour are treated as typos.
+- A field needs 5 hourly listings to appear (`MIN_PAY_N`); the note under the chart names the
+  fields that do not have enough yet. The pill needs 5 as well.
+- The numbers come from the listings, so they describe what employers published, not what
+  every intern earns. The note says so.
+- `#report=pay` opens the report, so it can be shared. The chart is built with DOM calls, not
+  inline `style` attributes, because the page's CSP does not allow those.
+
 ## Email list
 
 The list lives on a newsletter service (Kit, Beehiiv, Substack or similar), which handles
