@@ -96,7 +96,15 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .layout>*{min-width:0}
 /* The list is taller than most screens, so the pinned panel scrolls inside itself instead of
    running off the bottom with the last areas out of reach. */
-.areas{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--rule-2) transparent;padding-right:4px}
+.areas{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;scrollbar-width:none;padding-right:4px}
+.areas::-webkit-scrollbar{display:none}
+/* The last few areas wait behind "Show more"; the scrollbar only shows once the list is opened up. */
+.areas.open{scrollbar-width:thin;scrollbar-color:var(--rule-2) transparent}
+.areas.open::-webkit-scrollbar{display:block;width:6px}
+.areas.open::-webkit-scrollbar-thumb{background:var(--rule-2);border-radius:3px}
+.areas:not(.open) .area-list li.extra{display:none}
+.areas .more-areas{justify-content:flex-start;gap:6px;color:var(--amber);font-family:var(--mono);font-size:12px;margin-top:2px}
+.areas .more-areas:hover{color:var(--amber-2);background:var(--panel)}
 .areas h2{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--mute);letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px}
 .area-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
 .areas button{width:100%;text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center;background:transparent;border:1px solid transparent;color:var(--mute);padding:8px 10px;border-radius:6px;font-size:14px;font-weight:500;line-height:1.25}
@@ -325,6 +333,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .pager .step{padding:0 14px}
 .pager .gap{color:var(--dim);font-family:var(--mono);padding:0 2px}
 @media (max-width:900px){.pager .pg{min-width:44px;height:44px}.pager{gap:5px}}
+@media (max-width:900px){.areas:not(.open) .area-list li.extra{display:list-item}.area-list .more-li{display:none}}
 @media (max-width:560px){.pager .step{padding:0 10px}.pager .w{display:none}}
 @media (max-width:340px){.pager{gap:4px}.pager .pg{min-width:40px;padding:0 6px}.pager .step{padding:0 8px}}
 .empty button:hover,.loadmore:hover{background:var(--amber);color:#1A1200}
@@ -792,6 +801,20 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const addToList = b => { const li=document.createElement('li'); li.appendChild(b); ul.appendChild(li); };
   addToList(mkArea('All areas','',DATA.length));
   areas.forEach(a => addToList(mkArea(a,a,areaCounts.get(a))));
+  // The last MORE_AREAS areas sit behind a "Show more" button (on a laptop; a phone's strip shows them all).
+  const MORE_AREAS = 5, sidebar = $('.areas');
+  const extras = [...ul.children].slice(-MORE_AREAS);
+  let moreBtn = null;
+  if (areas.length > MORE_AREAS + 4){
+    extras.forEach(li => li.classList.add('extra'));
+    moreBtn = document.createElement('button'); moreBtn.type = 'button'; moreBtn.className = 'more-areas'; moreBtn.setAttribute('aria-expanded','false');
+    const li = document.createElement('li'); li.className = 'more-li'; li.appendChild(moreBtn); ul.appendChild(li);
+    const label = () => { const open = sidebar.classList.contains('open'); moreBtn.textContent = open ? 'Show fewer ▴' : `Show ${MORE_AREAS} more ▾`; moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+    moreBtn.addEventListener('click', () => { sidebar.classList.toggle('open'); label(); });
+    label();
+  }
+  // a selected area that is tucked away opens the list, so the highlight is never hidden
+  const showSelectedArea = () => { if (moreBtn && state.area && extras.some(li => li.firstChild.dataset.area === state.area) && !sidebar.classList.contains('open')) moreBtn.click(); };
 
   const addOpt = (sel, k, n) => { const o=document.createElement('option'); o.value=k; o.textContent=`${k} (${n})`; sel.appendChild(o); };
   const fill = (sel, map) => [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,n]) => addOpt(sel,k,n));
@@ -1118,6 +1141,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 
   window.addEventListener('hashchange', ()=>{ readHash(); syncInputs(); render(); if (state.report && !payDlg.open) openPay(); else if (!state.report && payDlg.open) closePay(); });
   readHash(); syncInputs(); render();
+  showSelectedArea();
   requestAnimationFrame(hubEdge);
   if (state.report) openPay();
 })();
