@@ -185,10 +185,11 @@ so every visitor sees the same three all week and a new set the next.
 
 ## South Florida industries
 
-A row of pills above the results filters the board to the employers this region is known for:
-sports, music and media; hospitals and health systems; aviation and aerospace; cruise and
-shipping; government and public schools. A pill shows its count, and with one picked a line
-under the row says what it covers and names the employers on the board.
+A row of pills above the results, labelled Industries, filters the board to the employers
+this region is known for: sports and media; hospitals and health systems; aviation and
+aerospace; cruise and shipping; government and public schools. The row scrolls sideways
+when it must, with a chevron at its edge; a pill's tooltip says what it covers and how many
+listings it holds.
 
 - The collections are `HUBS` in the `template.html` script: an employer-name pattern (`co`)
   and, where it helps, a title pattern (`ti`). They are matched in the page, so changing one
@@ -218,16 +219,16 @@ toggle (`#bi=1`). The chip says what the posting says, nothing more.
 
 ## The pay report
 
-"296 list pay" in the header, and the "Median $25/hr" pill beside the results title, open a
-report of what internships pay: the median, and the middle half, of the hourly pay listings
-quote, by field, as bars, with the same numbers in a table. Picking a field there filters the
-board to it, and the pill always shows the median of whatever is on screen.
+The "What interns earn $25/hr" button beside the subtitle opens a report of what
+internships pay: the median, and the middle half, of the hourly pay listings quote, by
+field, as bars, with the same numbers in a table. Picking a field there filters the board
+to it. The button's figure is the median across the whole board.
 
 - Only internships that quote an **hourly** figure count. A weekly, monthly or yearly figure
   is a different promise, and entry-level jobs (the Cloud & DevOps cards) are left out. A
   range counts as its midpoint; figures under $8 or over $120 an hour are treated as typos.
 - A field needs 5 hourly listings to appear (`MIN_PAY_N`); the note under the chart names the
-  fields that do not have enough yet. The pill needs 5 as well.
+  fields that do not have enough yet.
 - The numbers come from the listings, so they describe what employers published, not what
   every intern earns. The note says so.
 - `#report=pay` opens the report, so it can be shared. The chart is built with DOM calls, not
