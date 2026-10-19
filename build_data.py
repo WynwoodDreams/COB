@@ -8,8 +8,9 @@ Typical use (from the repo root):
     python3 build_data.py listings.xlsx --stats    # also print classification counters
     python3 build_data.py --sheet "Cloud & DevOps" cloud.csv --merge index.html   # add a hand-made sheet
 
-The spreadsheet needs these columns: company, positionName, location, jobType/0..3,
-postingDateParsed, externalApplyLink, salary, description, url, id.
+The spreadsheet needs these columns: company, positionName, location,
+postingDateParsed, externalApplyLink, salary, description. It can also carry jobType/0..3,
+url (the Indeed posting) and id; a row without an id gets one made from its apply link.
 
 A --sheet is a hand-made list of jobs and internships for one spotlight area (SPOT_AREAS),
 an .xlsx or a .csv with the columns Company, Role, Location and Direct Apply URL (or the
@@ -98,8 +99,22 @@ DESC_FALLBACK = [
  ("Mechanical, Electrical & Manufacturing Engineering", r"engineering"),
 ]
 
+# One-off category corrections, for a posting the rules above file somewhere wrong: they
+# read a stray word in the description ("audit", "finance", "software"). Each line is
+# (employer regex, title regex, area). Add a line here instead of loosening a rule, which
+# would move other cards.
+CATEGORY_OVERRIDES = [
+ (r"^Keith$", r"survey and mapping", "Architecture, Construction & Design"),
+ (r"^FTAI Aviation", r"^intern, engineering", "Mechanical, Electrical & Manufacturing Engineering"),
+ (r"^StandardAero", r"^student/intern$", "Skilled Trades, Automotive & Aviation"),
+ (r"^GA Telesis", r"^summer intern- 2027$", "Business, Management & Operations"),   # one posting for seven departments
+ (r"^Southern Glazer", r"\(OneTech\)", "Software, IT, Data & AI"),
+]
+
 def classify(title, desc, company=''):
     t = title.strip()
+    for co, tk, cat in CATEGORY_OVERRIDES:
+        if re.search(co, company, re.I) and re.search(tk, t, re.I): return cat
     if re.search(GENERIC, t, re.I):
         for cat, k in COMPANY_RULES:
             if re.search(k, company, re.I): return cat
@@ -506,7 +521,9 @@ def date_str(v):
     v = s(v)[:10]
     return v if re.match(r"^\d{4}-\d{2}-\d{2}$", v) else ""
 
-REQUIRED = ["company", "positionName", "location", "postingDateParsed", "externalApplyLink", "salary", "description", "url", "id"]
+REQUIRED = ["company", "positionName", "location", "postingDateParsed", "externalApplyLink", "salary", "description"]
+# url (the Indeed posting) and id are optional: some exports leave them out. A row without
+# either gets an id made from its apply link, so it still de-duplicates and keeps a stable id.
 
 def read_rows(path):
     try:
@@ -527,6 +544,10 @@ def read_rows(path):
         data.append(dict(zip(hdr, r)))
     return data
 
+def made_id(d, company, title):
+    key = s(d.get('externalApplyLink')) or "|".join([company, title, s(d.get('location'))])
+    return "x" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
+
 NOT_INTERNSHIPS = []
 def build_items(data, upgrade=True):
     items, seen, skipped = [], set(), 0
@@ -534,7 +555,7 @@ def build_items(data, upgrade=True):
         title = s(d.get('positionName')); company = company_name(s(d.get('company'))); desc = s(d.get('description'))
         if not title and not company: skipped += 1; continue
         if not is_internship(title, desc): NOT_INTERNSHIPS.append(f"{company} / {title[:50]}"); continue
-        pid = s(d.get('id')) or s(d.get('url'))
+        pid = s(d.get('id')) or s(d.get('url')) or made_id(d, company, title)
         if pid in seen: skipped += 1; continue
         seen.add(pid)
         indeed = url_or_blank(d.get('url'), upgrade)
@@ -739,6 +760,24 @@ def finalize(out, upgrade=True):
     out.sort(key=lambda x: (x['company'].lower(), x['title'].lower()))
     out.sort(key=lambda x: x['posted'], reverse=True)   # stable: newest first, then employer A-Z
     return out
+
+# Postings kept off the board on purpose. Each line is (employer regex, title regex, why).
+# Held here, not just deleted from index.html, so the next export cannot bring them back.
+EXCLUDED = [
+ (r"^Lotus Sales", r".", "door-to-door commission sales sold as an internship"),
+ (r"^Hongfeng US Services", r"office intern", "the job is in Irvine, California; Indeed filed it under Miami"),
+ (r"^Planate Management", r"robotics intern", "the job is in Orlando; Indeed filed it under Miami"),
+ (r"^king cable", r"intern/office assistant", "worded as a permanent office job, not an internship"),
+ (r"^Saludablemente", r"mental health counselor", "hires licensed counselors; not a student internship"),
+ (r"^RI Creative Studio", r"content creator manager/intern", "a manager-style title posted by one person hiring for their own team"),
+]
+
+def drop_excluded(out):
+    kept, held = [], []
+    for g in out:
+        why = next((w for co, tk, w in EXCLUDED if re.search(co, g['company'], re.I) and re.search(tk, g['title'], re.I)), None)
+        (held if why else kept).append((g, why) if why else g)
+    return kept, held
 
 def drop_expired(out):
     """Strip terms that have already ended, and drop a card whose only term has ended.
@@ -1110,6 +1149,10 @@ def main(argv=None):
         print(f"relinked {len(changed)} card(s) from Indeed to the employer's apply page using {a.relink}"
               + (": " + "; ".join(f"{g['company']} / {g['title'][:40]} -> {hostOf(g['locs'][0]['apply'])}" for g in changed) if changed else ""))
         out = finalize(out, upgrade=not a.keep_http)
+    out, held = drop_excluded(out)
+    if held:
+        print(f"held back {len(held)} posting(s) listed in EXCLUDED: "
+              + "; ".join(f"{g['company']} / {g['title'][:40]} ({why})" for g, why in held))
     out, expired = drop_expired(out)
     if expired:
         print(f"dropped {len(expired)} card(s) whose only term has already ended: "
