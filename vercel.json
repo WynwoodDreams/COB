@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-oHp1+wRbiC/C+qZDMqDG7b7z5y5bwrNNBVKnWo/nV9c=' 'self'; style-src 'sha256-EUqk46RWr7Afbo04l3Y5xxnB2RROm07ANrQQzMav/Oc=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-6KST+fcYoYo+7a2zr+w0IJNs5iwP067qsLcUtLnDHI4=' 'self'; style-src 'sha256-EUqk46RWr7Afbo04l3Y5xxnB2RROm07ANrQQzMav/Oc=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
         }
       ]
     },
@@ -14,7 +14,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-oHp1+wRbiC/C+qZDMqDG7b7z5y5bwrNNBVKnWo/nV9c=' 'self'; style-src 'sha256-EUqk46RWr7Afbo04l3Y5xxnB2RROm07ANrQQzMav/Oc=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-6KST+fcYoYo+7a2zr+w0IJNs5iwP067qsLcUtLnDHI4=' 'self'; style-src 'sha256-EUqk46RWr7Afbo04l3Y5xxnB2RROm07ANrQQzMav/Oc=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
         }
       ]
     },
@@ -33,6 +33,37 @@
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-VIQKCNsMYh6mlQXbgn+k0lqcTFFBdBuGPh8uly/NRag=' 'self'; style-src 'sha256-JX735WnARs1HYLx8TyhwBgPRnJUmC0Tdzd4d2SdS764=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+        }
+      ]
+    },
+    {
+      "source": "/assistant",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-bDXeU2pi9zxL662gtCdRHjPyGoHyrzIm+F5laC2wzVc=' 'self'; style-src 'sha256-Wc1IdUNl/t4NMi0N2EfLv2gFLk4jj96NgG3pgEZo6/c=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+        }
+      ]
+    },
+    {
+      "source": "/assistant.html",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-bDXeU2pi9zxL662gtCdRHjPyGoHyrzIm+F5laC2wzVc=' 'self'; style-src 'sha256-Wc1IdUNl/t4NMi0N2EfLv2gFLk4jj96NgG3pgEZo6/c=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'none'; frame-ancestors 'none'"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
         }
       ]
     },
@@ -61,5 +92,11 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/assistant.js": {
+      "maxDuration": 60,
+      "includeFiles": "index.html"
+    }
+  }
 }
