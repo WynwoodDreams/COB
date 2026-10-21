@@ -1291,6 +1291,13 @@ def render_insights(template_path, ins, date_label):
         if tpl.count(tok) != 1: sys.exit(f"{template_path}: expected exactly one {tok} placeholder")
     return tpl.replace('__INSIGHTS__', json_for_html(ins)).replace('__DATE__', date_label)
 
+def render_assistant(template_path, date_label):
+    """The assistant page carries no data: its listings come from /api/assistant, which reads
+    the built index.html. Only the 'updated' label is filled in."""
+    tpl = open(template_path, encoding='utf-8').read()
+    if tpl.count('__DATE__') != 1: sys.exit(f"{template_path}: expected exactly one __DATE__ placeholder")
+    return tpl.replace('__DATE__', date_label)
+
 def json_for_html(out):
     """JSON that is safe to inline inside a <script type="application/json"> block."""
     return json.dumps(out, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
@@ -1334,6 +1341,11 @@ def security_headers(pages):
     return {"headers": [
         {"source": route, "headers": [{"key": "Content-Security-Policy", "value": csp_for(route, html)}]} for route, html in pages.items()
     ] + [
+        # The assistant's API answers JSON only; nothing on it may be framed or run as a page.
+        {"source": "/api/(.*)", "headers": [
+            {"key": "Content-Security-Policy", "value": "default-src 'none'; frame-ancestors 'none'"},
+            {"key": "Cache-Control", "value": "no-store"},
+        ]},
         {"source": "/(.*)", "headers": [
             {"key": "X-Content-Type-Options", "value": "nosniff"},
             {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
@@ -1341,7 +1353,10 @@ def security_headers(pages):
             {"key": "X-Frame-Options", "value": "DENY"},
             {"key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains"},
         ]},
-    ]}
+    ],
+    # The assistant function reads the listings out of the built index.html at run time, so
+    # that file has to be bundled next to it. See "The opportunity assistant" in the README.
+    "functions": {"api/assistant.js": {"maxDuration": 60, "includeFiles": "index.html"}}}
 
 def render_html(template_path, out, date_label):
     tpl = open(template_path, encoding='utf-8').read()
@@ -1385,6 +1400,8 @@ def main(argv=None):
     ap.add_argument("--insights-template", default=os.path.join(here, "insights_template.html"))
     ap.add_argument("--history", default=os.path.join(here, "history.json"), help="where each build records its figures for the trends on the insights page (default: history.json next to this script); '-' to skip")
     ap.add_argument("--insights-out", default=os.path.join(here, "insights.html"), help="the insights page (default: insights.html next to this script); '-' to skip")
+    ap.add_argument("--assistant-template", default=os.path.join(here, "assistant_template.html"))
+    ap.add_argument("--assistant-out", default=os.path.join(here, "assistant.html"), help="the assistant page (default: assistant.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
     ap.add_argument("--max-age", type=int, default=90, metavar="DAYS",
                     help="drop postings older than DAYS (default 90; use 0 to keep everything). "
@@ -1516,6 +1533,11 @@ def main(argv=None):
             with open(a.insights_out, 'w', encoding='utf-8') as f: f.write(ihtml)
             print(f"wrote {a.insights_out} ({len(ihtml):,} chars)")
             pages.update({"/insights": ihtml, "/insights.html": ihtml})
+        if a.assistant_out != '-':
+            ahtml = render_assistant(a.assistant_template, a.date)
+            with open(a.assistant_out, 'w', encoding='utf-8') as f: f.write(ahtml)
+            print(f"wrote {a.assistant_out} ({len(ahtml):,} chars)")
+            pages.update({"/assistant": ahtml, "/assistant.html": ahtml})
         headers_path = a.headers or os.path.join(os.path.dirname(os.path.abspath(a.out)), 'vercel.json')
         if headers_path != '-':
             with open(headers_path, 'w', encoding='utf-8') as f:

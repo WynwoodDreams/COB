@@ -3,3 +3,8 @@ data.json
 check.txt
 *.xlsx
 __pycache__/
+
+node_modules/
+.env
+.env.local
+.vercel
