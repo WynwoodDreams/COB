@@ -109,6 +109,8 @@ CATEGORY_OVERRIDES = [
  (r"^StandardAero", r"^student/intern$", "Skilled Trades, Automotive & Aviation"),
  (r"^GA Telesis", r"^summer intern- 2027$", "Business, Management & Operations"),   # one posting for seven departments
  (r"^Southern Glazer", r"\(OneTech\)", "Software, IT, Data & AI"),
+ (r"^JM Family", r"^sales planning intern$", "Sales & Business Development"),   # "planning" read as civil
+ (r"^Greentech Renewables", r"^intern$", "Sales & Business Development"),      # electrical-distribution sales programme
 ]
 
 def classify(title, desc, company=''):
@@ -862,6 +864,9 @@ EXCLUDED = [
  (r"^king cable", r"intern/office assistant", "worded as a permanent office job, not an internship"),
  (r"^Saludablemente", r"mental health counselor", "hires licensed counselors; not a student internship"),
  (r"^RI Creative Studio", r"content creator manager/intern", "a manager-style title posted by one person hiring for their own team"),
+ (r"^Baker Tilly", r"business valuation associate", "a salaried full-time associate role, not an internship"),
+ (r"^Oasis Futsal", r"futsal coach", "a part-time coaching job, not an internship"),
+ (r"^TBD Influencer", r"personal assistant intern", "unpaid personal-assistant work for an unnamed individual"),
 ]
 
 def drop_excluded(out):
