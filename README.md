@@ -60,7 +60,11 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
    somewhere wrong. Add a line to either instead of loosening a rule, which would move other cards.
 
    Terms that have already ended are dropped automatically, and a listing whose only
-   advertised term has ended is removed. In September 2026, for example, "Summer 2026"
+   advertised term has ended is removed. A term in its last two months (Fall from
+   November, Summer from July) is treated as closing: a published card that names only
+   closing terms is kept through a `--merge` only if the new export still lists it, since
+   a Fall card an October scrape no longer carries is far more likely gone than open.
+   A card that also names a later term stays either way; the run prints what it dropped. In September 2026, for example, "Summer 2026"
    disappears from the Term filter while "Fall 2026" stays. Listings that never name a
    term are kept. Postings more than 90 days old (`--max-age`) are
    dropped on both sides of a merge, and again whenever the page is re-rendered with `--data`,
