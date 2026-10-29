@@ -308,6 +308,13 @@ def term_is_past(term):
     m = re.match(r"^(Winter|Spring|Summer|Fall)\s+(\d{4})$", term or "")
     if not m: return False
     return (int(m.group(2)), SEASON_END_MONTH[m.group(1)]) < (TODAY.year, TODAY.month)
+def term_is_closing(term):
+    """A term in its last two months: a 10-15 week internship is no longer recruiting for it."""
+    m = re.match(r"^(Winter|Spring|Summer|Fall)\s+(\d{4})$", term or "")
+    if not m or term_is_past(term): return False
+    y, mo = TODAY.year, TODAY.month + 2
+    if mo > 12: y, mo = y + 1, mo - 12
+    return (int(m.group(2)), SEASON_END_MONTH[m.group(1)]) <= (y, mo)
 def term_for(title, desc):
     pats = r"(Summer|Fall|Spring|Winter|Autumn)\s*(20\d\d)|(20\d\d)\s*(Summer|Fall|Spring|Winter)"
     found = []
@@ -891,6 +898,22 @@ def drop_expired(out):
         kept.append(g)
     return kept, expired
 
+def drop_closing(out, confirmed):
+    """Drop a card whose every term is closing unless the fresh export still lists it.
+
+    Nothing in an export says a posting closed, but a Fall card the October scrape no
+    longer carries, for a term that ends in December, is far more likely gone than open.
+    A card the export did confirm, or one that also names a later term, stays.
+    """
+    kept, closing = [], []
+    for g in out:
+        terms = g.get('term') or []
+        if terms and all(term_is_closing(t) for t in terms) and g.get('id') not in confirmed:
+            closing.append(g)
+        else:
+            kept.append(g)
+    return kept, closing
+
 def drop_stale(out, cutoff):
     """Split cards by whether their newest posting predates the cutoff. Dead links cost trust."""
     kept, stale = [], []
@@ -1463,7 +1486,13 @@ def main(argv=None):
         if added:
             print("  new: " + "; ".join(f"{g['company']} / {display_title(g['title'])[:40]}" for g in added[:8])
                   + (f" ... and {len(added)-8} more" if len(added) > 8 else ""))
+        confirmed = {g.get('id') for g in added + updated + same}
         out = finalize(out, upgrade=not a.keep_http)
+        out, closing = drop_closing(out, confirmed)
+        if closing:
+            print(f"dropped {len(closing)} card(s) for a term in its last two months that this export no longer lists: "
+                  + "; ".join(f"{g['company']} / {g['title'][:40]} ({', '.join(g['term'])})" for g in closing[:12])
+                  + (" ..." if len(closing) > 12 else ""))
         if a.max_age:
             out, stale = drop_stale(out, cutoff)
             if stale:
