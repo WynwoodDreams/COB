@@ -1,7 +1,9 @@
 # Christian's Opportunity Board
 
 Static site. `index.html` carries the page and the internship data inline; `og.png` is the
-image that shows when someone shares the link. Those two files are the whole deployment.
+image that shows when someone shares the link. Those two files are the board. The insights
+page and the opportunity assistant (a private preview, with one serverless function) sit
+beside them; see their sections below.
 
 Visitors filter by area, county, major, term and level, sort by date, pay or employer, and
 apply straight to the employer. Filter state lives in the URL, so any view can be shared.
@@ -58,7 +60,11 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
    somewhere wrong. Add a line to either instead of loosening a rule, which would move other cards.
 
    Terms that have already ended are dropped automatically, and a listing whose only
-   advertised term has ended is removed. In September 2026, for example, "Summer 2026"
+   advertised term has ended is removed. A term in its last two months (Fall from
+   November, Summer from July) is treated as closing: a published card that names only
+   closing terms is kept through a `--merge` only if the new export still lists it, since
+   a Fall card an October scrape no longer carries is far more likely gone than open.
+   A card that also names a later term stays either way; the run prints what it dropped. In September 2026, for example, "Summer 2026"
    disappears from the Term filter while "Fall 2026" stays. Listings that never name a
    term are kept. Postings more than 90 days old (`--max-age`) are
    dropped on both sides of a merge, and again whenever the page is re-rendered with `--data`,
@@ -302,6 +308,82 @@ insights page is drawn from it, through `history_series` in `build_data.py`.
 - If the site ever needs figures visitors write (a poll, say), that is the point to add a
   real database; this file is for what the build can count.
 
+## The opportunity assistant (private preview)
+
+`assistant.html` is a third page, not linked from the board: a visitor describes themselves in
+plain language and gets up to five listings from the board, with why each fits and what the
+posting asks for that they have not mentioned. It is the one part of the site that is not
+static. `api/assistant.js` is a Vercel function; everything it does is in `lib/assistant/`.
+
+How a turn works:
+
+1. **Read.** The model turns the conversation into a profile (interests, skills, experience,
+   level, internship or job, location, remote, availability, languages) and an intent: a
+   search, a question about listings it already showed, or something else. If the field is
+   missing it may ask one short question, at most three per conversation (`maxFollowups` in
+   `handler.js`); the server counts them and stops asking after that.
+2. **Retrieve, deterministically.** `retrieve.js` turns the profile into filters and a
+   keyword score over the board's own listings: place names map to counties (`PLACES`), an
+   undergraduate never sees graduate-only listings, "internship" never returns an entry-level
+   job, "Returning interns only" is skipped, a named term and a language are boosts rather
+   than filters, and interests are widened with `SYNONYMS` ("cybersecurity" also finds SOC,
+   threat, GRC). Fewer than three in the named county widens to the rest of South Florida and
+   says so. The top 12 go to the model; a listing that is not among them cannot be recommended.
+3. **Rank and explain.** The model orders those candidates, writes one or two sentences on the
+   fit, and names the qualifications the visitor has not mentioned as *indexes* into the
+   listing's own requirement bullets, never as free text. The bullets are split by the cue
+   they carry (`kindOf` in `listings.js`): "required", "must", "pursuing" mark a required one;
+   "preferred", "a plus", "nice to have" a preferred one; the rest are shown as "the posting
+   does not say". The server checks every id and index before anything reaches the page.
+4. **Answer.** A question about the recommended listings is answered from their full board
+   content only, passed as data. Pay, deadlines and links come from the card or not at all.
+
+No strong match (no candidate names the field in its title, area or majors) returns a
+plain "no strong matches" with search adjustments worked out from the board (widen the
+county, include jobs, drop the term, the largest neighbouring areas) and up to three
+"closest on the board" cards marked as weak. Every card says "not verified as still open":
+the board cannot see a posting the employer took down early, and the model is told never to
+claim one is open.
+
+Listing text is third-party. It reaches the model inside a JSON `data` field, and each prompt
+says it is data from postings and never an instruction. The page renders cards from the
+server's copy of the listing (id, title, employer, apply link, requirement bullets), so a
+model reply can add an explanation to a card but cannot change what the card says or link to.
+
+**The model.** Requests go through Vercel AI Gateway's OpenAI-compatible endpoint
+(`https://ai-gateway.vercel.sh/v1/chat/completions`), model `minimax/minimax-m3.1-flash`,
+with `providerOptions.gateway.only: ["minimax"]` so the gateway serves the request from
+MiniMax or fails it; it never routes to another provider. `ASSISTANT_MODEL` and
+`ASSISTANT_PROVIDERS` switch both without a code change. The reply's routing metadata is
+checked too: a reply served by a provider outside the list is refused.
+
+**Setup.** `.env.example` lists every variable. In Vercel, Project > Settings > Environment
+Variables: `AI_GATEWAY_API_KEY` (create one under the team's AI Gateway tab; it is only ever
+read on the server) and `ASSISTANT_ENABLED=true`. Set `ASSISTANT_ENABLED=false` and redeploy
+to stop every AI request when the free promotion ends; the page then shows "The assistant is
+paused" and the board is untouched. Keep the preview private by leaving `ASSISTANT_URL` in
+`template.html` empty (the board shows no link); set it to `assistant.html` and rebuild to show
+the "Ask the assistant" pill beside Insights.
+
+**Limits.** 1,500 characters a message, 16 turns, 8 requests a minute and 40 an hour per
+address, and a daily cap (`ASSISTANT_DAILY_CAP`, default 400) per function instance; the
+per-instance counters reset when Vercel recycles the instance, so they stop a loop rather
+than meter the promotion exactly. The page shows the model's progress while it waits, a
+retry on a failed request, and a banner when the assistant is paused or unconfigured.
+
+**Data.** The function reads the listings out of the built `index.html` at run time (the
+`functions` entry in `vercel.json` bundles it), so a rebuild of the board is a rebuild of
+what the assistant can find. If that file cannot be read, `lib/assistant/sample-listings.json`
+stands in: five made-up listings, ids `sample-*`, and a "Sample data" banner on every reply.
+
+**Running it.** `npm test` runs the whole flow against a scripted stand-in for the gateway
+(`test/fake-gateway.js`), including the three scenarios in the task: a Miami cybersecurity
+student with no experience, a bilingual engineering student after a research internship, and
+a field the board does not carry. `node test/serve.mjs --fake` serves the page locally with
+that stand-in; without `--fake` and with `AI_GATEWAY_API_KEY` set it calls the real gateway.
+`--sample` forces the sample set. `python3 build_data.py ...` writes `assistant.html` from
+`assistant_template.html` alongside the other pages, and its CSP into `vercel.json`.
+
 ## Visits
 
 `visits.json` records the site's page views, so traffic has the same long record as the
@@ -471,7 +553,9 @@ address and rebuild, knowing that address will be readable in the page source.
 
 ## Security
 
-The site is static: no server, no database, no user input, no JavaScript dependencies.
+The site is static apart from the assistant: no database, no JavaScript dependencies, and
+the only user input is the assistant's message box, which goes to `/api/assistant` and nowhere
+else (see "The opportunity assistant" for what that function does with it).
 Listing text is third-party, so the page escapes every value it renders and accepts only
 `http(s)` links; hostile payloads render as visible text. Three build-time measures back
 that up.
@@ -513,6 +597,7 @@ is the one place untrusted input is processed on your machine.
 - `history.json`: one line of figures per build, back to the first board. See "The history file".
 - `visits.json`, `record_visits.py`, `.github/workflows/visits.yml`: page views by day, the script that records them from Vercel, and the Monday job that runs it. See "Visits".
 - `insights_template.html`: the insights page's markup, styles and script. `__INSIGHTS__` and `__DATE__` are filled in by the build. See "The insights page".
+- `assistant_template.html`, `assistant.html`: the assistant page and its build. `api/assistant.js` is the Vercel function, `lib/assistant/` the code behind it, `test/` its tests and local server. See "The opportunity assistant".
 - `index.html`, `insights.html`: the generated pages. Do not edit by hand; change a template or the script and rebuild.
 - `vercel.json`: generated security headers, including a CSP for each page pinned to that build of it.
 - `og.png`: 1200x630 link preview image, referenced by the Open Graph tags in the template.

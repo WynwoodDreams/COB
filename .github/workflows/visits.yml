@@ -30,17 +30,20 @@ jobs:
         run: python3 record_visits.py
 
       - name: Redraw the insights page
-        # The board's "updated" date stays as it was: this run changes no listings, so the
-        # label is read back from the page and passed in, and no history snapshot is added.
+        # This run changes no listings. The board's "updated" label is read back from the page,
+        # --max-age 0 keeps the 90-day trim from removing anything between exports, and no
+        # history snapshot is added. Only insights.html (and vercel.json) are rewritten; the
+        # board, index.html, is left exactly as published and is not committed.
         run: |
           DATE=$(python3 -c "import re;print(re.search(r'updated ([A-Z][a-z]{2} \d{1,2}, \d{4})', open('index.html', encoding='utf-8').read()).group(1))")
-          python3 build_data.py --data index.html --date "$DATE" --no-snapshot
+          python3 build_data.py --data index.html --date "$DATE" --no-snapshot --max-age 0
+          git diff --quiet -- index.html assistant.html || { echo "::error::the board or assistant page changed during a visits run; refusing to commit it"; git diff --stat -- index.html assistant.html; exit 1; }
 
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add visits.json index.html insights.html vercel.json
+          git add visits.json insights.html vercel.json
           if git diff --cached --quiet; then echo "nothing new to commit"; exit 0; fi
           git commit -m "Record visits through $(date -u +%Y-%m-%d)"
           git push

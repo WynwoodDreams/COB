@@ -1,0 +1,10 @@
+{
+  "name": "christians-opportunity-board",
+  "private": true,
+  "description": "Static board plus one serverless function, /api/assistant. No dependencies.",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test test/assistant.test.mjs",
+    "assistant:dev": "node test/serve.mjs"
+  }
+}
