@@ -1402,9 +1402,16 @@ def security_headers(pages):
         {"source": "/(.*)", "headers": [
             {"key": "X-Content-Type-Options", "value": "nosniff"},
             {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
-            {"key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"},
             {"key": "X-Frame-Options", "value": "DENY"},
             {"key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains"},
+        ]},
+        # The microphone stays off everywhere except the assistant page, where a visitor can
+        # speak a message instead of typing it ("Talk instead of type" in the README).
+        {"source": "/((?!assistant).*)", "headers": [
+            {"key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"},
+        ]},
+        {"source": "/assistant(.html)?", "headers": [
+            {"key": "Permissions-Policy", "value": "camera=(), microphone=(self), geolocation=(), payment=(), usb=()"},
         ]},
     ],
     # The assistant function reads the listings out of the built index.html at run time, so

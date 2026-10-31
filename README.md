@@ -350,6 +350,16 @@ says it is data from postings and never an instruction. The page renders cards f
 server's copy of the listing (id, title, employer, apply link, requirement bullets), so a
 model reply can add an explanation to a card but cannot change what the card says or link to.
 
+**Talk instead of type.** A mic button beside Send lets a visitor speak their message. The
+browser's own speech recognition writes the words into the message box as they talk; tapping
+the mic again stops it, and nothing is sent until they press Send, so they can fix a misheard
+word first. It runs in English, or in Spanish when the browser's language is Spanish. The
+button is hidden where the browser has no speech recognition (Firefox, for one), and a blocked
+or missing microphone gets a plain message under the box. The microphone is allowed on this
+page only: `security_headers` in `build_data.py` writes `microphone=(self)` for
+`/assistant` and `microphone=()` for every other path. In Chrome the recognition may run on
+Google's servers rather than on the device; the assistant itself only ever receives the text.
+
 **The model.** Requests go through Vercel AI Gateway's OpenAI-compatible endpoint
 (`https://ai-gateway.vercel.sh/v1/chat/completions`), model `minimax/minimax-m3.1-flash`,
 with `providerOptions.gateway.only: ["minimax"]` so the gateway serves the request from
@@ -554,8 +564,8 @@ address and rebuild, knowing that address will be readable in the page source.
 ## Security
 
 The site is static apart from the assistant: no database, no JavaScript dependencies, and
-the only user input is the assistant's message box, which goes to `/api/assistant` and nowhere
-else (see "The opportunity assistant" for what that function does with it).
+the only user input is the assistant's message box (typed, or spoken through the browser's
+speech recognition), which goes to `/api/assistant` and nowhere else (see "The opportunity assistant" for what that function does with it).
 Listing text is third-party, so the page escapes every value it renders and accepts only
 `http(s)` links; hostile payloads render as visible text. Three build-time measures back
 that up.

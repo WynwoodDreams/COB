@@ -168,6 +168,15 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .compose .send:hover{background:var(--amber-2)}
 .compose .send:disabled{opacity:.45;cursor:default;box-shadow:none}
 .compose .send svg{width:15px;height:15px}
+.compose .mic{flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;background:transparent;color:var(--mute);border:1px solid var(--rule-2);border-radius:10px;padding:0}
+.compose .mic[hidden]{display:none}
+.compose .mic:hover{color:var(--amber);border-color:var(--amber)}
+.compose .mic:disabled{opacity:.45;cursor:default}
+.compose .mic svg{width:18px;height:18px}
+.compose .mic.on{color:#04120B;background:var(--amber);border-color:var(--amber);box-shadow:var(--glow);animation:micpulse 1.4s ease-in-out infinite}
+@keyframes micpulse{50%{box-shadow:0 0 0 6px var(--amber-dim)}}
+.compose .meta .voice{color:var(--mute)}
+.compose .meta .voice.warn{color:var(--down)}
 .compose .meta{display:flex;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;color:var(--dim);padding:6px 4px 0}
 .compose .meta .over{color:var(--down)}
 .compose .meta button{background:transparent;border:0;color:var(--mute);padding:0;font-family:var(--mono);font-size:11.5px;text-decoration:underline;text-underline-offset:3px}
@@ -274,9 +283,10 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     <div class="compose">
       <form id="form">
         <textarea id="input" rows="1" maxlength="1500" placeholder="What are you looking for?" aria-label="Your message" autocomplete="off"></textarea>
+        <button type="button" class="mic" id="mic" hidden aria-pressed="false" aria-label="Talk instead of typing" title="Talk instead of typing. Your browser turns your speech into text, which you can check before sending."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/></svg></button>
         <button type="submit" class="send" id="send"><span>Send</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
       </form>
-      <div class="meta"><span id="count">0 / 1500</span><span><button type="button" id="restart">Start over</button> · Enter sends, Shift+Enter for a new line</span></div>
+      <div class="meta"><span id="count">0 / 1500</span><span class="voice" id="voice-note" role="status" aria-live="polite"></span><span><button type="button" id="restart">Start over</button> · Enter sends, Shift+Enter for a new line</span></div>
     </div>
   </div>
 
@@ -418,7 +428,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     if (!text || busy || !enabled) return;
     if (text.length > MAX_CHARS) { fail(`Keep each message under ${MAX_CHARS} characters.`); return; }
     if (!isRetry){ msg('user', esc(text)); history.push({ role:'user', content:text }); }
-    lastSent = text; busy = true; send.disabled = true; starters.hidden = true; $('#intro') && $('#intro').remove();
+    voice.stop(); lastSent = text; busy = true; send.disabled = true; starters.hidden = true; $('#intro') && $('#intro').remove();
     input.value = ''; count(); wait();
     try {
       const res = await fetch(API, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ messages: history.slice(-KEEP), recommendedIds }) });
@@ -438,7 +448,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   }
 
   function setEnabled(on, why){
-    enabled = on; send.disabled = !on; input.disabled = !on;
+    enabled = on; send.disabled = !on; input.disabled = !on; voice.enable(on);
     $('#n-off').hidden = on; if (!on && why) $('#off-why').textContent = why;
     starters.hidden = !on || history.length > 0;
   }
@@ -458,9 +468,55 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const grow = () => { input.style.height = 'auto'; input.style.height = Math.min(160, input.scrollHeight) + 'px'; };
   input.addEventListener('input', () => { count(); grow(); });
   input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); } });
+  // ===== Talk instead of type =====
+  // The browser's own speech recognition writes what the visitor says into the message box.
+  // Nothing is sent until they press Send, so they can check and fix the text first. Hidden
+  // where the browser has no speech recognition (Firefox, for one); typing always works.
+  const voice = (() => {
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const mic = $('#mic'), note = $('#voice-note');
+    let rec = null, on = false, base = '', heard = '';
+    const say = (t, warn) => { note.textContent = t || ''; note.classList.toggle('warn', !!warn); };
+    const lang = () => /^es\b/i.test(navigator.language || '') ? 'es-US' : 'en-US';
+    const WHY = {
+      'not-allowed': 'The microphone is blocked. Allow it in your browser\'s site settings, or type instead.',
+      'service-not-allowed': 'This browser will not turn speech into text here. Type instead.',
+      'audio-capture': 'No microphone was found. Type instead.',
+      'network': 'Voice needs an internet connection in this browser. Type instead.',
+      'no-speech': 'Did not hear anything. Tap the mic and try again.',
+      'language-not-supported': 'This browser cannot recognise that language. Type instead.'
+    };
+    function set(v){ on = v; mic.classList.toggle('on', v); mic.setAttribute('aria-pressed', String(v)); mic.setAttribute('aria-label', v ? 'Stop listening' : 'Talk instead of typing'); }
+    function write(){
+      const joined = (base && heard ? base.replace(/\s+$/, '') + ' ' : base) + heard;
+      input.value = joined.slice(0, MAX_CHARS); count(); grow();
+    }
+    function start(){
+      if (on || input.disabled) return;
+      rec = new Rec(); rec.lang = lang(); rec.interimResults = true; rec.continuous = true;
+      base = input.value; heard = '';
+      rec.onresult = e => {
+        let fin = '', live = '';
+        for (let i = 0; i < e.results.length; i++) (e.results[i].isFinal ? (fin += e.results[i][0].transcript) : (live += e.results[i][0].transcript));
+        heard = (fin + live).trim(); write();
+      };
+      rec.onerror = e => { if (e.error !== 'aborted') say(WHY[e.error] || 'Voice stopped. Type instead, or tap the mic to try again.', true); };
+      rec.onend = () => { const got = !!heard; set(false); rec = null; if (got && !note.classList.contains('warn')) say('Check the text, then press Send.'); input.focus(); };
+      try { rec.start(); set(true); say('Listening… tap the mic again when you are done.'); }
+      catch (err) { rec = null; set(false); say('Voice could not start. Type instead.', true); }
+    }
+    function stop(){ if (rec) try { rec.stop(); } catch (err) {} }
+    if (Rec){
+      mic.hidden = false;
+      mic.addEventListener('click', () => on ? stop() : start());
+      input.addEventListener('input', e => { if (!e.isTrusted) return; if (!on) say(''); });
+    }
+    return { stop, enable(v){ if (!v) stop(); mic.disabled = !v; } };
+  })();
+
   form.addEventListener('submit', e => { e.preventDefault(); ask(input.value); });
   starters.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { ask(b.textContent); }));
-  $('#restart').addEventListener('click', () => { history.length = 0; recommendedIds = []; log.querySelectorAll('.msg').forEach(m => m.remove()); unwait(); starters.hidden = !enabled; input.value=''; count(); input.focus(); });
+  $('#restart').addEventListener('click', () => { voice.stop(); history.length = 0; recommendedIds = []; log.querySelectorAll('.msg').forEach(m => m.remove()); unwait(); starters.hidden = !enabled; input.value=''; count(); input.focus(); });
   boot();
 })();
 </script>
