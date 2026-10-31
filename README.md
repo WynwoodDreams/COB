@@ -361,9 +361,9 @@ checked too: a reply served by a provider outside the list is refused.
 Variables: `AI_GATEWAY_API_KEY` (create one under the team's AI Gateway tab; it is only ever
 read on the server) and `ASSISTANT_ENABLED=true`. Set `ASSISTANT_ENABLED=false` and redeploy
 to stop every AI request when the free promotion ends; the page then shows "The assistant is
-paused" and the board is untouched. Keep the preview private by leaving `ASSISTANT_URL` in
-`template.html` empty (the board shows no link); set it to `assistant.html` and rebuild to show
-the "Ask the assistant" pill beside Insights.
+paused" and the board is untouched. `ASSISTANT_URL` in `template.html` is set to
+`assistant.html`, which shows the "Ask the assistant" pill beside Insights; set it to `''` and
+rebuild to hide the page from the board again.
 
 **Limits.** 1,500 characters a message, 16 turns, 8 requests a minute and 40 an hour per
 address, and a daily cap (`ASSISTANT_DAILY_CAP`, default 400) per function instance; the
