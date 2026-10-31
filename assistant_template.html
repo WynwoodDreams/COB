@@ -128,6 +128,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .row .why{margin-top:10px;padding:10px 12px;border-left:3px solid var(--amber);background:rgba(0,227,123,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--ink)}
 .row .why b{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);display:block;margin-bottom:3px;font-weight:600}
 .row .asks{margin-top:10px;font-size:14px}
+.row .details h4.lochead{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:10px 0 4px;font-weight:600}
 .row .asks h4{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:8px 0 4px;font-weight:600}
 .row .asks h4:first-child{margin-top:0}
 .row .asks ul{margin:0;padding-left:18px;color:var(--mute)}
@@ -144,6 +145,14 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .dest{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:-2px}
 .plan{font-family:var(--mono);font-size:11.5px;color:var(--mute);text-align:center;text-decoration:none}
 .plan:hover{color:var(--amber);text-decoration:underline;text-underline-offset:3px}
+/* Cards open folded, like the board's: employer, title, tags and Apply first; the rest sits behind More details. */
+.more{background:transparent;border:1px solid var(--rule-2);color:var(--mute);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:12px}
+.more:hover,.more[aria-expanded="true"]{color:var(--ink);border-color:var(--ink)}
+.row .details{display:none;grid-column:1/-1;border-top:1px solid var(--rule);padding-top:12px;margin-top:4px}
+.row .details.open{display:block}
+.row .details>p{margin:0 0 4px}
+.row .details .why{margin-top:10px}
+.row .main .srcline{margin-top:4px}
 .locs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .locs a{text-decoration:none;background:var(--panel-2);border:1px solid var(--rule-2);border-radius:6px;padding:7px 11px;font-size:13px;color:var(--ink);display:inline-flex;gap:8px;align-items:center}
 .locs a span{font-family:var(--mono);font-size:11px;color:var(--amber)}
@@ -208,6 +217,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .compose .send span{display:none}
   .compose .send{padding:11px 13px}
   .locs a{min-height:44px}
+  .more{min-height:50px;padding:12px 16px;flex:1 1 100%}
   .foot a{display:inline-block;padding:12px 0;margin:-12px 0}
 }
 @media (max-width:360px){
@@ -303,7 +313,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 
   // The conversation lives here and nowhere else: a reload starts over.
   const history = [];      // {role, content, kind}
-  let recommendedIds = [], busy = false, enabled = false, lastSent = null;
+  let recommendedIds = [], busy = false, enabled = false, lastSent = null, cardSeq = 0;
   const log = $('#log'), input = $('#input'), send = $('#send'), form = $('#form'), starters = $('#starters');
 
   function add(el){ log.appendChild(el); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return el; }
@@ -346,21 +356,32 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const asks = d.requirements.length ? `<div class="asks">${group('required','Required')}${group('preferred','Preferred')}${group('unspecified','Also listed (the posting does not say if required)')}</div>`
       : `<div class="asks"><span class="none">The posting on the board lists no qualification bullets; check the employer's page.</span></div>`;
     const apply = safeUrl(d.apply);
+    const detId = 'det-' + d.id + '-' + (++cardSeq);
+    // Every card has something to unfold: at least its requirements and its links.
+    const hasDetails = true;
     el.innerHTML = `
       <div class="main">
         <div class="co">${n?`<span class="rank">#${n}</span>`:''}<span class="emp">${esc(d.company)}</span>${locLine?`<span class="loc">${esc(locLine)}</span>`:''}${days!=null?`<time datetime="${esc(d.posted)}" title="${esc(full)}"${days<7?' class="fresh"':''}>${esc(ageLabel(days))}</time>`:''}</div>
         <h3>${esc(d.title)}</h3>
         <div class="chips">${chips.join('')}</div>
-        ${d.snippet ? `<p>${esc(d.snippet)}</p>` : ''}
-        ${m.why ? `<div class="why"><b>Why it fits</b>${esc(m.why)}</div>` : ''}
-        ${asks}
-        ${d.locs.length>1 ? `<div class="locs">${d.locs.map(l => `<a href="${esc(safeUrl(l.apply))}" target="_blank" rel="noopener" title="Opens ${esc(hostOf(l.apply))}">${esc(l.loc)}<span>apply</span></a>`).join('')}</div>` : ''}
-        <div class="srcline">${full ? `Posted ${esc(full)}` : 'Posted date unknown'} · <span class="unv" title="The board cannot see a posting the employer took down early">not verified as still open</span>${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''} · <a href="index.html#q=${encodeURIComponent(d.company)}">On the board</a></div>
+        <div class="srcline">${full ? `Posted ${esc(full)}` : 'Posted date unknown'} · <span class="unv" title="The board cannot see a posting the employer took down early">not verified as still open</span></div>
       </div>
       <div class="side">
         ${apply ? `<a class="apply" href="${esc(apply)}" target="_blank" rel="noopener" title="Opens ${esc(apply)}">Apply ↗</a><span class="dest" title="This link opens ${esc(hostOf(apply))}">via ${esc(hostOf(apply))}</span>` : `<span class="dest">No apply link on the board</span>`}
-        ${BENCH[d.area] ? `<a class="plan" href="${esc(planLink(d))}" target="_blank" rel="noopener" title="Opens BuildersBench: the projects to build for this role">Projects for this role ↗</a>` : ''}
+        ${hasDetails ? `<button class="more" type="button" aria-expanded="false" aria-controls="${detId}">More details</button>` : ''}
+      </div>
+      <div class="details" id="${detId}">
+        ${d.snippet ? `<p>${esc(d.snippet)}</p>` : ''}
+        ${m.why ? `<div class="why"><b>Why it fits</b>${esc(m.why)}</div>` : ''}
+        ${asks}
+        ${d.locs.length>1 ? `<h4 class="lochead">Apply by location</h4><div class="locs">${d.locs.map(l => `<a href="${esc(safeUrl(l.apply))}" target="_blank" rel="noopener" title="Opens ${esc(hostOf(l.apply))}">${esc(l.loc)}<span>apply</span></a>`).join('')}</div>` : ''}
+        <div class="srcline">${d.indeed ? `<a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a> · ` : ''}<a href="index.html#q=${encodeURIComponent(d.company)}">On the board</a>${BENCH[d.area] ? ` · <a href="${esc(planLink(d))}" target="_blank" rel="noopener" title="Opens BuildersBench: the projects to build for this role">Projects for this role ↗</a>` : ''}</div>
       </div>`;
+    const more = el.querySelector('.more');
+    if (more) more.addEventListener('click', () => {
+      const dt = el.querySelector('.details'), open = !dt.classList.contains('open');
+      dt.classList.toggle('open', open); more.setAttribute('aria-expanded', open ? 'true' : 'false'); more.textContent = open ? 'Hide details' : 'More details';
+    });
     return el;
   }
   function filtersNote(f){
