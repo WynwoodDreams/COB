@@ -9,6 +9,9 @@ function fakeGateway(opts = {}) {
     const body = JSON.parse(init.body);
     calls.push({ url, headers: init.headers, body });
     if (opts.fail) return new Response(JSON.stringify({ error: { message: opts.fail.message || 'boom' } }), { status: opts.fail.status || 500 });
+    if (opts.emptyFirst && calls.filter(c => c.body.max_tokens <= (opts.emptyFirst)).length === calls.length && body.max_tokens <= opts.emptyFirst) {
+      return new Response(JSON.stringify({ id: 'fake', model: body.model, choices: [{ index: 0, message: { role: 'assistant', content: '' }, finish_reason: 'length' }], usage: { completion_tokens: body.max_tokens } }), { status: 200 });
+    }
     const sys = body.messages[0].content;
     let content;
     if (/intake step/.test(sys)) content = JSON.stringify(opts.read ? opts.read(body) : intake(body));

@@ -147,3 +147,14 @@ test('the HTTP handler rate-limits and answers GET/POST', async () => {
   assert.equal(last.code, 429); assert.equal(last.headers['Retry-After'], '60');
   const m = await call('DELETE'); assert.equal(m.code, 405);
 });
+
+test('a reply that runs out of tokens while reasoning is retried with a larger budget', async () => {
+  const { h, gw } = make({ env: { ASSISTANT_MAX_TOKENS: '500' }, gateway: { emptyFirst: 3000 } });
+  const r = await h.run({ messages: [{ role: 'user', content: 'cybersecurity student in Miami' }], recommendedIds: [] });
+  assert.equal(r.kind, 'results');
+  assert.ok(gw.calls.some(c => c.body.max_tokens >= 9000), 'retried with three times the budget');
+});
+test('an empty reply that did not hit the cap is reported with its details', async () => {
+  const bad = createHandler({ env: ENV, boardPath: board, log: () => {}, fetch: async () => new Response(JSON.stringify({ choices: [{ message: { content: '' }, finish_reason: 'stop' }] }), { status: 200 }) });
+  await assert.rejects(bad.run({ messages: [{ role: 'user', content: 'hi' }] }), /empty reply/);
+});
