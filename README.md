@@ -2,7 +2,7 @@
 
 Static site. `index.html` carries the page and the internship data inline; `og.png` is the
 image that shows when someone shares the link. Those two files are the board. The insights
-page and the opportunity assistant (a private preview, with one serverless function) sit
+page and the opportunity assistant (in beta, with one serverless function) sit
 beside them; see their sections below.
 
 Visitors filter by area, county, major, term and level, sort by date, pay or employer, and
@@ -308,9 +308,9 @@ insights page is drawn from it, through `history_series` in `build_data.py`.
 - If the site ever needs figures visitors write (a poll, say), that is the point to add a
   real database; this file is for what the build can count.
 
-## The opportunity assistant (private preview)
+## The opportunity assistant (beta)
 
-`assistant.html` is a third page, not linked from the board: a visitor describes themselves in
+`assistant.html` is a third page, linked from the board's "Ask the assistant" button: a visitor describes themselves in
 plain language and gets up to five listings from the board, with why each fits and what the
 posting asks for that they have not mentioned. It is the one part of the site that is not
 static. `api/assistant.js` is a Vercel function; everything it does is in `lib/assistant/`.
@@ -372,9 +372,10 @@ checked too: a reply served by a provider outside the list is refused.
 Variables: `AI_GATEWAY_API_KEY` (create one under the team's AI Gateway tab; it is only ever
 read on the server) and `ASSISTANT_ENABLED=true`. Set `ASSISTANT_ENABLED=false` and redeploy
 to stop every AI request when the free promotion ends; the page then shows "The assistant is
-paused" and the board is untouched. Keep the preview private by leaving `ASSISTANT_URL` in
-`template.html` empty (the board shows no link); set it to `assistant.html` and rebuild to show
-the "Ask the assistant" pill beside Insights.
+paused" and the board is untouched. The board's "Ask the assistant" pill (beside Insights,
+badged Beta) shows because `ASSISTANT_URL` in `template.html` is set to `assistant.html`; set it
+to `''` and rebuild to hide it again. The soft launch went out on 2026-11-01. The assistant page
+keeps `noindex`, so search engines do not list it; people reach it from the board.
 
 **Limits.** 1,500 characters a message, 16 turns, 8 requests a minute and 40 an hour per
 address, and a daily cap (`ASSISTANT_DAILY_CAP`, default 400) per function instance; the

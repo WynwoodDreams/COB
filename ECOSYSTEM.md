@@ -20,6 +20,10 @@ Read this before the rest. It overrides the roadmap below where they disagree.
 - **ResumeCanvas may become a paid product.** Nothing about pricing is decided. Until it is,
   do not build a paywall, and do not make anything in COB or BuildersBench depend on
   ResumeCanvas being free. See "Charging for ResumeCanvas" below.
+- **COB's assistant is in soft launch (2026-11-01).** The board's "Ask the assistant" button,
+  badged Beta, links to it. Traffic is about 25 to 50 visitors a week, well inside the
+  assistant's limits (400 requests a day per function instance, 40 an hour per visitor).
+  `ASSISTANT_ENABLED=false` in Vercel pauses it.
 - **Voice is a priority: people should be able to talk to every site.** The owner is building
   the talking part of ResumeCanvas first, and says it is not good enough yet. See
   "Talking to the sites" below.
@@ -103,7 +107,7 @@ What each site accepts from the others. Add a row here whenever you add or chang
 | ResumeCanvas | `/#jd=<posting text>` | Opens match mode with the job description filled in | Planned, on hold |
 | ResumeCanvas | `/#add-project=<title + bullets>` | Adds a BuildersBench project to the resume's Projects section | Planned, on hold |
 | COB | `/#…` filters and `page=N` | Area, county, major, term and level filters, kept after the `#` (see COB's README) | Works |
-| COB | `/assistant.html` | The assistant (private preview, not linked from the board) | Works |
+| COB | `/assistant.html` | The assistant (beta, linked from the board's "Ask the assistant" button since 2026-11-01) | Works |
 
 ## Where the links stand today
 
@@ -150,7 +154,6 @@ until the owner says otherwise (see "Current direction").
 - What is free and what is paid in ResumeCanvas, and when?
 - What does "talking to the sites" need to do before it is good enough: accuracy, speed,
   spoken replies, languages (Spanish and Haitian Creole are common in South Florida)?
-- When does the assistant go public (`ASSISTANT_URL` in COB's `template.html`)?
 - Should the assistant eventually run inside BuildersBench and ResumeCanvas, or always hand
   the student back to COB?
 - One domain for all three, or three separate sites joined by links?
