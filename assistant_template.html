@@ -470,8 +470,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); } });
   // ===== Talk instead of type =====
   // The browser's own speech recognition writes what the visitor says into the message box.
-  // Nothing is sent until they press Send, so they can check and fix the text first. Hidden
-  // where the browser has no speech recognition (Firefox, for one); typing always works.
+  // Nothing is sent until they press Send, so they can check and fix the text first. Typing
+  // always works.
   const voice = (() => {
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
     const mic = $('#mic'), note = $('#voice-note');
@@ -506,11 +506,11 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       catch (err) { rec = null; set(false); say('Voice could not start. Type instead.', true); }
     }
     function stop(){ if (rec) try { rec.stop(); } catch (err) {} }
-    if (Rec){
-      mic.hidden = false;
-      mic.addEventListener('click', () => on ? stop() : start());
-      input.addEventListener('input', e => { if (!e.isTrusted) return; if (!on) say(''); });
-    }
+    // The button always shows, so a visitor can find it; where the browser has no speech
+    // recognition (Firefox, Chrome on iPhone, in-app browsers) a tap says so instead.
+    mic.hidden = false;
+    mic.addEventListener('click', () => !Rec ? say('Talking is not available in this browser. Open this page in Safari, Chrome or Edge, or type instead.', true) : on ? stop() : start());
+    input.addEventListener('input', e => { if (!e.isTrusted) return; if (!on) say(''); });
     return { stop, enable(v){ if (!v) stop(); mic.disabled = !v; } };
   })();
 

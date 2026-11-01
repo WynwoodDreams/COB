@@ -354,8 +354,9 @@ model reply can add an explanation to a card but cannot change what the card say
 browser's own speech recognition writes the words into the message box as they talk; tapping
 the mic again stops it, and nothing is sent until they press Send, so they can fix a misheard
 word first. It runs in English, or in Spanish when the browser's language is Spanish. The
-button is hidden where the browser has no speech recognition (Firefox, for one), and a blocked
-or missing microphone gets a plain message under the box. The microphone is allowed on this
+button always shows; where the browser has no speech recognition (Firefox, Chrome on iPhone,
+in-app browsers) a tap says so and suggests Safari, Chrome or Edge, and a blocked or missing
+microphone gets a plain message under the box. The microphone is allowed on this
 page only: `security_headers` in `build_data.py` writes `microphone=(self)` for
 `/assistant` and `microphone=()` for every other path. In Chrome the recognition may run on
 Google's servers rather than on the device; the assistant itself only ever receives the text.
