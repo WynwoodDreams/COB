@@ -181,15 +181,17 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .compose .meta .over{color:var(--down)}
 .compose .meta button{background:transparent;border:0;color:var(--mute);padding:0;font-family:var(--mono);font-size:11.5px;text-decoration:underline;text-underline-offset:3px}
 .compose .meta button:hover{color:var(--amber)}
-.starters{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
-.starters button{background:var(--panel);border:1px solid var(--rule-2);color:var(--mute);border-radius:999px;padding:8px 14px;font-size:13.5px;text-align:left}
-.starters button:hover{color:var(--ink);border-color:var(--amber)}
+.starters{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:18px auto 6px;max-width:720px}
+.starters button{background:var(--panel);border:1px solid var(--rule-2);color:var(--mute);border-radius:999px;padding:9px 16px;font-size:14px;animation:rise .7s cubic-bezier(.2,.7,.3,1) both}
+.starters button:nth-child(2){animation-delay:.08s} .starters button:nth-child(3){animation-delay:.16s}
+.starters button:nth-child(4){animation-delay:.24s} .starters button:nth-child(5){animation-delay:.32s}
+.starters button:hover{color:var(--ink);border-color:var(--amber);background:var(--amber-dim)}
 .starters[hidden]{display:none}
-.intro{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:18px 20px}
-.intro h2{margin:0 0 6px;font-size:18px}
-.intro p{margin:0;color:var(--mute);font-size:14.5px;max-width:80ch}
-.intro ul{margin:8px 0 0;padding-left:18px;color:var(--mute);font-size:13.5px}
-.intro li{margin:3px 0}
+/* the opening: one line of welcome, then the suggestions rise in one after another */
+.intro{text-align:center;padding:clamp(28px,7vh,72px) 8px 4px;animation:rise .8s cubic-bezier(.2,.7,.3,1) both}
+.intro h2{margin:0 0 8px;font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.02em}
+.intro p{margin:0 auto;color:var(--mute);font-size:15.5px;max-width:52ch}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 .foot{margin-top:40px;border-top:1px solid var(--rule);padding-top:16px;font-family:var(--mono);font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .foot a{color:var(--mute);text-decoration:underline;text-underline-offset:3px}
@@ -213,7 +215,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .row p{font-size:15px;line-height:1.55}
   .row h3{font-size:19px}
   .bubble{font-size:15.5px}
-  .starters button{min-height:44px;flex:1 1 100%}
+  .starters button{min-height:44px}
+  .compose .meta .keys{display:none}
   .compose .send span{display:none}
   .compose .send{padding:11px 13px}
   .locs a{min-height:44px}
@@ -261,32 +264,28 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   <div class="chat">
     <div class="notice warn" id="n-sample" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>Sample data.</b> The board's live listings could not be read on this deployment, so the assistant is searching a small made-up sample set. Nothing it shows here is a real opening.</div></div>
     <div class="notice warn" id="n-off" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>The assistant is paused.</b> <span id="off-why">AI requests are switched off on this deployment.</span> The <a href="index.html">board's search and filters</a> still work.</div></div>
-    <div class="notice" id="n-about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><div><b>How it works.</b> Tell it what you study or can do, where in South Florida you are, and when you are free. It filters the board's own listings by location and eligibility, then an AI model ranks the closest ones and explains the fit. It only ever shows listings that are on the board, with the board's own apply links, and it cannot tell whether a posting is still open: check the employer's page before you count on one.</div></div>
 
     <div class="log" id="log" aria-live="polite">
       <div class="intro" id="intro">
-        <h2>Describe yourself in a sentence or two.</h2>
-        <p>Interests, skills, experience so far, where you are and when you can work. It will ask at most three short questions if something important is missing, then show up to five listings with why each fits and what the posting asks for that you have not mentioned.</p>
-        <ul>
-          <li>Required and preferred qualifications are read from each posting's own bullets.</li>
-          <li>Ask follow-up questions about the listings it finds; it answers from their text only.</li>
-          <li>Nothing you type is stored on the server; the conversation lives in this tab.</li>
-        </ul>
+        <h2>Find your next internship.</h2>
+        <p>Say or type what you study and where you are. I'll pull the best fits from the board.</p>
       </div>
     </div>
     <div class="starters" id="starters">
-      <button type="button">I'm a cybersecurity student in Miami with no professional experience yet, looking for a Summer 2027 internship.</button>
-      <button type="button">Bilingual (English/Spanish) engineering student at FAU, interested in a research internship, available part-time now.</button>
-      <button type="button">Accounting major in Broward, had one tax internship, looking for audit or finance roles.</button>
+      <button type="button">Cybersecurity internship in Miami</button>
+      <button type="button">Paid software internship in Broward</button>
+      <button type="button">Accounting or audit, Summer 2027</button>
+      <button type="button">Bilingual, part-time roles</button>
+      <button type="button">Entry-level cloud jobs</button>
     </div>
 
     <div class="compose">
       <form id="form">
-        <textarea id="input" rows="1" maxlength="1500" placeholder="What are you looking for?" aria-label="Your message" autocomplete="off"></textarea>
+        <textarea id="input" rows="1" maxlength="1500" placeholder="e.g. Marketing in Broward" aria-label="Your message" autocomplete="off"></textarea>
         <button type="button" class="mic" id="mic" hidden aria-pressed="false" aria-label="Talk instead of typing" title="Talk instead of typing. Your browser turns your speech into text, which you can check before sending."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/></svg></button>
         <button type="submit" class="send" id="send"><span>Send</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
       </form>
-      <div class="meta"><span id="count">0 / 1500</span><span class="voice" id="voice-note" role="status" aria-live="polite"></span><span><button type="button" id="restart">Start over</button> · Enter sends, Shift+Enter for a new line</span></div>
+      <div class="meta"><span id="count">0 / 1500</span><span class="voice" id="voice-note" role="status" aria-live="polite"></span><span><button type="button" id="restart">Start over</button><span class="keys"> · Enter sends, Shift+Enter for a new line</span></span></div>
     </div>
   </div>
 
@@ -456,7 +455,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     try {
       const res = await fetch(API, { method:'GET' }); const st = await res.json();
       $('#st-n').textContent = st.listings; $('#n-sample').hidden = st.source !== 'sample';
-      $('#st-model').textContent = st.enabled ? `model ${st.model}` : 'assistant paused';
+      $('#st-model').textContent = st.enabled ? '' : 'assistant paused';
       setEnabled(!!st.enabled, st.paused ? 'AI requests are switched off while the free promotion is over.' : (!st.configured ? 'The assistant is not configured on this deployment.' : ''));
     } catch(e){
       $('#st-model').textContent = 'assistant unreachable';
