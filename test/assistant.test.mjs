@@ -11,7 +11,7 @@ const { fakeGateway } = require('./fake-gateway.js');
 
 const ENV = { AI_GATEWAY_API_KEY: 'test-key', ASSISTANT_ENABLED: 'true' };
 const board = path.join(process.cwd(), 'index.html');
-const make = (opts = {}) => { const gw = fakeGateway(opts.gateway); return { gw, h: createHandler({ env: Object.assign({}, ENV, opts.env), fetch: gw.fetch, boardPath: opts.boardPath || board, log: () => {} }) }; };
+const make = (opts = {}) => { const gw = fakeGateway(opts.gateway); return { gw, h: createHandler({ env: Object.assign({}, ENV, opts.env), fetch: gw.fetch, boardPath: opts.boardPath || board, log: () => {}, warn: () => {} }) }; };
 
 test('listings load from index.html and classify requirement bullets', () => {
   const d = loadListings({ boardPath: board });
@@ -122,9 +122,40 @@ test('input limits, the disable switch and gateway errors come back as clear err
   await assert.rejects(h.run({ messages: [{ role: 'user', content: 'x'.repeat(LIMITS.maxMessageChars + 1) }] }), /under 1500/);
   await assert.rejects(make({ env: { ASSISTANT_ENABLED: 'false' } }).h.run({ messages: [{ role: 'user', content: 'hi' }] }), /paused/);
   await assert.rejects(make({ env: { AI_GATEWAY_API_KEY: '' } }).h.run({ messages: [{ role: 'user', content: 'hi' }] }), /not configured/);
-  await assert.rejects(make({ gateway: { fail: { status: 401 } } }).h.run({ messages: [{ role: 'user', content: 'cyber in miami' }] }), /credentials/);
-  await assert.rejects(make({ gateway: { fail: { status: 429 } } }).h.run({ messages: [{ role: 'user', content: 'cyber in miami' }] }), /rate-limited/);
-  await assert.rejects(make({ gateway: { served: 'someone-else' } }).h.run({ messages: [{ role: 'user', content: 'cyber in miami' }] }), /not an allowed provider/);
+});
+
+test('when the model fails, the visitor still gets listings: a keyword search of the board', async () => {
+  // Bad credentials, rate limits, a provider outside the allowed list and a reply that stays
+  // empty all end the same way for the visitor: the board searched on their own words, with
+  // no "why it fits", instead of an error about the model.
+  for (const gateway of [{ fail: { status: 401 } }, { fail: { status: 429 } }, { fail: { status: 500 } }, { served: 'someone-else' }, { empty: 99 }]) {
+    const { h } = make({ gateway });
+    const r = await h.run({ messages: [{ role: 'user', content: 'cybersecurity internship in Miami' }] });
+    assert.equal(r.kind, 'results', JSON.stringify(gateway)); assert.equal(r.fallback, true);
+    assert.ok(r.matches.length >= 1 && r.matches.length <= 5);
+    for (const m of r.matches) { assert.equal(m.why, ''); assert.match(m.listing.title + ' ' + m.listing.area, /cyber|security/i); }
+    assert.match(r.filters.location_filter, /Miami-Dade/);
+    assert.doesNotMatch(r.summary, /model|gateway/i);
+  }
+});
+
+test('an empty reply is retried once with more room before falling back', async () => {
+  const { h, gw } = make({ gateway: { empty: 1 } });
+  const r = await h.run({ messages: [{ role: 'user', content: "I'm a cybersecurity student in Miami looking for a Summer 2027 internship." }] });
+  assert.equal(r.kind, 'results'); assert.equal(r.fallback, false);
+  assert.ok(r.matches.every(m => m.why.length > 10), 'the model ranked these');
+  assert.equal(gw.calls.length, 3);
+  assert.equal(gw.calls[1].body.max_tokens, gw.calls[0].body.max_tokens * 2);
+});
+
+test('the starter "Entry-level cloud jobs" returns cloud jobs even with no model at all', async () => {
+  const { h } = make({ gateway: { empty: 99 } });
+  const r = await h.run({ messages: [{ role: 'user', content: 'Entry-level cloud jobs' }] });
+  assert.ok(r.kind === 'results' || r.kind === 'nomatch', r.kind);
+  assert.match(r.filters.eligibility, /entry-level jobs only/);
+  const shown = r.kind === 'results' ? r.matches.map(m => m.listing) : r.closest;
+  assert.ok(shown.length >= 1);
+  for (const d of shown) assert.equal(d.kind, 'Entry-level job');
 });
 
 test('the model is configurable', async () => {

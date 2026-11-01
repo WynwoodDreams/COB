@@ -130,6 +130,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .row .asks{margin-top:10px;font-size:14px}
 .row .asks h4{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:8px 0 4px;font-weight:600}
 .row .asks h4:first-child{margin-top:0}
+.row .asks summary+h4{margin-top:4px}
 .row .asks ul{margin:0;padding-left:18px;color:var(--mute)}
 .row .asks li{margin:3px 0}
 .row .asks li.miss{color:var(--ink)}
@@ -226,6 +227,85 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   .wrap{padding-left:max(11px,env(safe-area-inset-left));padding-right:max(11px,env(safe-area-inset-right))}
   .mark{width:40px;height:40px}
 }
+
+/* the requirements block folds; a phone opens it on demand */
+.asks summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;padding:2px 0}
+.asks summary::-webkit-details-marker{display:none}
+.asks summary b{font-weight:600;white-space:nowrap}
+.asks summary span{text-transform:none;letter-spacing:0;color:var(--mute)}
+.asks summary::after{content:'+';font-size:14px;color:var(--amber);margin-left:auto}
+.asks[open] summary::after{content:'–'}
+.asks[open] summary{margin-bottom:4px}
+.bubble.err .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.bubble.err .acts:empty{display:none}
+.bubble .acts .retry{margin-left:0;text-decoration:none;display:inline-flex;align-items:center}
+.hbtn{display:none}
+.compose .meta .disc{display:none}
+
+/* ---------- phone: one bar, the conversation, the composer ----------
+   Under 640px: back, title and start over share one pinned row; the composer sits at the
+   bottom of the screen even before the first message; no speaker labels (alignment says
+   who is who); the counter only shows near the limit; cards lead with the title. */
+@media (max-width:640px){
+  .bbar a{min-height:38px;padding-top:7px;padding-bottom:7px;font-size:11.5px}
+  .bbar .go{font-size:11.5px}
+  .wrap{display:flex;flex-direction:column;min-height:calc(100dvh - 39px);padding-top:0;padding-bottom:0}
+
+  .head{position:sticky;top:0;z-index:25;background:var(--bg);flex-wrap:nowrap;padding:8px 0;
+    box-shadow:-14px 0 0 var(--bg),14px 0 0 var(--bg),0 8px 10px -8px rgba(0,0,0,.75)}
+  .title{flex:1 1 auto;align-items:center;gap:10px}
+  .mark{display:none}
+  .title>div{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+  .head .sub{order:-1;margin-top:0;flex:none}
+  .head .sub>span{display:none}
+  .head h1{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .head h1::after{display:none}
+  .paybtn{width:44px;height:44px;min-height:44px;padding:0;justify-content:center;border-radius:12px;box-shadow:none}
+  .paybtn>span{display:none}
+  .paybtn svg{width:19px;height:19px}
+  .hbtn{display:flex;flex:none;align-items:center;justify-content:center;width:44px;height:44px;background:transparent;border:1px solid var(--rule-2);border-radius:12px;color:var(--mute);padding:0}
+  .hbtn svg{width:18px;height:18px}
+  .hbtn:hover,.hbtn:focus-visible{color:var(--amber);border-color:var(--amber)}
+  .head-side{display:none}
+
+  .chat{flex:1;display:flex;flex-direction:column;width:100%;margin-top:8px}
+  .log{gap:10px;min-height:0}
+  .msg{gap:6px}
+  .msg .who{display:none}
+  .bubble{padding:10px 14px}
+  .intro{padding:22px 2px 2px;text-align:left}
+  .intro h2{font-size:22px}
+  .intro p{font-size:14.5px;margin:0}
+  .starters{justify-content:flex-start;margin:14px 0 4px}
+  .starters button{padding:9px 14px}
+  .filters-note{display:none}
+
+  .row{padding:14px;gap:10px}
+  .row .main{display:flex;flex-direction:column}
+  .row h3{order:-1;margin:0 0 5px;font-size:17px;line-height:1.3}
+  .row .co{gap:2px 8px;font-size:12.5px}
+  .row .co time{margin-left:auto}
+  .chips{margin:9px 0 0;gap:5px}
+  .chip{font-size:11.5px;padding:3px 8px}
+  .row p,.row .side .dest{display:none}
+  .row .why{font-size:14px}
+  .row .srcline{font-size:11.5px;margin-top:8px}
+  .row .srcline .lnk{display:none}
+  .asks summary{min-height:44px}
+  .row .side{gap:8px}
+  .row .side .apply{flex:1 1 100%;min-height:48px}
+  .row .side .plan{flex:1 1 100%;justify-content:center;border:1px solid var(--rule-2);border-radius:9px;font-size:12px}
+
+  .compose{margin-top:auto;padding:10px 0 max(10px,env(safe-area-inset-bottom))}
+  .compose form{padding:6px 6px 6px 12px}
+  .compose .meta{padding:5px 2px 0}
+  .compose .meta #count{display:none}
+  .compose .meta #count.near{display:inline}
+  .compose .meta #restart{display:none}
+  .compose .meta .disc{display:inline;font-size:11px}
+  .foot{margin-top:6px;padding:10px 0 max(12px,env(safe-area-inset-bottom));font-size:11px}
+  .foot span:last-child{display:none}
+}
 </style>
 </head>
 <body>
@@ -252,8 +332,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       </span>
       <div>
         <h1>Opportunity <span>Assistant</span></h1>
-        <div class="sub"><span>Beta · listings updated __DATE__</span><a class="paybtn" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18M3 6h18M3 18h12"/></svg><span>Back to the board</span></a></div>
+        <div class="sub"><span>Beta · listings updated __DATE__</span><a class="paybtn" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Back to the board</span></a></div>
       </div>
+      <button type="button" class="hbtn" id="restart-top" aria-label="Start over" title="Start over"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
     </div>
     <div class="head-side" id="side">
       <span><b id="st-n">…</b> listings on the board</span>
@@ -285,7 +366,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         <button type="button" class="mic" id="mic" hidden aria-pressed="false" aria-label="Talk instead of typing" title="Talk instead of typing. Your browser turns your speech into text, which you can check before sending."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/></svg></button>
         <button type="submit" class="send" id="send"><span>Send</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
       </form>
-      <div class="meta"><span id="count">0 / 1500</span><span class="voice" id="voice-note" role="status" aria-live="polite"></span><span><button type="button" id="restart">Start over</button><span class="keys"> · Enter sends, Shift+Enter for a new line</span></span></div>
+      <div class="meta"><span id="count">0 / 1500</span><span class="voice" id="voice-note" role="status" aria-live="polite"></span><span><button type="button" id="restart">Start over</button><span class="keys"> · Enter sends, Shift+Enter for a new line</span></span><span class="disc">Answers can be wrong. Check each posting.</span></div>
     </div>
   </div>
 
@@ -306,6 +387,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const BENCH = { 'Cloud & DevOps': true, 'Software, IT, Data & AI': true };
   const planLink = d => BENCH_URL + 'match.html?q=' + encodeURIComponent([d.title, d.snippet, ...d.requirements.map(r => r.text)].filter(Boolean).join('\n').slice(0, 1500));
   const DAY = 86400000, NOW = Date.now();
+  const WIDE = window.matchMedia('(min-width:641px)');
   const asDate = s => { const d = new Date(s+'T12:00:00'); return isNaN(d) ? null : d; };
   const fmtDate = s => { const d = asDate(s||''); return d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; };
   const ageLabel = days => days < 1 ? 'today' : days < 7 ? Math.max(1, Math.round(days)) + 'd ago' : days < 31 ? Math.round(days/7) + 'w ago' : days < 365 ? Math.round(days/30) + 'mo ago' : Math.round(days/365) + 'y ago';
@@ -352,7 +434,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     if (d.flag) chips.push(`<span class="chip flag">${esc(d.flag)}</span>`);
     const missR = new Set(m.missingRequired||[]), missP = new Set(m.missingPreferred||[]);
     const group = (kind, label) => { const rs = d.requirements.filter(r => r.kind===kind); return rs.length ? `<h4>${label}</h4><ul>${rs.map(r => `<li${missR.has(r.text)||missP.has(r.text)?' class="miss"':''}>${esc(r.text)}</li>`).join('')}</ul>` : ''; };
-    const asks = d.requirements.length ? `<div class="asks">${group('required','Required')}${group('preferred','Preferred')}${group('unspecified','Also listed (the posting does not say if required)')}</div>`
+    const missing = d.requirements.filter(r => missR.has(r.text) || missP.has(r.text)).length;
+    const asks = d.requirements.length ? `<details class="asks"${WIDE.matches ? ' open' : ''}><summary><b>What they ask for</b><span>${d.requirements.length} item${d.requirements.length===1?'':'s'}${missing ? ` · ${missing} not in your profile` : ''}</span></summary>${group('required','Required')}${group('preferred','Preferred')}${group('unspecified','Also listed (the posting does not say if required)')}</details>`
       : `<div class="asks"><span class="none">The posting on the board lists no qualification bullets; check the employer's page.</span></div>`;
     const apply = safeUrl(d.apply);
     el.innerHTML = `
@@ -364,7 +447,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
         ${m.why ? `<div class="why"><b>Why it fits</b>${esc(m.why)}</div>` : ''}
         ${asks}
         ${d.locs.length>1 ? `<div class="locs">${d.locs.map(l => `<a href="${esc(safeUrl(l.apply))}" target="_blank" rel="noopener" title="Opens ${esc(hostOf(l.apply))}">${esc(l.loc)}<span>apply</span></a>`).join('')}</div>` : ''}
-        <div class="srcline">${full ? `Posted ${esc(full)}` : 'Posted date unknown'} · <span class="unv" title="The board cannot see a posting the employer took down early">not verified as still open</span>${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''} · <a href="index.html#q=${encodeURIComponent(d.company)}">On the board</a></div>
+        <div class="srcline">${full ? `Posted ${esc(full)}` : 'Posted date unknown'} · <span class="unv" title="The board cannot see a posting the employer took down early">not verified as still open</span><span class="lnk">${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''} · <a href="index.html#q=${encodeURIComponent(d.company)}">On the board</a></span></div>
       </div>
       <div class="side">
         ${apply ? `<a class="apply" href="${esc(apply)}" target="_blank" rel="noopener" title="Opens ${esc(apply)}">Apply ↗</a><span class="dest" title="This link opens ${esc(hostOf(apply))}">via ${esc(hostOf(apply))}</span>` : `<span class="dest">No apply link on the board</span>`}
@@ -414,13 +497,18 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       add(el);
       history.push({ role:'assistant', kind:'nomatch', content: r.summary + (r.adjustments && r.adjustments.length ? ' Suggested: ' + r.adjustments.join(' ') : '') });
     } else {
-      fail('The server sent something this page does not understand.');
+      fail(TROUBLE, true);
     }
   }
+  // A visitor never sees what broke on the server. They see that it did not go through,
+  // a one-tap search of the board on what they asked, and a retry.
   function fail(text, retry){
-    const el = msg('assistant', `<b>Something went wrong.</b> ${esc(text)}${retry ? ' <button type="button" class="retry">Try again</button>' : ''}`, 'err');
-    const b = el.querySelector('.retry'); if (b) b.addEventListener('click', () => { el.remove(); ask(lastSent, true); });
+    const q = String(lastSent || '').trim().slice(0, 120);
+    const board = q ? ` <a class="retry" href="index.html#q=${encodeURIComponent(q)}">Search the board instead</a>` : '';
+    const el = msg('assistant', `${esc(text)}<span class="acts">${retry ? '<button type="button" class="retry">Try again</button>' : ''}${retry ? board : ''}</span>`, 'err');
+    const b = el.querySelector('button.retry'); if (b) b.addEventListener('click', () => { el.remove(); ask(lastSent, true); });
   }
+  const TROUBLE = 'That one did not go through.';
 
   async function ask(text, isRetry){
     text = String(text||'').trim();
@@ -428,7 +516,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     if (text.length > MAX_CHARS) { fail(`Keep each message under ${MAX_CHARS} characters.`); return; }
     if (!isRetry){ msg('user', esc(text)); history.push({ role:'user', content:text }); }
     voice.stop(); lastSent = text; busy = true; send.disabled = true; starters.hidden = true; $('#intro') && $('#intro').remove();
-    input.value = ''; count(); wait();
+    input.value = ''; count(); grow(); wait();
     try {
       const res = await fetch(API, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ messages: history.slice(-KEEP), recommendedIds }) });
       let body = null; try { body = await res.json(); } catch(e){}
@@ -436,13 +524,13 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       if (!res.ok){
         const why = body && body.error ? body.error : `The server answered ${res.status}.`;
         if (res.status === 503 && body && (body.code === 'paused' || body.code === 'not_configured')) { setEnabled(false, why); fail(why); }
-        else fail(why, res.status !== 429 && res.status !== 400);
+        else fail(res.status >= 500 ? TROUBLE : why, res.status !== 429 && res.status !== 400);
         if (isRetry || res.status === 400) history.pop();
         return;
       }
       show(body);
     } catch(e){
-      unwait(); fail('Could not reach the assistant. Check your connection and try again.', true);
+      unwait(); fail('Could not reach the assistant. Check your connection.', true);
     } finally { busy = false; send.disabled = !enabled; input.focus(); }
   }
 
@@ -463,7 +551,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     }
   }
 
-  const count = () => { const n = input.value.length; const c = $('#count'); c.textContent = `${n} / ${MAX_CHARS}`; c.classList.toggle('over', n > MAX_CHARS); };
+  const count = () => { const n = input.value.length; const c = $('#count'); c.textContent = `${n} / ${MAX_CHARS}`; c.classList.toggle('over', n > MAX_CHARS); c.classList.toggle('near', n > MAX_CHARS - 100); };
   const grow = () => { input.style.height = 'auto'; input.style.height = Math.min(160, input.scrollHeight) + 'px'; };
   input.addEventListener('input', () => { count(); grow(); });
   input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); } });
@@ -534,6 +622,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 
   form.addEventListener('submit', e => { e.preventDefault(); ask(input.value); });
   starters.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { ask(b.textContent); }));
+  $('#restart-top').addEventListener('click', () => $('#restart').click());
   $('#restart').addEventListener('click', () => { voice.stop(); history.length = 0; recommendedIds = []; log.querySelectorAll('.msg').forEach(m => m.remove()); unwait(); starters.hidden = !enabled; input.value=''; count(); input.focus(); });
   boot();
 })();

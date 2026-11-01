@@ -425,6 +425,84 @@ a.paybtn{text-decoration:none}
   .bbar .kicker,.bbar .pitch{display:none}
   .bbar .go{font-size:12.5px}
 }
+
+/* ---------- phone: the list is the product ----------
+   Under 640px the page opens on listings, not furniture: one-row header with the two
+   features as icon buttons, search pinned to the top with the filter button inside it,
+   one count line, and cards that lead with the title and end on a full-width Apply. The
+   description, majors and source line move into each card's Details panel. */
+.ftog{display:none}
+.details .snip{display:none}
+.more.m-only{display:none}
+.resultbar .ru{display:none}
+@media (max-width:640px){
+  .bbar a{min-height:38px;padding-top:7px;padding-bottom:7px;font-size:11.5px}
+  .bbar .go{font-size:11.5px}
+  .wrap{padding-top:10px}
+
+  /* header: title and the two feature buttons share one row */
+  .head,.head-side{display:contents}
+  .title{flex:none;align-items:center;padding-bottom:10px}
+  .title>div{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-width:0}
+  .mark{display:none}
+  .head h1{font-size:clamp(17px,5vw,20px);line-height:1.15;min-width:0}
+  .head h1::after{display:none}
+  .head .sub{margin-top:0;flex:none;flex-wrap:nowrap;gap:8px}
+  .head .sub>span{display:none}
+  .paybtn{width:44px;height:44px;min-height:44px;padding:0;justify-content:center;border-radius:12px;box-shadow:none}
+  .paybtn>span,.paybtn .new{display:none}
+  .paybtn svg{width:19px;height:19px}
+
+  /* search: pinned, with the filter button inside it */
+  .search{position:sticky;top:0;z-index:22;background:var(--bg);padding:8px 0;
+    box-shadow:-14px 0 0 var(--bg),14px 0 0 var(--bg),0 8px 10px -8px rgba(0,0,0,.75)}
+  .search input{padding-right:96px}
+  .search button.clear{right:52px}
+  .ftog{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;width:42px;height:42px;margin-top:-21px;
+    background:var(--panel-2);border:1px solid var(--rule-2);border-radius:9px;color:var(--ink);padding:0}
+  .ftog svg{width:19px;height:19px}
+  .ftog[aria-expanded="true"]{border-color:var(--amber);color:var(--amber)}
+  .ftog b{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--amber);color:#04120B;
+    font-family:var(--mono);font-size:11px;font-weight:700;line-height:18px;text-align:center}
+  .ftog b[hidden]{display:none}
+  .fbar{display:none}
+  .filters{top:62px}
+
+  /* areas: one short strip, no label, no counts */
+  .layout{margin-top:6px;gap:6px}
+  .areas h2{display:none}
+  .areas button{padding:8px 13px}
+  .areas button i{display:none}
+
+  /* one count line */
+  .resultbar{margin:6px 0 10px}
+  .resultbar h2{font-size:14px;min-width:0}
+  .resultbar .note{flex:0 1 auto;margin-left:auto;font-size:12px}
+  .resultbar .rx,.resultbar .rr{display:none}
+  .resultbar .ru{display:inline}
+
+  /* cards: title, then employer and place, then a few tags, then Apply */
+  .row{padding:14px;gap:10px}
+  .row .main{display:flex;flex-direction:column}
+  .row h3{order:-1;margin:0 0 5px;font-size:17px;line-height:1.3}
+  .row .co{gap:2px 8px;font-size:12.5px}
+  .row .co .emp{font-size:13px}
+  .chips{margin:9px 0 0;gap:5px}
+  .chip{font-size:11.5px;padding:3px 8px}
+  .row p,.majors,.row .srcline,.row .side .dest{display:none}
+  .row .side{gap:8px}
+  .row .side .apply{flex:1 1 auto;order:1;min-height:48px}
+  .row .side .more,.row .side .more.m-only{display:block;order:2;flex:0 0 auto;min-height:48px;padding:10px 16px}
+  .row .side .plan{order:3;flex:1 1 100%;min-height:40px;justify-content:flex-start;font-size:12px}
+  .details .snip{display:block;color:var(--mute);margin:0 0 10px;line-height:1.55}
+
+  /* pick of the week: a marked card, not a light show */
+  .row.pick::before,.row.pick::after{display:none}
+  .row.pick{box-shadow:inset 3px 0 0 var(--pick)}
+  .chip.pick{text-shadow:none;box-shadow:none}
+
+  .foot{margin-top:24px}
+}
 </style>
 </head>
 <body>
@@ -479,6 +557,7 @@ a.paybtn{text-decoration:none}
         <input id="q" type="search" placeholder="Search company, title, or keyword" autocomplete="off" aria-label="Search listings">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <button type="button" class="clear" id="clearq" aria-label="Clear search">&times;</button>
+        <button type="button" class="ftog" id="ftog" aria-controls="filters" aria-expanded="false" aria-label="Filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><b id="ftog-n" hidden></b></button>
       </form>
     </div>
   </header>
@@ -553,6 +632,8 @@ a.paybtn{text-decoration:none}
   // rebuild to show the pill beside Insights.
   const ASSISTANT_URL = 'assistant.html';
   const JOIN_AFTER = 6;
+  // The board's 'updated' date, read back from the tagline (the build stamps it there once).
+  const UPDATED = ((document.querySelector('.head .sub > span') || {}).textContent || '').replace(/^.*updated\s*/, '').trim();
   const DEFAULTS = { q:'', area:'', county:'', major:'', term:'', level:'', hub:'', paid:false, remote:false, bi:false, report:false, sort:'new', page:1 };
   const state = Object.assign({}, DEFAULTS);
 
@@ -728,10 +809,14 @@ a.paybtn{text-decoration:none}
     if (d.flag) chips.push(`<span class="chip flag">${esc(d.flag)}</span>`);
     const majors = d.majors.map(m => `<button type="button" data-major="${esc(m)}">${esc(m)}</button>`).join('');
     const source = `${full ? `Posted ${esc(full)}` : 'Posted date unknown'}${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''} · <a class="report" href="${esc(reportLink(d))}" target="_blank" rel="noopener" title="Opens a pre-filled report on GitHub">Report closed listing</a>`;
-    // Only offer a Details button when it opens onto something the card is not already showing.
-    const hasDetails = d.details.length > 0 || d.locs.length > 1;
+    // On a desktop, Details only appears when it opens onto something the card is not already
+    // showing. On a phone the card drops its description and source line to keep the list
+    // scannable, so every card gets a Details panel there that carries them (.m-only).
+    const deskDetails = d.details.length > 0 || d.locs.length > 1;
+    const hasDetails = true;
     const detId = `det-${d.id}`;
     const details = `
+      ${d.snippet ? `<div class="snip">${esc(d.snippet)}</div>` : ''}
       ${d.details.length ? `<h4>What they ask for</h4><ul>${d.details.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>` : ''}
       ${d.locs.length>1 ? `<h4>Apply by location</h4><div class="locs">${d.locs.map(l=>`<a href="${esc(l.apply)}" target="_blank" rel="noopener" title="Opens ${esc(hostOf(l.apply))}">${esc(l.loc)}<span>apply</span></a>`).join('')}</div>` : ''}
       <div class="src">${source}</div>`;
@@ -742,13 +827,13 @@ a.paybtn{text-decoration:none}
         ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
         ${d.snippet ? `<p>${esc(d.snippet)}</p>` : ''}
         ${majors?`<div class="majors">${majors}</div>`:''}
-        ${hasDetails ? '' : `<div class="srcline">${source}</div>`}
+        ${deskDetails ? '' : `<div class="srcline">${source}</div>`}
       </div>
       <div class="side">
         ${d.locs[0].apply ? `<a class="apply" href="${esc(d.locs[0].apply)}" target="_blank" rel="noopener" title="Opens ${esc(d.locs[0].apply)}">Apply ↗</a>` : ''}
         ${d.dest ? `<span class="dest" title="This link opens ${esc(d.dest)}">via ${esc(d.dest)}</span>` : ''}
         ${BENCH[d.cat] ? `<a class="plan" href="${esc(planLink(d))}" target="_blank" rel="noopener" title="Opens BuildersBench: the projects to build and certs to earn for this role">Projects for this role ↗</a>` : ''}
-        ${hasDetails ? `<button class="more" type="button" aria-expanded="false" aria-controls="${detId}">Details</button>` : ''}
+        ${hasDetails ? `<button class="more${deskDetails ? '' : ' m-only'}" type="button" aria-expanded="false" aria-controls="${detId}">Details</button>` : ''}
       </div>
       ${hasDetails ? `<div class="details" id="${detId}">${details}</div>` : ''}`;
     el.addEventListener('pointerdown', e => {
@@ -796,7 +881,9 @@ a.paybtn{text-decoration:none}
     state.page = Math.min(Math.max(1, state.page|0), pages);
     const from = (state.page - 1) * PAGE, to = Math.min(from + PAGE, list.length);
     const noun = jobs ? 'listing' : 'internship';
-    $('#rcount').textContent = list.length ? `${pages>1?`${from+1}–${to} of `:''}${list.length} ${noun}${list.length===1?'':'s'}${jobs && interns?` · ${jobs} job${jobs===1?'':'s'} · ${interns} internship${interns===1?'':'s'}`:''}${openings>list.length?` · ${openings} openings across locations`:''}` : 'No listings match';
+    // Numbers and fixed words only, so innerHTML is safe here. The breakdown (.rx) is detail a
+    // phone hides; the board's updated date (.ru) shows only there, where the tagline is gone.
+    $('#rcount').innerHTML = list.length ? `${pages>1?`<span class="rr">${from+1}–${to} of </span>`:''}${list.length} ${noun}${list.length===1?'':'s'}<span class="rx">${jobs && interns?` · ${jobs} job${jobs===1?'':'s'} · ${interns} internship${interns===1?'':'s'}`:''}${openings>list.length?` · ${openings} openings across locations`:''}</span>${UPDATED?`<span class="ru"> · updated ${esc(UPDATED.replace(/,\s*\d{4}$/, ''))}</span>`:''}` : 'No listings match';
     if (!list.length){
       wrap.innerHTML = `<div class="empty"><h3>Nothing matches.</h3><p>Try a broader search or clear a filter.</p><button type="button" id="empty-reset">Reset filters</button></div>`;
       $('#empty-reset').addEventListener('click', reset);
@@ -809,6 +896,8 @@ a.paybtn{text-decoration:none}
     }
     const n = activeCount();
     $('#filter-count').innerHTML = n ? `<span class="on">${n} on</span>` : (filters.classList.contains('collapsed') ? 'show' : 'hide');
+    const fn = $('#ftog-n'); fn.hidden = !n; fn.textContent = n ? String(n) : '';
+    $('#ftog').setAttribute('aria-label', n ? `Filters, ${n} on` : 'Filters');
     $('#clearq').classList.toggle('show', !!state.q);
     $('#copy').classList.remove('done'); $('#copy .t').textContent='Copy link';
     writeHash();
@@ -819,7 +908,7 @@ a.paybtn{text-decoration:none}
   // is several times taller than the button alone.
   function stickyInset(){
     let inset = 0;
-    for (const el of [$('.fbar'), $('#filters')]){
+    for (const el of [$('.fbar'), $('.search'), $('#filters')]){
       if (!el) continue;
       const st = getComputedStyle(el);
       if (st.position !== 'sticky' || st.display === 'none') continue;
@@ -893,9 +982,12 @@ a.paybtn{text-decoration:none}
   if (ASSISTANT_URL){ const a = $('#assist'); a.href = ASSISTANT_URL; a.hidden = false; }
 
   const filters = $('#filters');
-  const setFilters = open => { filters.classList.toggle('collapsed', !open); $('#filter-toggle').setAttribute('aria-expanded', open?'true':'false'); render(); };
+  const setFilters = open => { filters.classList.toggle('collapsed', !open); for (const b of [$('#filter-toggle'), $('#ftog')]) b.setAttribute('aria-expanded', open?'true':'false'); render(); };
   filters.classList.add('collapsed');   // only takes effect under the phone breakpoint
   $('#filter-toggle').addEventListener('click', ()=> setFilters(filters.classList.contains('collapsed')));
+  $('#ftog').addEventListener('click', ()=> setFilters(filters.classList.contains('collapsed')));
+  const PHONE = window.matchMedia('(max-width:640px)'), placeholder = () => { $('#q').placeholder = PHONE.matches ? 'Search jobs or companies' : 'Search company, title, or keyword'; };
+  placeholder(); if (PHONE.addEventListener) PHONE.addEventListener('change', placeholder);
 
   $('#copy').addEventListener('click', async e => {
     const b=e.currentTarget, url=location.href;

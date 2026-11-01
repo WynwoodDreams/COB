@@ -9,6 +9,9 @@ function fakeGateway(opts = {}) {
     const body = JSON.parse(init.body);
     calls.push({ url, headers: init.headers, body });
     if (opts.fail) return new Response(JSON.stringify({ error: { message: opts.fail.message || 'boom' } }), { status: opts.fail.status || 500 });
+    // `empty: n` makes the first n replies come back with no content, the way a reasoning
+    // model does when it spends its whole token budget thinking.
+    if (opts.empty && calls.length <= opts.empty) return new Response(JSON.stringify({ id: 'fake', model: body.model, choices: [{ index: 0, message: { role: 'assistant', content: '' }, finish_reason: 'length' }] }), { status: 200, headers: { 'content-type': 'application/json' } });
     const sys = body.messages[0].content;
     let content;
     if (/intake step/.test(sys)) content = JSON.stringify(opts.read ? opts.read(body) : intake(body));

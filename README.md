@@ -368,6 +368,19 @@ MiniMax or fails it; it never routes to another provider. `ASSISTANT_MODEL` and
 `ASSISTANT_PROVIDERS` switch both without a code change. The reply's routing metadata is
 checked too: a reply served by a provider outside the list is refused.
 
+**When the model fails, the visitor still gets listings.** A reply that comes back empty
+(a reasoning model can spend its whole token budget thinking) is retried once with twice the
+`max_tokens`. If the intake or ranking call still fails for any reason (empty reply, timeout,
+bad JSON, rate limit, no credit, bad credentials, a provider outside the list), the handler
+reads the visitor's own words with `keywordRead` in `handler.js` (field words, county, jobs or
+internships, term) and runs the same deterministic search. The reply is an ordinary
+`results` or `nomatch` with `fallback: true` and no "why it fits"; it never mentions the
+model. Every fallback is written to the function log with `console.warn` (`[assistant]
+intake failed...`), so a broken key or an out-of-credit gateway shows up in Vercel's logs
+instead of on a student's screen. The page itself never shows a server error's text: a 5xx
+reads "That one did not go through." with Try again and a link that searches the board for
+what they asked.
+
 **Setup.** `.env.example` lists every variable. In Vercel, Project > Settings > Environment
 Variables: `AI_GATEWAY_API_KEY` (create one under the team's AI Gateway tab; it is only ever
 read on the server) and `ASSISTANT_ENABLED=true`. Set `ASSISTANT_ENABLED=false` and redeploy
@@ -549,6 +562,20 @@ Filters button that sticks to the top of the list while you scroll, and every co
 clears the 44px touch minimum. No text on a card is under 12px, the search field stays
 at 16px so iOS does not zoom on focus, and `.wrap` respects `env(safe-area-inset-*)`
 for notched phones. Checked at 320, 360, 390 and 430px wide plus landscape.
+
+At 640px and below both pages go further, so a phone opens on listings rather than
+furniture. On the board: the title and the Insights and Assistant buttons (icons only) share
+one row; the search box is what sticks to the top, with the filter button inside it (it shows
+how many filters are on) in place of the Filters bar; the area strip loses its label and
+counts; the result line is just "532 listings · updated Oct 29"; and each card leads with its
+title, then employer, place and age, a few chips, and Apply beside Details. The description,
+majors and source line move into Details, which every card has on a phone (`.m-only`) and only
+cards with more to show have on a desktop. Pick of the Week keeps its magenta edge but not
+the orbiting light. On the assistant: back, title and start over share one pinned row; the
+composer sits at the bottom of the screen from the start; messages have no You/Assistant
+labels; the counter shows only within 100 characters of the limit; the disclaimer is one
+line under the composer; and a card's requirements fold behind "What they ask for", with a
+count of how many are not in the visitor's profile. Desktop layout is unchanged.
 
 ## Outbound links
 
