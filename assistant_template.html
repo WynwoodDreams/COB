@@ -175,7 +175,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .compose .mic svg{width:18px;height:18px}
 .compose .mic.on{color:#04120B;background:var(--amber);border-color:var(--amber);box-shadow:var(--glow);animation:micpulse 1.4s ease-in-out infinite}
 @keyframes micpulse{50%{box-shadow:0 0 0 6px var(--amber-dim)}}
-.compose .meta .voice{color:var(--mute)}
+.compose .meta .voice{color:var(--amber);font-size:12.5px}
 .compose .meta .voice.warn{color:var(--down)}
 .compose .meta{display:flex;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;color:var(--dim);padding:6px 4px 0}
 .compose .meta .over{color:var(--down)}
@@ -490,19 +490,38 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       const joined = (base && heard ? base.replace(/\s+$/, '') + ' ' : base) + heard;
       input.value = joined.slice(0, MAX_CHARS); count(); grow();
     }
+    // Android's recogniser misbehaves in continuous mode (it repeats or drops words), so there
+    // it listens for one phrase at a time; tapping again adds to what is already in the box.
+    const CONTINUOUS = !/Android/i.test(navigator.userAgent || '');
+    const PLACEHOLDER = input.placeholder;
+    let audioTimer = null, gotAudio = false, failed = false;
     function start(){
       if (on || input.disabled) return;
-      rec = new Rec(); rec.lang = lang(); rec.interimResults = true; rec.continuous = true;
-      base = input.value; heard = '';
+      rec = new Rec(); rec.lang = lang(); rec.interimResults = true; rec.continuous = CONTINUOUS;
+      base = input.value; heard = ''; gotAudio = false; failed = false;
+      rec.onaudiostart = () => { gotAudio = true; clearTimeout(audioTimer); say('Listening… speak now.'); };
+      rec.onspeechstart = () => say('Hearing you… tap the mic when you are done.');
       rec.onresult = e => {
         let fin = '', live = '';
         for (let i = 0; i < e.results.length; i++) (e.results[i].isFinal ? (fin += e.results[i][0].transcript) : (live += e.results[i][0].transcript));
         heard = (fin + live).trim(); write();
       };
-      rec.onerror = e => { if (e.error !== 'aborted') say(WHY[e.error] || 'Voice stopped. Type instead, or tap the mic to try again.', true); };
-      rec.onend = () => { const got = !!heard; set(false); rec = null; if (got && !note.classList.contains('warn')) say('Check the text, then press Send.'); input.focus(); };
-      try { rec.start(); set(true); say('Listening… tap the mic again when you are done.'); }
-      catch (err) { rec = null; set(false); say('Voice could not start. Type instead.', true); }
+      rec.onnomatch = () => { if (!heard) { failed = true; say('Heard something but could not make out the words. Try again a little closer to the mic.', true); } };
+      rec.onerror = e => {
+        if (window.console) console.warn('speech recognition error:', e.error, e.message || '');
+        if (e.error === 'aborted') return;
+        failed = true; say(WHY[e.error] || `Voice stopped (${e.error}). Type instead, or tap the mic to try again.`, true);
+      };
+      rec.onend = () => {
+        clearTimeout(audioTimer); set(false); rec = null; input.placeholder = PLACEHOLDER;
+        if (heard && !failed) say('Check the text, then press Send.');
+        else if (!failed) say(gotAudio ? 'Did not catch any words. Tap the mic and try again.' : 'No sound reached the browser. Check that your microphone is on and is the one selected in Chrome (Settings › Privacy › Microphone).', true);
+        input.focus();
+      };
+      try { rec.start(); set(true); input.placeholder = 'Listening… speak now'; say('Starting the microphone…'); }
+      catch (err) { rec = null; set(false); say('Voice could not start. Type instead.', true); return; }
+      // If no sound has arrived after a few seconds, say so instead of sitting there silently.
+      audioTimer = setTimeout(() => { if (on && !gotAudio) say('Waiting for sound… if you allowed the microphone and still see this, check that the right mic is selected in Chrome.', true); }, 4000);
     }
     function stop(){ if (rec) try { rec.stop(); } catch (err) {} }
     // The button always shows, so a visitor can find it; where the browser has no speech

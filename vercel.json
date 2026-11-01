@@ -41,7 +41,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-eGXirz4U51WFUXuSyMkbxmHMCgpiUJA6teOqFXFF9YU=' 'self'; style-src 'sha256-oXx5bfUdZ3UPVeheGVU4cHfcEUzDOKnzLx5dB65jVyU=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-F4LN8vtSPdEv40UkaMhL3WAoGU2gAxvafdtTy8AQp84=' 'self'; style-src 'sha256-lkHIc7DfpGYYH0WGJMmW5VDX7UCwtRmSJfcWTAZMrN8=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
         }
       ]
     },
@@ -50,7 +50,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-eGXirz4U51WFUXuSyMkbxmHMCgpiUJA6teOqFXFF9YU=' 'self'; style-src 'sha256-oXx5bfUdZ3UPVeheGVU4cHfcEUzDOKnzLx5dB65jVyU=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+          "value": "default-src 'none'; script-src 'sha256-rbTaSdDD+Sd+K8IZ66VS79bdI78bN8AwXXyN0/lD5fY=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=' 'sha256-F4LN8vtSPdEv40UkaMhL3WAoGU2gAxvafdtTy8AQp84=' 'self'; style-src 'sha256-lkHIc7DfpGYYH0WGJMmW5VDX7UCwtRmSJfcWTAZMrN8=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
         }
       ]
     },
