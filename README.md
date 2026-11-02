@@ -361,6 +361,18 @@ page only: `security_headers` in `build_data.py` writes `microphone=(self)` for
 `/assistant` and `microphone=()` for every other path. In Chrome the recognition may run on
 Google's servers rather than on the device; the assistant itself only ever receives the text.
 
+**The beta gate.** Before the chat opens, the page asks for a name and an email. The
+server checks them on every turn (`visitor: {name, email}` in the POST body; a missing or
+bad one is a `400` with `code: "who"`, which makes the page show the form again), so the
+form cannot be skipped by calling the API directly. The pair is kept in the visitor's
+browser (`localStorage`, key `cob.visitor`) so a return visit is not asked twice; "change"
+in the header clears it. Each new conversation writes one line to the function log,
+`[assistant] visitor {"name","email","at","asked"}`, which is where to read them: Vercel
+project, Logs, filter on `visitor`. Nothing is stored anywhere else yet, and Vercel keeps
+function logs for a limited time, so a log drain or a small store is the next step if the
+list matters. `ASSISTANT_GATE=off` turns the requirement off; `GET /api/assistant` reports
+`gate` so the page knows which way it is set.
+
 **The model.** Requests go through Vercel AI Gateway's OpenAI-compatible endpoint
 (`https://ai-gateway.vercel.sh/v1/chat/completions`), model `minimax/minimax-m3.1-flash`,
 with `providerOptions.gateway.only: ["minimax"]` so the gateway serves the request from

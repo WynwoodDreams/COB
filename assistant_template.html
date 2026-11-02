@@ -189,6 +189,22 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .starters button:hover{color:var(--ink);border-color:var(--amber);background:var(--amber-dim)}
 .starters[hidden]{display:none}
 /* the opening: one line of welcome, then the suggestions rise in one after another */
+.gate{max-width:440px;margin:clamp(20px,6vh,56px) auto 0;background:var(--panel);border:1px solid var(--rule-2);border-radius:16px;padding:22px 22px 18px;animation:rise .8s cubic-bezier(.2,.7,.3,1) both}
+.gate[hidden]{display:none}
+.gate h2{margin:0 0 6px;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.gate p{margin:0 0 16px;color:var(--mute);font-size:14.5px}
+.gate label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:0 0 5px}
+.gate input{display:block;width:100%;margin-bottom:12px;background:var(--bg);border:1px solid var(--rule-2);border-radius:10px;padding:10px 12px;color:var(--ink);font:inherit;font-size:15px}
+.gate input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-dim)}
+.gate .err{display:none;color:var(--down);font-size:13px;margin:-6px 0 10px}
+.gate .err.on{display:block}
+.gate button{width:100%;background:var(--amber);color:#06110B;border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:700;font-size:15px;cursor:pointer;box-shadow:var(--glow)}
+.gate button:hover{background:var(--amber-2)}
+.gate small{display:block;margin-top:10px;color:var(--dim);font-size:12px;text-align:center}
+.chat.gated .log,.chat.gated .starters,.chat.gated .compose{display:none}
+#st-who{display:none}#st-who.on{display:inline}
+#st-who button{background:none;border:0;color:var(--dim);font:inherit;font-size:inherit;cursor:pointer;padding:0;text-decoration:underline}
+#st-who button:hover{color:var(--ink)}
 .intro{text-align:center;padding:clamp(28px,7vh,72px) 8px 4px;animation:rise .8s cubic-bezier(.2,.7,.3,1) both}
 .intro h2{margin:0 0 8px;font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.02em}
 .intro p{margin:0 auto;color:var(--mute);font-size:15.5px;max-width:52ch}
@@ -339,6 +355,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     <div class="head-side" id="side">
       <span><b id="st-n">…</b> listings on the board</span>
       <span id="st-model">checking the assistant…</span>
+      <span id="st-who"><span id="who-name"></span> · <button type="button" id="who-change">change</button></span>
     </div>
   </header>
 
@@ -346,6 +363,17 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     <div class="notice warn" id="n-sample" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>Sample data.</b> The board's live listings could not be read on this deployment, so the assistant is searching a small made-up sample set. Nothing it shows here is a real opening.</div></div>
     <div class="notice warn" id="n-off" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>The assistant is paused.</b> <span id="off-why">AI requests are switched off on this deployment.</span> The <a href="index.html">board's search and filters</a> still work.</div></div>
 
+    <form class="gate" id="gate" hidden novalidate>
+      <h2>Before you start</h2>
+      <p>The assistant is in beta. Leave your name and email so Christian can follow up and see how it is being used.</p>
+      <label for="g-name">Name</label>
+      <input id="g-name" type="text" autocomplete="name" maxlength="80" required>
+      <label for="g-email">Email</label>
+      <input id="g-email" type="email" autocomplete="email" maxlength="120" required>
+      <div class="err" id="g-err" role="alert"></div>
+      <button type="submit">Open the assistant</button>
+      <small>Used only to follow up about the board. Not shared or sold.</small>
+    </form>
     <div class="log" id="log" aria-live="polite">
       <div class="intro" id="intro">
         <h2>Find your next internship.</h2>
@@ -383,6 +411,29 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const safeUrl = u => /^https?:\/\//i.test(String(u||'')) ? String(u) : '';
   const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./,''); } catch(e){ return ''; } };
   const API = '/api/assistant', MAX_CHARS = 1500, KEEP = 16;
+  // ===== Beta gate =====
+  // A name and an email before the chat opens; the server refuses a turn without them. They
+  // are kept in this browser so a returning visitor is not asked twice; "change" clears them.
+  const WHO = 'cob.visitor';
+  let visitor = null, gateOn = false;
+  try { const v = JSON.parse(localStorage.getItem(WHO) || 'null'); if (v && v.name && v.email) visitor = { name: String(v.name), email: String(v.email) }; } catch(e){}
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  function showGate(on){
+    $('#gate').hidden = !on; $('.chat').classList.toggle('gated', on);
+    $('#st-who').classList.toggle('on', !on && !!visitor); if (visitor) $('#who-name').textContent = visitor.name;
+    if (on) { $('#g-name').value = visitor ? visitor.name : ''; $('#g-email').value = visitor ? visitor.email : ''; setTimeout(() => $('#g-name').focus(), 50); }
+  }
+  function applyGate(){ showGate(gateOn && !visitor); if (!gateOn || visitor) setTimeout(() => { if (enabled) input.focus(); }, 50); }
+  $('#gate').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('#g-name').value.trim().replace(/\s+/g, ' '), email = $('#g-email').value.trim().toLowerCase(), err = $('#g-err');
+    if (name.length < 2) { err.textContent = 'Enter your name.'; err.classList.add('on'); $('#g-name').focus(); return; }
+    if (!EMAIL_RE.test(email)) { err.textContent = 'Enter a valid email address.'; err.classList.add('on'); $('#g-email').focus(); return; }
+    err.classList.remove('on'); visitor = { name, email };
+    try { localStorage.setItem(WHO, JSON.stringify(visitor)); } catch(e){}
+    applyGate();
+  });
+  $('#who-change').addEventListener('click', () => { visitor = null; try { localStorage.removeItem(WHO); } catch(e){} showGate(true); });
   const BENCH_URL = 'https://www.buildersbench.dev/';
   const BENCH = { 'Cloud & DevOps': true, 'Software, IT, Data & AI': true };
   const planLink = d => BENCH_URL + 'match.html?q=' + encodeURIComponent([d.title, d.snippet, ...d.requirements.map(r => r.text)].filter(Boolean).join('\n').slice(0, 1500));
@@ -518,11 +569,12 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     voice.stop(); lastSent = text; busy = true; send.disabled = true; starters.hidden = true; $('#intro') && $('#intro').remove();
     input.value = ''; count(); grow(); wait();
     try {
-      const res = await fetch(API, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ messages: history.slice(-KEEP), recommendedIds }) });
+      const res = await fetch(API, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ messages: history.slice(-KEEP), recommendedIds, visitor: visitor || undefined }) });
       let body = null; try { body = await res.json(); } catch(e){}
       unwait();
       if (!res.ok){
         const why = body && body.error ? body.error : `The server answered ${res.status}.`;
+        if (res.status === 400 && body && body.code === 'who') { history.pop(); gateOn = true; visitor = null; try { localStorage.removeItem(WHO); } catch(e){} showGate(true); return; }
         if (res.status === 503 && body && (body.code === 'paused' || body.code === 'not_configured')) { setEnabled(false, why); fail(why); }
         else fail(res.status >= 500 ? TROUBLE : why, res.status !== 429 && res.status !== 400);
         if (isRetry || res.status === 400) history.pop();
@@ -544,7 +596,9 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       const res = await fetch(API, { method:'GET' }); const st = await res.json();
       $('#st-n').textContent = st.listings; $('#n-sample').hidden = st.source !== 'sample';
       $('#st-model').textContent = st.enabled ? '' : 'assistant paused';
+      gateOn = !!st.gate;
       setEnabled(!!st.enabled, st.paused ? 'AI requests are switched off while the free promotion is over.' : (!st.configured ? 'The assistant is not configured on this deployment.' : ''));
+      applyGate();
     } catch(e){
       $('#st-model').textContent = 'assistant unreachable';
       setEnabled(false, 'The assistant could not be reached. The board itself still works.');

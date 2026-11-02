@@ -9,7 +9,8 @@ const { loadListings, kindOf } = require('../lib/assistant/listings.js');
 const { extractJson } = require('../lib/assistant/model.js');
 const { fakeGateway } = require('./fake-gateway.js');
 
-const ENV = { AI_GATEWAY_API_KEY: 'test-key', ASSISTANT_ENABLED: 'true' };
+// ASSISTANT_GATE is off here so the scenarios can call run() without a visitor; the gate has its own test.
+const ENV = { AI_GATEWAY_API_KEY: 'test-key', ASSISTANT_ENABLED: 'true', ASSISTANT_GATE: 'off' };
 const board = path.join(process.cwd(), 'index.html');
 const make = (opts = {}) => { const gw = fakeGateway(opts.gateway); return { gw, h: createHandler({ env: Object.assign({}, ENV, opts.env), fetch: gw.fetch, boardPath: opts.boardPath || board, log: () => {}, warn: () => {} }) }; };
 
@@ -177,4 +178,25 @@ test('the HTTP handler rate-limits and answers GET/POST', async () => {
   let last; for (let i = 0; i < LIMITS.perMinute + 2; i++) last = await call('POST', { messages: [{ role: 'user', content: 'hi' }] }, '2.2.2.2');
   assert.equal(last.code, 429); assert.equal(last.headers['Retry-After'], '60');
   const m = await call('DELETE'); assert.equal(m.code, 405);
+});
+
+test('the beta gate: a name and a valid email are required on every turn, and the visitor is logged once', async () => {
+  const lines = []; const orig = console.log; console.log = (...a) => lines.push(a.join(' '));
+  try {
+    const { h } = make({ env: { ASSISTANT_GATE: 'on' } });
+    assert.equal(h.status().gate, true);
+    assert.equal(make().h.status().gate, false);
+    const msgs = [{ role: 'user', content: 'cybersecurity student in Miami' }];
+    await assert.rejects(h.run({ messages: msgs }), /Enter your name/);
+    await assert.rejects(h.run({ messages: msgs, visitor: { name: 'A', email: 'a@b.co' } }), /Enter your name/);
+    await assert.rejects(h.run({ messages: msgs, visitor: { name: 'Ana', email: 'not-an-email' } }), /valid email/);
+    const r = await h.run({ messages: msgs, visitor: { name: '  Ana  Diaz ', email: 'Ana@Example.com' } });
+    assert.equal(r.kind, 'results');
+    const logged = lines.filter(l => l.startsWith('[assistant] visitor'));
+    assert.equal(logged.length, 1);
+    assert.match(logged[0], /"name":"Ana Diaz"/); assert.match(logged[0], /"email":"ana@example.com"/);
+    // a follow-up turn in the same conversation still needs the visitor but is not logged again
+    await h.run({ messages: [...msgs, { role: 'assistant', content: 'ok', kind: 'results' }, { role: 'user', content: 'any in Broward?' }], visitor: { name: 'Ana Diaz', email: 'ana@example.com' } });
+    assert.equal(lines.filter(l => l.startsWith('[assistant] visitor')).length, 1);
+  } finally { console.log = orig; }
 });
