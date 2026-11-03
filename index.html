@@ -599,6 +599,12 @@ a.paybtn{text-decoration:none}
   // The board links out to 163 different employer and ATS domains. Naming the destination
   // lets someone judge a link before they tap it, rather than trusting a bare "Apply".
   const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./,''); } catch(e){ return ''; } };
+  // Job boards and job-ad networks, as opposed to the employer's own careers portal or the
+  // applicant-tracking system it runs (Workday, Greenhouse, iCIMS, SmartRecruiters...). A card
+  // whose Apply opens one of these sorts after every card that applies on the employer's own
+  // site, in every view and under every sort, so a board link only leads a view that has
+  // nothing better. Add a domain here to demote it too.
+  const JOB_BOARDS = /(^|\.)(indeed\.com|appcast\.io|jobappnetwork\.com|recruitics\.com|jobsync\.io|teamworkonline\.com|linkedin\.com|ziprecruiter\.com|glassdoor\.com|monster\.com|simplyhired\.com|careerbuilder\.com|joinhandshake\.com|dice\.com|snagajob\.com|jooble\.org|talent\.com|lensa\.com|jobcase\.com|adzuna\.com)$/i;
   // A scrape can't see a posting the employer took down early, so visitors can say so.
   // Reports land as pre-filled GitHub issues on the public repo, which keeps any email
   // address off the page. To take reports by email instead, swap this for a mailto: link.
@@ -667,7 +673,12 @@ a.paybtn{text-decoration:none}
     d.posted = /^\d{4}-\d{2}-\d{2}$/.test(d.posted||'') ? d.posted : '';
     d.rate = hourly(d.pay);
     d.hubs = Array.isArray(d.hubs) ? d.hubs.filter(h => typeof h === 'string') : [];
+    // If the first location applies through a job board but another applies on the employer's
+    // own site, lead with that one, so the card's Apply button opens the employer's portal.
+    const own = d.locs.findIndex(l => l.apply && !JOB_BOARDS.test(hostOf(l.apply)));
+    if (own > 0 && JOB_BOARDS.test(hostOf(d.locs[0].apply))) d.locs.unshift(...d.locs.splice(own, 1));
     d.dest = hostOf(d.locs[0].apply);
+    d.board = JOB_BOARDS.test(d.dest);
     const dt = d.posted ? asDate(d.posted) : null;
     d.days = dt ? Math.max(0, (NOW - dt.getTime()) / DAY) : null;
     d.hay = [d.company, d.title, d.cat, d.kind, d.majors.join(' '), d.locs.map(l=>l.loc).join(' '), d.counties.join(' '), d.term.join(' '), d.level, d.mode, d.pay, d.flag, d.snippet, d.details.join(' '), d.lang.length ? 'bilingual ' + d.lang.join(' ') : ''].join(' ').toLowerCase();
@@ -832,6 +843,8 @@ a.paybtn{text-decoration:none}
   function render(){
     document.querySelectorAll('.areas button[data-area]').forEach(b => { const on=b.dataset.area===state.area; b.setAttribute('aria-pressed',on?'true':'false'); if(on && state.area && window.innerWidth<=900 && b.closest('#areas')) b.scrollIntoView({block:'nearest',inline:'center'}); });
     const list = DATA.filter(matches).sort(sortFn);
+    // Employer portals before job boards, each group in the visitor's chosen order.
+    list.splice(0, list.length, ...list.filter(d => !d.board), ...list.filter(d => d.board));
     // Featured cards that match the current view lead it, at most FEAT_MAX of them, and only
     // under the default sort: a visitor who asks for highest pay or
     // A to Z gets exactly that.

@@ -584,6 +584,15 @@ Each card names the domain its Apply button opens, under the button, because the
 links out to more than 160 employer and applicant-tracking domains that come from scraped
 postings. Per-location links in the details panel carry the same information as a tooltip.
 
+**Employer portals first.** A card whose Apply opens a job board or job-ad network (Indeed,
+Appcast, JobAppNetwork, Recruitics, JobSync, TeamWork Online, LinkedIn, ZipRecruiter and the
+others in `JOB_BOARDS` in `template.html`) sorts after every card that applies on the
+employer's own careers site or its applicant-tracking system (Workday, Greenhouse, iCIMS,
+SmartRecruiters and so on). That holds in every view and under every sort, each group keeping
+the chosen order, so a job-board card only leads a view with nothing better; featured cards
+still come first. A card with several locations leads with one that applies on the
+employer's site when it has one. To demote another domain, add it to `JOB_BOARDS` and rebuild.
+
 Next to "Original listing" every card has a **Report closed listing** link. It opens a
 new issue on this repo's GitHub, pre-filled with the employer, role, card id and apply
 link, because a scrape can't see a posting the employer took down early. Reports need a
