@@ -29,10 +29,12 @@ def page_of(path):
     return "other"
 
 def fetch(token, since, until):
+    # `by` is an array: the API wants the key repeated (by=day&by=requestPath), not a
+    # comma-joined value, which it rejects with a 400.
     q = urllib.parse.urlencode({
-        "projectId": PROJECT, "teamId": TEAM, "by": "day,requestPath", "limit": 100,
+        "projectId": PROJECT, "teamId": TEAM, "by": ["day", "requestPath"], "limit": 100,
         "since": since.strftime("%Y-%m-%dT00:00:00.000Z"), "until": until.strftime("%Y-%m-%dT23:59:59.999Z"),
-    }, safe=",")
+    }, doseq=True)
     req = urllib.request.Request(API + "?" + q, headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=60) as r: return json.load(r)
