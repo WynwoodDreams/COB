@@ -367,11 +367,16 @@ bad one is a `400` with `code: "who"`, which makes the page show the form again)
 form cannot be skipped by calling the API directly. The pair is kept in the visitor's
 browser (`localStorage`, key `cob.visitor`) so a return visit is not asked twice; "change"
 in the header clears it. Each new conversation writes one line to the function log,
-`[assistant] visitor {"name","email","at","asked"}`, which is where to read them: Vercel
-project, Logs, filter on `visitor`. Nothing is stored anywhere else yet, and Vercel keeps
-function logs for a limited time, so a log drain or a small store is the next step if the
-list matters. `ASSISTANT_GATE=off` turns the requirement off; `GET /api/assistant` reports
-`gate` so the page knows which way it is set.
+`[assistant] visitor {"name","email","at","asked"}` (Vercel project, Logs, filter on
+`visitor`), and Vercel keeps function logs for a limited time. So the same entry is also
+inserted into a Supabase table, `cob_assistant_visitors` (one row per conversation: name,
+email, first question, time), when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set in
+Vercel (`lib/assistant/visitors.js`). That table is where to read the list: Supabase
+dashboard > Table Editor > cob_assistant_visitors, or download it as CSV from there. It has
+row-level security on and no policies, so only the service key (server-side) can write or
+read it; a failed insert is warned about in the log and the visitor still gets their answer.
+`ASSISTANT_GATE=off` turns the requirement off; `GET /api/assistant` reports `gate` and
+`visitorStore` so the page knows which way each is set.
 
 **The model.** Requests go through Vercel AI Gateway's OpenAI-compatible endpoint
 (`https://ai-gateway.vercel.sh/v1/chat/completions`), model `minimax/minimax-m3.1-flash`,
@@ -395,7 +400,8 @@ what they asked.
 
 **Setup.** `.env.example` lists every variable. In Vercel, Project > Settings > Environment
 Variables: `AI_GATEWAY_API_KEY` (create one under the team's AI Gateway tab; it is only ever
-read on the server) and `ASSISTANT_ENABLED=true`. Set `ASSISTANT_ENABLED=false` and redeploy
+read on the server), `ASSISTANT_ENABLED=true`, and `SUPABASE_URL` plus
+`SUPABASE_SERVICE_ROLE_KEY` so sign-ins are kept (see "The beta gate"). Set `ASSISTANT_ENABLED=false` and redeploy
 to stop every AI request when the free promotion ends; the page then shows "The assistant is
 paused" and the board is untouched. The board's "Ask the assistant" pill (beside Insights,
 badged Beta) shows because `ASSISTANT_URL` in `template.html` is set to `assistant.html`; set it

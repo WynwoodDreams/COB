@@ -200,3 +200,30 @@ test('the beta gate: a name and a valid email are required on every turn, and th
     assert.equal(lines.filter(l => l.startsWith('[assistant] visitor')).length, 1);
   } finally { console.log = orig; }
 });
+
+test('the beta gate: with Supabase configured each sign-in is also inserted into the visitors table, and a store failure does not reach the visitor', async () => {
+  const orig = console.log; console.log = () => {};
+  try {
+    const calls = []; let status = 201;
+    const storeFetch = async (url, init) => { calls.push({ url, init }); return { ok: status < 300, status, text: async () => 'nope' }; };
+    const env = { ASSISTANT_GATE: 'on', SUPABASE_URL: 'https://x.supabase.co/', SUPABASE_SERVICE_ROLE_KEY: 'srk' };
+    const gw = fakeGateway();
+    const h = createHandler({ env: Object.assign({}, ENV, env), fetch: gw.fetch, storeFetch, boardPath: board, log: () => {}, warn: () => {} });
+    assert.equal(h.status().visitorStore, true);
+    assert.equal(make({ env: { ASSISTANT_GATE: 'on' } }).h.status().visitorStore, false);
+    const msgs = [{ role: 'user', content: 'cybersecurity student in Miami' }];
+    await h.run({ messages: msgs, visitor: { name: 'Ana Diaz', email: 'Ana@Example.com' } });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'https://x.supabase.co/rest/v1/cob_assistant_visitors');
+    assert.equal(calls[0].init.headers.Authorization, 'Bearer srk');
+    const row = JSON.parse(calls[0].init.body);
+    assert.equal(row.name, 'Ana Diaz'); assert.equal(row.email, 'ana@example.com'); assert.equal(row.asked, 'cybersecurity student in Miami'); assert.ok(row.at);
+    // follow-up turns are not inserted again
+    await h.run({ messages: [...msgs, { role: 'assistant', content: 'ok', kind: 'results' }, { role: 'user', content: 'any in Broward?' }], visitor: { name: 'Ana Diaz', email: 'ana@example.com' } });
+    assert.equal(calls.length, 1);
+    // a refused insert is swallowed
+    status = 500;
+    const r = await h.run({ messages: msgs, visitor: { name: 'Bo Li', email: 'bo@example.com' } });
+    assert.equal(r.kind, 'results'); assert.equal(calls.length, 2);
+  } finally { console.log = orig; }
+});
