@@ -24,6 +24,15 @@ Read this before the rest. It overrides the roadmap below where they disagree.
   badged Beta, links to it. Traffic is about 25 to 50 visitors a week, well inside the
   assistant's limits (400 requests a day per function instance, 40 an hour per visitor).
   `ASSISTANT_ENABLED=false` in Vercel pauses it.
+- **COB keeps the assistant's sign-ins in a database (2026-11-03).** The assistant asks for a
+  name and an email before the chat opens. Each new conversation now saves one row (name,
+  email, first question, time) to the `cob_assistant_visitors` table in the owner's Supabase
+  project "Emnova-Prjoect", the same project that holds BuildersBench's `bb_click_events`.
+  The owner chose to share that project rather than pay for a new one. The table has
+  row-level security on and no policies, so only COB's server, using the service_role key in
+  Vercel (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), can write or read it. To see the list:
+  Supabase, Table Editor, `cob_assistant_visitors` (export to CSV from there). See COB's
+  README, "The beta gate". This is the first exception to "no database of students" below.
 - **Voice is a priority: people should be able to talk to every site.** The owner is building
   the talking part of ResumeCanvas first, and says it is not good enough yet. See
   "Talking to the sites" below.
@@ -46,10 +55,13 @@ The opportunity assistant, which lives in COB (`assistant.html`, `api/assistant.
 
 ## Principles all three keep
 
-- **No accounts, no database of students.** Progress (BuildersBench) and resumes
-  (ResumeCanvas) stay in the student's browser. Nothing about a student is stored on a server.
-  Charging for ResumeCanvas may force a change here; that is the owner's call, not a coding
-  decision.
+- **No accounts, and as little stored about students as possible.** Progress
+  (BuildersBench) and resumes (ResumeCanvas) stay in the student's browser. The one
+  exception, by the owner's decision on 2026-11-03, is COB's assistant sign-in: a name, an
+  email and the first question, kept in Supabase (see "Current direction"). Nothing else about
+  a student is stored on a server, and any site that describes its privacy must say the
+  assistant keeps those three things. Storing anything more, or charging for ResumeCanvas,
+  is the owner's call, not a coding decision.
 - **The sites talk to each other only through links.** A handoff is a URL. Anything a student
   wrote goes after the `#`, which browsers never send to a server; public posting text may go
   in the query string.
@@ -151,6 +163,10 @@ until the owner says otherwise (see "Current direction").
 
 ## Open questions for the owner
 
+- How long should COB keep assistant sign-ins, and should the assistant page say plainly,
+  before the form, that the name and email are saved and how to ask for them to be deleted?
+- Will the saved emails ever be used to contact people (for example the email list), and if
+  so, does the sign-in form need a separate opt-in?
 - What is free and what is paid in ResumeCanvas, and when?
 - What does "talking to the sites" need to do before it is good enough: accuracy, speed,
   spoken replies, languages (Spanish and Haitian Creole are common in South Florida)?
