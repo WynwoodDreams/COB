@@ -176,24 +176,6 @@ adding or removing a placement is an edit to that file and a rebuild:
 - `featured.json` is the whole truth. A build clears every mark and sets them again from
   the file, so deleting an entry ends that placement on the next build.
 
-## Pick of the week
-
-Every Monday the page draws three listings at random (`PICK_MAX` in the template) and marks
-them PICK OF THE WEEK, in neon magenta (a colour no other card uses) with a light that runs around the
-card's edge all the time, and a chip whose tooltip says the draw is random and
-unpaid. Nothing needs editing or rebuilding: the page seeds the draw with the current week,
-so every visitor sees the same three all week and a new set the next.
-
-- Only listings posted in the last 45 days (`PICK_FRESH`) with an apply link and no warning
-  flag are in the draw. Featured cards are left out, since they are already pinned.
-- Picks lead whatever view they match, right after any featured cards, under "Newest first"
-  only, the same rule featured cards follow.
-- Each card's place in the draw comes from a hash of the week and its id, so a rebuild that
-  adds or drops other listings mid-week leaves the picks alone unless a pick itself is gone.
-- They are kept apart from featured cards on purpose. The FEATURED tooltip tells visitors
-  those are paid placements; marking free, randomly chosen roles FEATURED would make that
-  claim false.
-
 ## South Florida industries
 
 The employers this region is known for, gathered by name rather than by field: sports and
@@ -589,8 +571,8 @@ how many filters are on) in place of the Filters bar; the area strip loses its l
 counts; the result line is just "532 listings · updated Oct 29"; and each card leads with its
 title, then employer, place and age, a few chips, and Apply beside Details. The description,
 majors and source line move into Details, which every card has on a phone (`.m-only`) and only
-cards with more to show have on a desktop. Pick of the Week keeps its magenta edge but not
-the orbiting light. On the assistant: back, title and start over share one pinned row; the
+cards with more to show have on a desktop.
+On the assistant: back, title and start over share one pinned row; the
 composer sits at the bottom of the screen from the start; messages have no You/Assistant
 labels; the counter shows only within 100 characters of the limit; the disclaimer is one
 line under the composer; and a card's requirements fold behind "What they ask for", with a
