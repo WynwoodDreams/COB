@@ -26,6 +26,7 @@ def page_of(path):
     p = (path or "").split("?")[0].rstrip("/") or "/"
     if p in ("/", "/index.html"): return "board"
     if p in ("/insights", "/insights.html"): return "insights"
+    if p in ("/assistant", "/assistant.html"): return "assistant"
     return "other"
 
 def fetch(token, since, until):
@@ -63,7 +64,7 @@ def rows_of(payload):
             if ts is not None: day = dt.datetime.utcfromtimestamp(ts / (1000 if ts > 1e11 else 1)).strftime("%Y-%m-%d")
         if not day: continue
         views = row.get("pageviews", row.get("pageViews", row.get("views", row.get("total", 0)))) or 0
-        visitors = row.get("visitors", row.get("uniques", 0)) or 0
+        visitors = row.get("visitors", row.get("uniques", row.get("devices", 0))) or 0
         out.append((day, page_of(row.get("requestPath") or row.get("path") or row.get("route")), int(views), int(visitors)))
     return out
 
@@ -82,7 +83,7 @@ def main():
     days = visits.setdefault("days", {})
     fresh = {}
     for day, page, views, visitors in rows:
-        d = fresh.setdefault(day, {"board": 0, "insights": 0, "other": 0, "visitors": 0})
+        d = fresh.setdefault(day, {"board": 0, "insights": 0, "assistant": 0, "other": 0, "visitors": 0})
         d[page] += views
         d["visitors"] += visitors   # visitors per path, summed: a ceiling on the day's visitors, not a count of people
     for day, d in fresh.items(): days[day] = d
@@ -91,13 +92,13 @@ def main():
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump({"source": visits["source"], "updated": visits["updated"], "days": dict(sorted(days.items()))}, f, indent=0, ensure_ascii=False); f.write("\n")
     week = [d for d in sorted(fresh) if d > (today - dt.timedelta(days=7)).isoformat()]
-    wk = {k: sum(fresh[d][k] for d in week) for k in ("board", "insights", "other")}
+    wk = {k: sum(fresh[d][k] for d in week) for k in ("board", "insights", "assistant", "other")}
     print(f"recorded {len(fresh)} day(s) from {min(fresh) if fresh else '-'} to {max(fresh) if fresh else '-'} into {OUT} ({len(days)} days on file)")
-    print(f"last 7 days: board {wk['board']} views, insights {wk['insights']} views, other {wk['other']}")
+    print(f"last 7 days: board {wk['board']} views, insights {wk['insights']} views, assistant {wk['assistant']} views, other {wk['other']}")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as f:
-            f.write(f"## Visits, last 7 days\n\n| Page | Views |\n|---|---:|\n| Board | {wk['board']} |\n| Insights | {wk['insights']} |\n| Other | {wk['other']} |\n\n{len(days)} days on file in `visits.json`.\n")
+            f.write(f"## Visits, last 7 days\n\n| Page | Views |\n|---|---:|\n| Board | {wk['board']} |\n| Insights | {wk['insights']} |\n| Assistant | {wk['assistant']} |\n| Other | {wk['other']} |\n\n{len(days)} days on file in `visits.json`.\n")
 
 if __name__ == "__main__":
     main()

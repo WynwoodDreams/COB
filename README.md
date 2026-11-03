@@ -431,7 +431,8 @@ drawn over each bar) and shows each quarter's visits in the table.
 - `record_visits.py` asks the Vercel Web Analytics API for the last 28 days of page views by
   day and page, and merges them into `visits.json`. A day already on file is overwritten by
   the fresh figure for it, because Vercel's count for a recent day can still grow. Nothing is
-  deleted. Paths count as `board` (`/`, `/index.html`), `insights` (`/insights.html`) or `other`.
+  deleted. Paths count as `board` (`/`, `/index.html`), `insights` (`/insights.html`),
+  `assistant` (`/assistant.html`) or `other`.
 - `.github/workflows/visits.yml` runs it every Monday at 8:17 ET on GitHub's servers, then
   rebuilds `insights.html` with `--no-snapshot` (the board's "updated" date and the history
   file are left as they are, since no listing changed) and commits. The Actions tab shows

@@ -1297,7 +1297,7 @@ def visits_series(days):
         wk = (dt.date.fromisoformat(d) - dt.timedelta(days=dt.date.fromisoformat(d).weekday())).isoformat()  # that week's Monday
         for key, bucket in ((m, by_month), (wk, by_week)):
             b = bucket.setdefault(key, {"all": 0, "insights": 0})
-            b["all"] += int(v.get("board", 0)) + int(v.get("insights", 0)) + int(v.get("other", 0))
+            b["all"] += int(v.get("board", 0)) + int(v.get("insights", 0)) + int(v.get("assistant", 0)) + int(v.get("other", 0))
             b["insights"] += int(v.get("insights", 0))
     return {"months": [[m, b["all"], b["insights"]] for m, b in sorted(by_month.items())][-12:],
             "weeks": [[w, b["all"], b["insights"]] for w, b in sorted(by_week.items())][-16:],
@@ -1334,7 +1334,7 @@ def history_series(hist, visits=None):
         })
     for q in quarters:   # a quarter's visits, where the record has them
         qd = [v for d, v in (visits or {}).items() if quarter_of(d) == q["q"]]
-        q["visits"] = sum(int(v.get("board", 0)) + int(v.get("insights", 0)) + int(v.get("other", 0)) for v in qd) if qd else None
+        q["visits"] = sum(int(v.get("board", 0)) + int(v.get("insights", 0)) + int(v.get("assistant", 0)) + int(v.get("other", 0)) for v in qd) if qd else None
     return {"series": series, "areaSeries": area_series, "postedByMonth": sorted(posted.items()), "visits": visits_series(visits),
             "quarters": quarters, "first": hist[0]["date"] if hist else None, "builds": len(hist)}
 
