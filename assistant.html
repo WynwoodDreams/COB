@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Opportunity Assistant · Christian's Opportunity Board</title>
-<meta name="description" content="Describe what you study, what you can do and where you are, and get up to five matching South Florida internships from Christian's Opportunity Board.">
+<title>Scout · Opportunity Assistant · Christian's Opportunity Board</title>
+<meta name="description" content="Talk to Scout, the opportunity assistant: say what you study and where you are, and get the South Florida internships on Christian's Opportunity Board that fit.">
 <meta name="robots" content="noindex">
 <link rel="canonical" href="https://cob-eta.vercel.app/assistant.html">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2300E37B'/%3E%3Crect x='16' y='19' width='32' height='6' rx='3' fill='%23090D0B'/%3E%3Crect x='16' y='30' width='32' height='6' rx='3' fill='%23090D0B'/%3E%3Crect x='16' y='41' width='20' height='6' rx='3' fill='%23090D0B'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2300E37B'/%3E%3Ccircle cx='32' cy='32' r='14' fill='%2304120B'/%3E%3C/svg%3E">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Christian's Opportunity Board">
-<meta property="og:title" content="Opportunity Assistant">
-<meta property="og:description" content="Describe yourself in plain language and get matching South Florida internships from the board.">
+<meta property="og:title" content="Scout · Opportunity Assistant">
+<meta property="og:description" content="Say what you study and where you are, and Scout finds the South Florida internships on the board that fit.">
 <meta property="og:url" content="https://cob-eta.vercel.app/assistant.html">
 <meta property="og:image" content="https://cob-eta.vercel.app/og.png">
 <meta name="theme-color" content="#090D0B">
@@ -23,7 +23,12 @@
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
 <style>
-/* Same tokens as the board (template.html). Change a colour there and copy it here. */
+/* Same tokens as the board (template.html). Change a colour there and copy it here.
+
+   The page is a stage, not a chat. Scout, the presence, sits large at the left and speaks
+   its reply in display type; what it has understood runs as a mono strip; the listings it
+   recommends are a filmstrip of cards underneath; one floating bar holds the mic. On a phone
+   Scout is pinned on top, the cards scroll under it, and the bar sits at the bottom. */
 :root{
   --bg:#090D0B; --panel:#101714; --panel-2:#16201C; --rule:#1D2A25; --rule-2:#2C3E37;
   --ink:#E9F1ED; --mute:#8FA39B; --dim:#66796F;
@@ -33,19 +38,27 @@
   --lang:#5BD0E8; --lang-rgb:91,208,232;
   --down:#FF6B6B;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+  --glowa:.10;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
-button,a,select,input,label,textarea{-webkit-tap-highlight-color:rgba(124,140,255,.18)}
-body{margin:0;background:var(--bg);background-image:radial-gradient(900px 380px at 18% -120px,rgba(0,227,123,.10),transparent 70%);background-repeat:no-repeat;color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(233,241,237,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(233,241,237,.035) 1px,transparent 1px);background-size:48px 48px;
+  mask-image:radial-gradient(1200px 700px at 30% 40%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(1200px 700px at 30% 40%,#000 20%,transparent 75%)}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;transition:opacity .6s;opacity:var(--glowa);
+  background:radial-gradient(900px 600px at 22% 45%,rgba(0,227,123,.55),transparent 65%)}
+body.speaking{--glowa:.22} body.listening{--glowa:.16} body.thinking{--glowa:.14}
 a{color:inherit} button{font:inherit;cursor:pointer}
 :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
-.wrap{max-width:1280px;margin:0 auto;padding:26px 24px 60px;padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right))}
+button,a,input,textarea{-webkit-tap-highlight-color:rgba(0,227,123,.18)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.main{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;min-height:100dvh}
+@media (min-width:761px){body{height:100dvh;overflow:hidden}.main{height:100dvh;min-height:0}}
 
-/* ---------- sibling-site banner ---------- */
-.bbar{border-bottom:1px solid var(--rule);background:linear-gradient(180deg,rgba(0,227,123,.07),rgba(0,227,123,0))}
-.bbar a{display:flex;align-items:center;gap:12px;max-width:1280px;margin:0 auto;padding:11px 24px;min-height:48px;text-decoration:none;color:var(--mute);font-family:var(--mono);font-size:12px;letter-spacing:.04em}
+/* sibling-site line */
+.bbar{flex:none;border-bottom:1px solid var(--rule);background:linear-gradient(180deg,rgba(0,227,123,.07),rgba(0,227,123,0))}
+.bbar a{display:flex;align-items:center;gap:12px;padding:9px 24px;min-height:40px;text-decoration:none;color:var(--mute);font-family:var(--mono);font-size:12px;letter-spacing:.02em}
 .bbar a:hover{color:var(--ink);background:rgba(0,227,123,.05)}
 .bbar svg{flex:none;color:var(--amber)}
 .bbar .kicker{color:var(--dim);text-transform:uppercase;letter-spacing:.14em;font-size:10.5px;flex:none}
@@ -53,334 +66,320 @@ a{color:inherit} button{font:inherit;cursor:pointer}
 .bbar .pitch{color:var(--mute);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bbar .go{margin-left:auto;flex:none;color:var(--amber);font-weight:600}
 
-/* header, as on the board */
-.head{display:flex;justify-content:space-between;align-items:center;gap:14px 28px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--rule)}
-.head h1{font-weight:800;letter-spacing:-.03em;font-size:clamp(22px,3.2vw,34px);margin:0;line-height:1.1}
-.head h1 span{color:var(--amber)}
-.head h1::after{content:'';display:inline-block;width:.5ch;height:.86em;margin-left:.12em;vertical-align:-.08em;background:var(--amber);box-shadow:0 0 14px var(--amber-glow);animation:caret 1.1s steps(2,end) infinite}
-@keyframes caret{0%{opacity:1}50%{opacity:0}100%{opacity:1}}
-.head .sub{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;font-family:var(--mono);font-size:12px;color:var(--mute);margin-top:5px}
-.title{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 420px}
-.mark{flex:none;width:68px;height:68px;color:var(--amber);filter:drop-shadow(0 0 7px var(--amber-glow))}
-.mark svg{width:100%;height:100%;overflow:visible;transform-origin:50% 50%;animation:markspin 12s linear infinite}
-.mark .link{stroke:currentColor;stroke-width:.7;stroke-linecap:round;fill:none}
-.mark .ring{opacity:.6} .mark .spokes{opacity:.95} .mark .core{fill:var(--ink)}
-.mark .n0{stop-color:var(--ink);stop-opacity:1} .mark .n1{stop-color:var(--amber);stop-opacity:.9} .mark .n2{stop-color:var(--amber);stop-opacity:0}
-@keyframes markspin{to{transform:rotate(360deg)}}
-.paybtn{display:inline-flex;align-items:center;gap:7px;background:var(--amber-dim);border:1px solid rgba(0,227,123,.45);color:var(--ink);border-radius:999px;padding:4px 12px 4px 9px;font-family:var(--mono);font-size:12px;cursor:pointer;box-shadow:0 0 16px rgba(0,227,123,.12);text-decoration:none}
-.paybtn svg{width:15px;height:15px;color:var(--amber);flex:none}
-.paybtn:hover,.paybtn:focus-visible{border-color:var(--amber);box-shadow:0 0 22px rgba(0,227,123,.3)}
-.badge{color:#04120B;background:var(--amber);border-radius:999px;padding:1px 7px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1.5;box-shadow:0 0 10px var(--amber-glow)}
-.badge.warn{background:var(--feat);box-shadow:0 0 10px rgba(var(--feat-rgb),.4)}
-.head-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 1 360px;min-width:220px;font-family:var(--mono);font-size:12px;color:var(--dim);text-align:right}
-.head-side b{color:var(--ink);font-weight:600}
+/* top bar: brand, a mono readout, the visitor */
+header.top{flex:none;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid var(--rule)}
+header.top .brand{text-decoration:none;font-weight:800;letter-spacing:-.03em;font-size:17px;white-space:nowrap;display:inline-flex;align-items:center;gap:8px}
+header.top .brand span{color:var(--amber)}
+header.top .brand svg{width:16px;height:16px;color:var(--amber)}
+.readout{display:flex;align-items:center;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);overflow:hidden}
+.readout span{padding:0 12px;border-left:1px solid var(--rule-2);white-space:nowrap}
+.readout span:first-child{border-left:0}
+.readout b{color:var(--amber);font-weight:600}
+.readout .st{color:var(--ink)}
+.badge{color:#04120B;background:var(--feat);border-radius:999px;padding:1px 7px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+header.top .who{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--dim);display:flex;align-items:center;gap:12px}
+header.top .who b{color:var(--ink);font-weight:600}
+header.top .who a,header.top .who button.lnk{color:var(--mute);background:none;border:0;padding:0;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
+#st-who{display:none}#st-who.on{display:inline}
+.iconbtn{flex:none;width:44px;height:44px;border-radius:12px;background:transparent;border:1px solid var(--rule-2);color:var(--mute);display:inline-flex;align-items:center;justify-content:center}
+.iconbtn:hover{color:var(--amber);border-color:var(--amber)}
+.iconbtn.on{color:var(--amber);border-color:var(--amber)}
+.iconbtn svg{width:18px;height:18px}
 
-/* the conversation */
-.chat{max-width:900px;margin:18px auto 0}
-.notice{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--rule-2);border-radius:12px;padding:12px 14px;font-size:13.5px;color:var(--mute);margin-bottom:12px}
+/* notices */
+.notice{display:flex;gap:10px;align-items:flex-start;margin:12px 24px 0;background:var(--panel);border:1px solid var(--rule-2);border-radius:12px;padding:10px 14px;font-size:13.5px;color:var(--mute)}
 .notice[hidden]{display:none}
-.notice b{color:var(--ink)}
-.notice.warn{border-color:rgba(var(--feat-rgb),.45);background:rgba(var(--feat-rgb),.06)}
-.notice.warn b{color:var(--feat)}
-.notice svg{width:16px;height:16px;flex:none;margin-top:2px;color:var(--amber)}
-.notice.warn svg{color:var(--feat)}
-.log{display:flex;flex-direction:column;gap:12px;min-height:120px}
-.msg{display:flex;flex-direction:column;gap:8px;max-width:100%}
-.msg .who{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-.msg.user{align-items:flex-end}
-.msg.user .bubble{background:var(--amber-dim);border:1px solid rgba(0,227,123,.35);color:var(--ink);border-radius:14px 14px 4px 14px}
-.bubble{background:var(--panel);border:1px solid var(--rule);border-radius:14px 14px 14px 4px;padding:12px 16px;font-size:15px;max-width:80ch;white-space:pre-wrap;overflow-wrap:anywhere}
-.msg.assistant .bubble{color:var(--ink)}
-.bubble.q{border-color:rgba(0,227,123,.35)}
-.bubble.q::before{content:'Quick question';display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-bottom:4px}
-.bubble.err{border-color:rgba(255,107,107,.45);background:rgba(255,107,107,.06)}
-.bubble.err b{color:var(--down)}
-.bubble .retry{margin-left:10px;background:transparent;border:1px solid var(--amber);color:var(--amber);border-radius:7px;padding:6px 12px;font-family:var(--mono);font-size:12px;font-weight:600}
-.bubble .retry:hover{background:var(--amber);color:#04120B}
-/* the loading row: three nodes lighting up in turn, in the mark's language */
-.wait{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12.5px;color:var(--mute);padding:4px 2px}
-.wait i{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber-glow);animation:pulse 1.2s ease-in-out infinite}
-.wait i:nth-child(2){animation-delay:.2s} .wait i:nth-child(3){animation-delay:.4s}
-@keyframes pulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
-.filters-note{font-family:var(--mono);font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;gap:6px 14px}
-.filters-note span::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-right:7px;vertical-align:middle;opacity:.7}
+.notice svg{width:18px;height:18px;flex:none;margin-top:1px}
+.notice.warn{border-color:rgba(var(--feat-rgb),.5)} .notice.warn svg{color:var(--feat)}
+.notice b{color:var(--ink);font-weight:600} .notice a{color:var(--ink)}
 
-/* listing cards, the board's .row with a "why it fits" block */
-.rows{display:flex;flex-direction:column;gap:8px;isolation:isolate}
-.row{background:var(--panel);border:1px solid #18211D;border-radius:12px;padding:16px 18px;display:grid;grid-template-columns:1fr auto;gap:8px 20px;align-items:start;position:relative;transition:transform .22s cubic-bezier(.2,.7,.3,1),border-color .22s ease,background-color .22s ease,box-shadow .22s ease}
-.row .main{min-width:0}
-.row .co{font-family:var(--mono);font-size:12px;color:var(--amber);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
-.row .co .emp{font-size:13.5px;font-weight:600;letter-spacing:-.005em}
-.row .co time{color:var(--dim)} .row .co time.fresh{color:var(--amber-2)}
-.row .co .loc{color:var(--mute)}
-.row .rank{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.06em}
-.row h3{margin:4px 0 6px;font-size:18px;font-weight:600;line-height:1.25;letter-spacing:-.01em}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.chip{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:5px;background:var(--panel-2);border:1px solid var(--rule-2);color:var(--mute)}
-.chip.term{color:var(--ink)}
-.chip.pay{color:var(--amber-2);border-color:rgba(245,165,36,.4);background:var(--amber-dim)}
-.chip.flag{color:#F58B8B;border-color:rgba(245,139,139,.35);background:rgba(245,139,139,.08)}
-.chip.mode{color:#8FD3A8;border-color:rgba(143,211,168,.35);background:rgba(143,211,168,.08)}
-.chip.job{color:#04121A;background:var(--amber);border-color:var(--amber);font-weight:700}
-.chip.lang{color:var(--lang);border-color:rgba(var(--lang-rgb),.4);background:rgba(var(--lang-rgb),.09)}
-.chip.out{color:var(--feat);border-color:rgba(var(--feat-rgb),.45);background:rgba(var(--feat-rgb),.08)}
-.row p{margin:0;font-size:14px;color:var(--mute);max-width:80ch}
-.row .why{margin-top:10px;padding:10px 12px;border-left:3px solid var(--amber);background:rgba(0,227,123,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--ink)}
-.row .why b{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);display:block;margin-bottom:3px;font-weight:600}
-.row .asks{margin-top:10px;font-size:14px}
-.row .asks h4{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:8px 0 4px;font-weight:600}
-.row .asks h4:first-child{margin-top:0}
-.row .asks summary+h4{margin-top:4px}
-.row .asks ul{margin:0;padding-left:18px;color:var(--mute)}
-.row .asks li{margin:3px 0}
-.row .asks li.miss{color:var(--ink)}
-.row .asks li.miss::after{content:' · not mentioned in your profile';font-family:var(--mono);font-size:11px;color:var(--feat)}
-.row .asks .none{color:var(--dim);font-family:var(--mono);font-size:12px}
-.row .srcline{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:10px}
-.row .srcline a{color:var(--mute)}
-.row .srcline .unv{color:var(--feat)}
-.row .side{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:150px}
-.apply{background:var(--amber);color:#04120B;text-decoration:none;font-family:var(--mono);font-weight:700;font-size:13px;padding:10px 16px;border-radius:9px;text-align:center;box-shadow:var(--glow)}
-.apply:hover{background:var(--amber-2);box-shadow:0 0 30px rgba(0,227,123,.42)}
-.dest{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:-2px}
-.plan{font-family:var(--mono);font-size:11.5px;color:var(--mute);text-align:center;text-decoration:none}
-.plan:hover{color:var(--amber);text-decoration:underline;text-underline-offset:3px}
-.locs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.locs a{text-decoration:none;background:var(--panel-2);border:1px solid var(--rule-2);border-radius:6px;padding:7px 11px;font-size:13px;color:var(--ink);display:inline-flex;gap:8px;align-items:center}
-.locs a span{font-family:var(--mono);font-size:11px;color:var(--amber)}
-@media (hover:hover) and (pointer:fine){
-  .row:hover{border-color:rgba(0,227,123,.22);background:#121B17;transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .row:hover h3{color:#fff}
-}
-.row:focus-within{border-color:rgba(0,227,123,.45)}
-.adjust{background:var(--panel);border:1px dashed rgba(0,227,123,.45);border-radius:12px;padding:12px 16px}
-.adjust h4{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin:0 0 6px;font-weight:600}
-.adjust ul{margin:0;padding-left:18px;color:var(--mute);font-size:14px}
-.adjust li{margin:4px 0}
-.closest{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:4px}
-
-/* the composer */
-.compose{position:sticky;bottom:0;margin-top:16px;padding:12px 0 max(8px,env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(9,13,11,0),var(--bg) 24%)}
-.compose form{display:flex;gap:8px;align-items:flex-end;background:var(--panel);border:1px solid var(--rule-2);border-radius:14px;padding:8px 8px 8px 14px}
-.compose form:focus-within{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-dim)}
-.compose textarea{flex:1;min-width:0;background:transparent;border:0;color:var(--ink);font:inherit;font-size:16px;line-height:1.4;resize:none;max-height:160px;padding:8px 0;outline:none}
-.compose textarea::placeholder{color:var(--dim)}
-.compose .send{flex:none;display:inline-flex;align-items:center;gap:8px;background:var(--amber);color:#04120B;border:0;border-radius:10px;padding:11px 16px;font-family:var(--mono);font-weight:700;font-size:13px;box-shadow:var(--glow);min-height:44px}
-.compose .send:hover{background:var(--amber-2)}
-.compose .send:disabled{opacity:.45;cursor:default;box-shadow:none}
-.compose .send svg{width:15px;height:15px}
-.compose .mic{flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;background:transparent;color:var(--mute);border:1px solid var(--rule-2);border-radius:10px;padding:0}
-.compose .mic[hidden]{display:none}
-.compose .mic:hover{color:var(--amber);border-color:var(--amber)}
-.compose .mic:disabled{opacity:.45;cursor:default}
-.compose .mic svg{width:18px;height:18px}
-.compose .mic.on{color:#04120B;background:var(--amber);border-color:var(--amber);box-shadow:var(--glow);animation:micpulse 1.4s ease-in-out infinite}
-@keyframes micpulse{50%{box-shadow:0 0 0 6px var(--amber-dim)}}
-.compose .meta .voice{color:var(--amber);font-size:12.5px}
-.compose .meta .voice.warn{color:var(--down)}
-.compose .meta{display:flex;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;color:var(--dim);padding:6px 4px 0}
-.compose .meta .over{color:var(--down)}
-.compose .meta button{background:transparent;border:0;color:var(--mute);padding:0;font-family:var(--mono);font-size:11.5px;text-decoration:underline;text-underline-offset:3px}
-.compose .meta button:hover{color:var(--amber)}
-.starters{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:18px auto 6px;max-width:720px}
-.starters button{background:var(--panel);border:1px solid var(--rule-2);color:var(--mute);border-radius:999px;padding:9px 16px;font-size:14px;animation:rise .7s cubic-bezier(.2,.7,.3,1) both}
-.starters button:nth-child(2){animation-delay:.08s} .starters button:nth-child(3){animation-delay:.16s}
-.starters button:nth-child(4){animation-delay:.24s} .starters button:nth-child(5){animation-delay:.32s}
-.starters button:hover{color:var(--ink);border-color:var(--amber);background:var(--amber-dim)}
-.starters[hidden]{display:none}
-/* the opening: one line of welcome, then the suggestions rise in one after another */
-.gate{max-width:440px;margin:clamp(20px,6vh,56px) auto 0;background:var(--panel);border:1px solid var(--rule-2);border-radius:16px;padding:22px 22px 18px;animation:rise .8s cubic-bezier(.2,.7,.3,1) both}
+/* gate */
+.gate{max-width:440px;margin:clamp(24px,10vh,96px) auto;background:var(--panel);border:1px solid var(--rule-2);border-radius:18px;padding:26px 24px}
 .gate[hidden]{display:none}
-.gate h2{margin:0 0 6px;font-size:22px;font-weight:800;letter-spacing:-.02em}
-.gate p{margin:0 0 16px;color:var(--mute);font-size:14.5px}
+.gate h2{margin:0 0 6px;font-size:26px;font-weight:800;letter-spacing:-.03em}
+.gate p{margin:0 0 16px;color:var(--mute);font-size:14.5px;line-height:1.5}
 .gate label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:0 0 5px}
-.gate input{display:block;width:100%;margin-bottom:12px;background:var(--bg);border:1px solid var(--rule-2);border-radius:10px;padding:10px 12px;color:var(--ink);font:inherit;font-size:15px}
+.gate input{display:block;width:100%;margin-bottom:12px;background:var(--bg);border:1px solid var(--rule-2);border-radius:10px;padding:11px 12px;color:var(--ink);font:inherit;font-size:15px}
 .gate input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-dim)}
 .gate .err{display:none;color:var(--down);font-size:13px;margin:-6px 0 10px}
 .gate .err.on{display:block}
-.gate button{width:100%;background:var(--amber);color:#06110B;border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:700;font-size:15px;cursor:pointer;box-shadow:var(--glow)}
+.gate button{width:100%;background:var(--amber);color:#06110B;border:0;border-radius:10px;padding:12px 14px;font-weight:700;font-size:15px}
 .gate button:hover{background:var(--amber-2)}
 .gate small{display:block;margin-top:10px;color:var(--dim);font-size:12px;text-align:center}
-.chat.gated .log,.chat.gated .starters,.chat.gated .compose{display:none}
-#st-who{display:none}#st-who.on{display:inline}
-#st-who button{background:none;border:0;color:var(--dim);font:inherit;font-size:inherit;cursor:pointer;padding:0;text-decoration:underline}
-#st-who button:hover{color:var(--ink)}
-.intro{text-align:center;padding:clamp(28px,7vh,72px) 8px 4px;animation:rise .8s cubic-bezier(.2,.7,.3,1) both}
-.intro h2{margin:0 0 8px;font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.02em}
-.intro p{margin:0 auto;color:var(--mute);font-size:15.5px;max-width:52ch}
-@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.stage.gated{display:none}
 
-.foot{margin-top:40px;border-top:1px solid var(--rule);padding-top:16px;font-family:var(--mono);font-size:12px;color:var(--dim);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.foot a{color:var(--mute);text-decoration:underline;text-underline-offset:3px}
+/* the stage */
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.stage.opening{overflow-y:auto}
 
-@media (max-width:900px){
-  .bbar a{padding:10px 14px;gap:9px;font-size:12.5px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
-  .bbar .kicker,.bbar .pitch{display:none}
-  .wrap{padding:18px 14px 48px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
-  .head{align-items:flex-start}
-  .title{gap:11px;align-items:flex-start}
-  .mark{width:46px;height:46px;margin:-4px 0 0 -4px}
-  .head h1{font-size:clamp(19px,5.2vw,28px)}
-  .head-side{flex:1 1 100%;align-items:flex-start;text-align:left}
-  .paybtn{min-height:40px;padding:6px 14px 6px 10px;font-size:12.5px}
-  .row{grid-template-columns:1fr;padding:16px 15px}
-  .row .side{flex-direction:row;flex-wrap:wrap}
-  .row .side .apply{flex:1;min-height:50px;display:flex;align-items:center;justify-content:center;padding:12px 16px}
-  .row .side .dest{order:3;flex-basis:100%;font-size:12.5px;text-align:left;margin-top:2px}
-  .row .side .plan{order:4;flex-basis:100%;font-size:12.5px;min-height:44px;display:flex;align-items:center}
-  .chip{font-size:12.5px;padding:4px 9px}
-  .row p{font-size:15px;line-height:1.55}
-  .row h3{font-size:19px}
-  .bubble{font-size:15.5px}
-  .starters button{min-height:44px}
-  .compose .meta .keys{display:none}
-  .compose .send span{display:none}
-  .compose .send{padding:11px 13px}
-  .locs a{min-height:44px}
-  .foot a{display:inline-block;padding:12px 0;margin:-12px 0}
-}
-@media (max-width:360px){
-  .wrap{padding-left:max(11px,env(safe-area-inset-left));padding-right:max(11px,env(safe-area-inset-right))}
-  .mark{width:40px;height:40px}
-}
+/* the presence */
+.orb{position:relative;flex:none;width:var(--orb,136px);height:var(--orb,136px)}
+.orb .ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(0,227,123,.35);opacity:0}
+.speaking .orb .ring,.thinking .orb .ring{animation:ripple 2.4s ease-out infinite}
+.thinking .orb .ring{animation-duration:1.6s}
+.speaking .orb .ring:nth-child(2),.thinking .orb .ring:nth-child(2){animation-delay:.8s}.speaking .orb .ring:nth-child(3),.thinking .orb .ring:nth-child(3){animation-delay:1.6s}
+.listening .orb .ring{animation:ripple 1.4s ease-in infinite reverse}
+@keyframes ripple{0%{transform:scale(.62);opacity:.8}100%{transform:scale(1.25);opacity:0}}
+.orb .halo{position:absolute;inset:14%;border-radius:50%;background:rgba(0,227,123,.16);animation:breathe 3s ease-in-out infinite}
+.quiet .orb .halo{animation-duration:5s;opacity:.4}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:.9}}
+.orb .core{position:absolute;inset:28%;border-radius:50%;background:var(--amber);box-shadow:0 0 60px rgba(0,227,123,.5),inset 0 -8px 24px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;gap:5%}
+.orb .core i{display:block;width:6%;height:14%;border-radius:999px;background:#04120B;transition:height .2s}
+.speaking .orb .core i{animation:bar 1s ease-in-out infinite}
+.speaking .orb .core i:nth-child(2){animation-delay:.15s}.speaking .orb .core i:nth-child(3){animation-delay:.3s}.speaking .orb .core i:nth-child(4){animation-delay:.45s}
+@keyframes bar{0%,100%{height:14%}50%{height:44%}}
+.thinking .orb .core i{animation:think 1.2s ease-in-out infinite;height:14%}
+.thinking .orb .core i:nth-child(2){animation-delay:.2s}.thinking .orb .core i:nth-child(3){animation-delay:.4s}.thinking .orb .core i:nth-child(4){animation-delay:.6s}
+@keyframes think{0%,100%{opacity:.35}50%{opacity:1}}
+.listening .orb .core{background:var(--panel-2);border:2px solid var(--amber);box-shadow:0 0 40px rgba(0,227,123,.25)}
+.listening .orb .core i{background:var(--amber);height:10%}
+.err .orb .core{background:var(--panel-2);border:2px solid var(--down);box-shadow:none}
+.err .orb .core i{background:var(--down)}
 
-/* the requirements block folds; a phone opens it on demand */
-.asks summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;padding:2px 0}
+/* what it says */
+.agent{display:flex;gap:28px;align-items:center;padding:16px 24px 10px}
+.agent .text{min-width:0;flex:1;display:flex;flex-direction:column;gap:12px}
+.agent .nm{display:flex;align-items:baseline;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.agent .nm b{color:var(--ink);font-weight:600;font-size:13px}
+.agent .nm .state{color:var(--amber)}
+.agent .you{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--mute);line-height:1.5;max-width:60em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agent .you[hidden]{display:none}
+.agent .you b{color:var(--dim);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:11px;margin-right:8px}
+.agent .say{margin:0;font-size:clamp(20px,2vw,27px);line-height:1.22;font-weight:700;letter-spacing:-.03em;max-width:26em;text-wrap:balance}
+.agent .say b{color:var(--amber);font-weight:800}
+.err .say{color:var(--ink)}
+.agent .ask{margin:0;font-size:15px;line-height:1.5;color:var(--mute);max-width:44em}
+.agent .ask[hidden]{display:none}
+.wave{display:flex;align-items:center;gap:3px;height:18px}
+.wave i{display:block;width:3px;height:3px;border-radius:2px;background:var(--amber);opacity:.35}
+.speaking .wave i{animation:wv 1.1s ease-in-out infinite;opacity:.9}
+@keyframes wv{0%,100%{height:3px}50%{height:var(--h,16px)}}
+.listening .wave i,.thinking .wave i{animation:wv 1.4s ease-in-out infinite;opacity:.6}
+.chips{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.chips:empty{display:none}
+.chips button,.chips a{min-height:44px;padding:8px 18px;border-radius:999px;border:1px solid var(--rule-2);background:rgba(16,23,20,.8);color:var(--ink);font-size:14.5px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:8px;text-align:left;backdrop-filter:blur(8px)}
+.chips button.lead,.chips a.lead{border-color:var(--amber);background:var(--amber-dim);box-shadow:0 0 24px rgba(0,227,123,.18)}
+.chips button:hover,.chips a:hover{border-color:var(--amber)}
+.chips button:disabled{opacity:.5;cursor:default}
+.chips svg{width:16px;height:16px;color:var(--amber);flex:none}
+
+/* the dossier strip: what the search actually used */
+.dossier{flex:none;display:flex;align-items:center;gap:14px;padding:9px 24px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);overflow-x:auto;scrollbar-width:none}
+.dossier[hidden]{display:none}
+.dossier .k{flex:none;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:0}
+.pills{display:flex;gap:8px;flex:none}
+.pills span{font-family:var(--mono);font-size:12.5px;padding:6px 12px;border-radius:999px;background:var(--panel-2);border:1px solid var(--rule-2);white-space:nowrap}
+.pills span.gap{background:transparent;border-style:dashed;color:var(--mute)}
+
+/* starters, on the opening */
+.starters{display:flex;gap:12px;padding:8px 24px 16px;flex-wrap:wrap;justify-content:center;max-width:980px;margin:0 auto;width:100%}
+.starters[hidden]{display:none}
+.starters .k{flex-basis:100%;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:0 0 2px;text-align:center}
+.starters button{flex:1 1 220px;min-height:52px;padding:11px 14px;border-radius:14px;border:1px solid var(--rule-2);background:rgba(16,23,20,.8);color:var(--ink);font-size:14.5px;line-height:1.4;text-align:left}
+.starters button:hover{border-color:var(--amber)}
+
+/* the filmstrip */
+.listcol{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:12px 0 0;overflow:hidden}
+.listcol[hidden]{display:none}
+.listhead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:0 24px}
+.listhead h2{margin:0;font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--dim)}
+.listhead .n{font-family:var(--mono);font-size:12px;color:var(--mute)}
+.listhead .log{margin-left:auto}
+.listhead .open{font-family:var(--mono);font-size:12px;color:var(--amber);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.strip{display:flex;gap:14px;padding:4px 24px 10px;overflow-x:auto;overflow-y:auto;flex:1;min-height:0;align-items:flex-start;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:var(--rule-2) transparent}
+.card{flex:none;width:350px;scroll-snap-align:start;background:var(--panel);border:1px solid var(--rule);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.card:nth-child(2){animation-delay:.08s}.card:nth-child(3){animation-delay:.16s}.card:nth-child(4){animation-delay:.24s}.card:nth-child(5){animation-delay:.32s}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.card.top{border-color:var(--amber);box-shadow:0 0 32px rgba(0,227,123,.14);background:linear-gradient(180deg,rgba(0,227,123,.08),rgba(0,227,123,0) 40%),var(--panel)}
+.card.weak{opacity:.78}
+.card .lab{font-family:var(--mono);font-size:10.5px;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;font-weight:600;display:flex;gap:10px}
+.card .lab .rank{color:var(--dim)}
+.card.weak .lab{color:var(--mute)}
+.card .head{display:flex;gap:12px;align-items:flex-start}
+.card .head>div:first-child{flex:1;min-width:0}
+.card h3{margin:0;font-size:17px;font-weight:700;letter-spacing:-.02em;line-height:1.25}
+.card .meta{font-size:13.5px;color:var(--mute);margin-top:4px}
+.card .meta time.fresh{color:var(--amber)}
+.card .pay{font-family:var(--mono);font-weight:600;font-size:15px;flex:none;white-space:nowrap}
+.card .pay.none{color:var(--dim);font-weight:400;font-size:12.5px}
+.card .tags{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:999px;background:var(--panel-2);border:1px solid var(--rule-2);color:var(--mute);white-space:nowrap}
+.chip.term{color:var(--ink)} .chip.job{color:var(--feat);border-color:rgba(var(--feat-rgb),.4)}
+.chip.lang{color:var(--lang);border-color:rgba(var(--lang-rgb),.4)} .chip.out{color:var(--feat);border-color:rgba(var(--feat-rgb),.4)}
+.chip.flag{color:var(--down);border-color:rgba(255,107,107,.4)} .chip.mode{color:var(--ink)}
+.card p{margin:0;font-size:14px;line-height:1.5}
+.card .why b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:3px}
+.asks{font-size:13px;color:var(--mute);line-height:1.5}
+.asks summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;padding:4px 0;min-height:32px}
 .asks summary::-webkit-details-marker{display:none}
-.asks summary b{font-weight:600;white-space:nowrap}
+.asks summary b{font-weight:600;white-space:nowrap;color:var(--ink)}
 .asks summary span{text-transform:none;letter-spacing:0;color:var(--mute)}
 .asks summary::after{content:'+';font-size:14px;color:var(--amber);margin-left:auto}
 .asks[open] summary::after{content:'–'}
-.asks[open] summary{margin-bottom:4px}
-.bubble.err .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.bubble.err .acts:empty{display:none}
-.bubble .acts .retry{margin-left:0;text-decoration:none;display:inline-flex;align-items:center}
-.hbtn{display:none}
-.compose .meta .disc{display:none}
+.asks h4{margin:8px 0 3px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.asks ul{margin:0;padding-left:16px} .asks li{margin:2px 0} .asks li.miss{color:var(--ink)}
+.asks li.miss::after{content:' · not in your profile';color:var(--feat);font-family:var(--mono);font-size:10.5px}
+.asks .none{font-size:12.5px;color:var(--dim)}
+.card .locs{display:flex;flex-wrap:wrap;gap:6px}
+.card .locs a{font-family:var(--mono);font-size:12px;color:var(--ink);text-decoration:none;border:1px solid var(--rule-2);border-radius:999px;padding:5px 10px;min-height:32px;display:inline-flex;align-items:center;gap:6px}
+.card .locs a span{color:var(--amber)}
+.card .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:auto;padding-top:4px}
+.card .apply{min-height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:10px;background:var(--panel-2);border:1px solid var(--rule-2);color:var(--ink);font-weight:700;font-size:14px;text-decoration:none}
+.card.top .apply{background:var(--amber);border-color:var(--amber);color:#04120B}
+.card .plan{min-height:44px;display:inline-flex;align-items:center;padding:0 12px;border-radius:10px;border:1px solid var(--rule-2);background:transparent;color:var(--ink);font-weight:600;font-size:13px;text-decoration:none}
+.card .src{flex-basis:100%;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.6}
+.card .src a{color:var(--mute)}
+.log{position:relative;margin:0;color:var(--mute);font-size:13px}
+.log summary{cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--mute);list-style:none}
+.log summary::-webkit-details-marker{display:none}
+.log[open] .body{position:absolute;right:0;top:calc(100% + 8px);width:min(440px,84vw);max-height:50vh;overflow-y:auto;background:var(--panel);border:1px solid var(--rule-2);border-radius:12px;padding:12px 14px;z-index:6;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.log .body div{padding:3px 0;line-height:1.5}
+.log b{font-weight:600;color:var(--ink)} .log b.s{color:var(--amber)}
 
-/* ---------- phone: one bar, the conversation, the composer ----------
-   Under 640px: back, title and start over share one pinned row; the composer sits at the
-   bottom of the screen even before the first message; no speaker labels (alignment says
-   who is who); the counter only shows near the limit; cards lead with the title. */
-@media (max-width:640px){
-  .bbar a{min-height:38px;padding-top:7px;padding-bottom:7px;font-size:11.5px}
-  .bbar .go{font-size:11.5px}
-  .wrap{display:flex;flex-direction:column;min-height:calc(100dvh - 39px);padding-top:0;padding-bottom:0}
+/* the bar */
+.bottom{flex:none;z-index:5;padding:8px 24px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(180deg,rgba(9,13,11,0),rgba(9,13,11,.92) 40%)}
+.compose{display:flex;gap:8px;align-items:center;width:100%;max-width:680px;background:rgba(16,23,20,.9);border:1px solid var(--rule-2);border-radius:999px;padding:6px 6px 6px 20px;box-shadow:0 18px 50px rgba(0,0,0,.45);backdrop-filter:blur(10px)}
+.compose:focus-within{border-color:var(--amber)}
+.compose textarea{flex:1;min-width:0;background:transparent;border:0;color:var(--ink);font:inherit;font-size:16px;outline:none;resize:none;line-height:1.4;max-height:120px;padding:6px 0}
+.compose textarea::placeholder{color:var(--dim)}
+.compose textarea:disabled{opacity:.5}
+.compose .mic{flex:none;width:54px;height:54px;border-radius:50%;background:var(--amber);border:0;color:#04120B;box-shadow:0 0 28px rgba(0,227,123,.35);display:inline-flex;align-items:center;justify-content:center}
+.compose .mic svg{width:22px;height:22px}
+.compose .mic.on{animation:micpulse 1.2s ease-in-out infinite;background:var(--panel-2);color:var(--amber);border:2px solid var(--amber)}
+.compose .mic:disabled{opacity:.45;cursor:default;animation:none}
+@keyframes micpulse{50%{box-shadow:0 0 0 10px var(--amber-dim)}}
+.compose .send{flex:none;height:54px;padding:0 18px;border-radius:999px;background:transparent;border:1px solid var(--rule-2);color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:7px}
+.compose .send:hover{border-color:var(--amber)}
+.compose .send:disabled{opacity:.45;cursor:default}
+.compose .send svg{width:15px;height:15px}
+.fine{margin:0;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.5;text-align:center;max-width:680px;display:flex;gap:6px 14px;flex-wrap:wrap;justify-content:center}
+.fine .voice{color:var(--mute)} .fine .voice.warn{color:var(--feat)}
+.fine .voice:empty{display:none}
+.fine #count{display:none} .fine #count.near{display:inline} .fine #count.over{color:var(--down)}
 
-  .head{position:sticky;top:0;z-index:25;background:var(--bg);flex-wrap:nowrap;padding:8px 0;
-    box-shadow:-14px 0 0 var(--bg),14px 0 0 var(--bg),0 8px 10px -8px rgba(0,0,0,.75)}
-  .title{flex:1 1 auto;align-items:center;gap:10px}
-  .mark{display:none}
-  .title>div{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
-  .head .sub{order:-1;margin-top:0;flex:none}
-  .head .sub>span{display:none}
-  .head h1{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-  .head h1::after{display:none}
-  .paybtn{width:44px;height:44px;min-height:44px;padding:0;justify-content:center;border-radius:12px;box-shadow:none}
-  .paybtn>span{display:none}
-  .paybtn svg{width:19px;height:19px}
-  .hbtn{display:flex;flex:none;align-items:center;justify-content:center;width:44px;height:44px;background:transparent;border:1px solid var(--rule-2);border-radius:12px;color:var(--mute);padding:0}
-  .hbtn svg{width:18px;height:18px}
-  .hbtn:hover,.hbtn:focus-visible{color:var(--amber);border-color:var(--amber)}
-  .head-side{display:none}
+/* the opening: the presence alone, centred, large */
+.stage.opening .agent{flex-direction:column;text-align:center;justify-content:center;flex:1;min-height:0;padding:16px 24px;--orb:min(220px,26vh);gap:14px}
+.stage.opening .agent .text{align-items:center}
+.stage.opening .agent .nm{justify-content:center}
+.stage.opening .agent .say{font-size:clamp(22px,2.8vw,36px);max-width:20em}
+.stage.opening .chips{justify-content:center}
+.stage.opening .you{display:none}
 
-  .chat{flex:1;display:flex;flex-direction:column;width:100%;margin-top:8px}
-  .log{gap:10px;min-height:0}
-  .msg{gap:6px}
-  .msg .who{display:none}
-  .bubble{padding:10px 14px}
-  .intro{padding:22px 2px 2px;text-align:left}
-  .intro h2{font-size:22px}
-  .intro p{font-size:14.5px;margin:0}
-  .starters{justify-content:flex-start;margin:14px 0 4px}
-  .starters button{padding:9px 14px}
-  .filters-note{display:none}
+/* footer line, only on the opening */
+.foot{flex:none;padding:0 24px 10px;font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.foot a{color:var(--mute);text-decoration:underline;text-underline-offset:3px}
+.stage:not(.opening) ~ .foot{display:none}
 
-  .row{padding:14px;gap:10px}
-  .row .main{display:flex;flex-direction:column}
-  .row h3{order:-1;margin:0 0 5px;font-size:17px;line-height:1.3}
-  .row .co{gap:2px 8px;font-size:12.5px}
-  .row .co time{margin-left:auto}
-  .chips{margin:9px 0 0;gap:5px}
-  .chip{font-size:11.5px;padding:3px 8px}
-  .row p,.row .side .dest{display:none}
-  .row .why{font-size:14px}
-  .row .srcline{font-size:11.5px;margin-top:8px}
-  .row .srcline .lnk{display:none}
-  .asks summary{min-height:44px}
-  .row .side{gap:8px}
-  .row .side .apply{flex:1 1 100%;min-height:48px}
-  .row .side .plan{flex:1 1 100%;justify-content:center;border:1px solid var(--rule-2);border-radius:9px;font-size:12px}
-
-  .compose{margin-top:auto;padding:10px 0 max(10px,env(safe-area-inset-bottom))}
-  .compose form{padding:6px 6px 6px 12px}
-  .compose .meta{padding:5px 2px 0}
-  .compose .meta #count{display:none}
-  .compose .meta #count.near{display:inline}
-  .compose .meta #restart{display:none}
-  .compose .meta .disc{display:inline;font-size:11px}
-  .foot{margin-top:6px;padding:10px 0 max(12px,env(safe-area-inset-bottom));font-size:11px}
+/* phone: Scout pinned, the cards scrolling under it, the bar at the bottom */
+@media (max-width:760px){
+  body{height:100dvh;overflow:hidden}
+  body::before{background-size:36px 36px}
+  .main{min-height:0;height:100dvh}
+  .bbar a{padding:8px 14px;min-height:36px;font-size:11.5px;gap:9px}
+  .bbar .kicker,.bbar .pitch{display:none}
+  header.top{padding:8px 14px;gap:8px}
+  header.top .brand{font-size:15px}
+  .readout{display:none}
+  header.top .who{font-size:11px;gap:8px}
+  header.top .who .lbl{display:none}
+  .notice{margin:10px 14px 0;font-size:12.5px}
+  .agent{gap:14px;padding:12px 14px 8px;--orb:64px;align-items:flex-start}
+  .agent .text{gap:8px}
+  .agent .nm{font-size:11px}
+  .agent .you{font-size:11.5px;white-space:normal;max-height:2.9em}
+  .agent .say{font-size:17px;font-weight:600;letter-spacing:-.015em;max-width:none}
+  .agent .ask{font-size:13.5px}
+  .wave{display:none}
+  .chips{flex-wrap:nowrap;overflow-x:auto;gap:8px;scrollbar-width:none;margin:0 -14px;padding:0 14px 2px}
+  .chips button,.chips a{flex:none;min-height:40px;padding:8px 14px;font-size:13.5px}
+  .dossier{padding:7px 14px}
+  .starters{flex-direction:column;align-items:stretch;justify-content:flex-start;max-width:none;margin:0;padding:8px 14px 16px;overflow-y:auto}
+  .starters .k{flex-basis:auto;text-align:left}
+  .starters button{flex:none;width:100%;min-height:48px}
+  .listcol{flex:1;min-height:0;overflow-y:auto;padding:10px 0 0;-webkit-overflow-scrolling:touch}
+  .listhead{padding:0 14px}
+  .strip{flex-direction:column;gap:10px;padding:4px 14px 12px;overflow:visible;scroll-snap-type:none;align-items:stretch}
+  .card{width:auto;padding:13px 14px}
+  .card h3{font-size:15.5px}
+  .log[open] .body{right:auto;left:0}
+  .bottom{padding:8px 12px max(12px,env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--rule)}
+  .compose{padding:5px 5px 5px 14px;box-shadow:none}
+  .compose .mic{width:48px;height:48px}
+  .compose .send span{display:none}
+  .compose .send{padding:0 14px;height:48px}
+  .fine{font-size:10.5px}
+  .stage:not(.opening) .fine .disc{display:none}
+  .stage.opening{overflow-y:auto}
+  .stage.opening .agent{flex:none;--orb:min(160px,24vh);padding:18px 14px 10px;gap:14px;align-items:center}
+  .stage.opening .agent .say{font-size:21px;font-weight:700;letter-spacing:-.02em}
+  .stage.opening .chips{flex-wrap:wrap;overflow:visible;margin:0;padding:0}
+  .stage.opening .chips button,.stage.opening .chips a{flex:1 1 100%;border-radius:12px;min-height:46px}
+  .stage.opening .wave{display:flex}
+  .foot{padding:0 14px 8px}
   .foot span:last-child{display:none}
 }
 </style>
 </head>
 <body>
-<div class="bbar">
-  <a href="https://www.buildersbench.dev/" target="_blank" rel="noopener">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V10l7-6 7 6v11"/><path d="M9 21v-6h6v6"/></svg>
-    <span class="kicker">Also from Christian</span>
-    <span class="name">BuildersBench.dev</span>
-    <span class="pitch">Build projects that actually get you hired</span>
-    <span class="go">Visit &rarr;</span>
-  </a>
-</div>
-<div class="wrap">
-  <header class="head">
-    <div class="title">
-      <span class="mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none">
-          <defs><radialGradient id="node-glow" cx="50%" cy="50%" r="50%"><stop class="n0" offset="0%"/><stop class="n1" offset="35%"/><stop class="n2" offset="100%"/></radialGradient></defs>
-          <path class="link ring" d="M12 4.4 19.23 9.65 16.47 18.15 7.53 18.15 4.77 9.65Z"/>
-          <g class="link spokes"><path d="M12 12 12 4.4"/><path d="M12 12 19.23 9.65"/><path d="M12 12 16.47 18.15"/><path d="M12 12 7.53 18.15"/><path d="M12 12 4.77 9.65"/></g>
-          <g fill="url(#node-glow)"><circle cx="12" cy="12" r="3.4"/><circle cx="12" cy="4.4" r="2.4"/><circle cx="19.23" cy="9.65" r="2.4"/><circle cx="16.47" cy="18.15" r="2.4"/><circle cx="7.53" cy="18.15" r="2.4"/><circle cx="4.77" cy="9.65" r="2.4"/></g>
-          <g class="core"><circle cx="12" cy="12" r="1.25"/><circle cx="12" cy="4.4" r=".85"/><circle cx="19.23" cy="9.65" r=".85"/><circle cx="16.47" cy="18.15" r=".85"/><circle cx="7.53" cy="18.15" r=".85"/><circle cx="4.77" cy="9.65" r=".85"/></g>
-        </svg>
-      </span>
-      <div>
-        <h1>Opportunity <span>Assistant</span></h1>
-        <div class="sub"><span>Beta · listings updated Nov 6, 2026</span><a class="paybtn" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Back to the board</span></a></div>
-      </div>
-      <button type="button" class="hbtn" id="restart-top" aria-label="Start over" title="Start over"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-    </div>
-    <div class="head-side" id="side">
-      <span><b id="st-n">…</b> listings on the board</span>
-      <span id="st-model">checking the assistant…</span>
-      <span id="st-who"><span id="who-name"></span> · <button type="button" id="who-change">change</button></span>
-    </div>
+<div class="main">
+  <div class="bbar">
+    <a href="https://www.buildersbench.dev/" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V10l7-6 7 6v11"/><path d="M9 21v-6h6v6"/></svg>
+      <span class="kicker">Also from Christian</span>
+      <span class="name">BuildersBench.dev</span>
+      <span class="pitch">Build projects that actually get you hired</span>
+      <span class="go">Visit &rarr;</span>
+    </a>
+  </div>
+
+  <header class="top">
+    <a class="brand" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Christian's <span>Opportunity</span> Board</a>
+    <div class="readout" aria-live="polite"><span><b>Scout</b></span><span><b id="st-n">…</b> listings</span><span class="st" id="readout-state">Standing by</span><span>updated Nov 6, 2026</span><span><span class="badge">Beta</span></span></div>
+    <span class="who">
+      <span id="st-who"><span class="lbl">Talking with </span><b id="who-name"></b> · <button type="button" class="lnk" id="who-change">change</button></span>
+      <button type="button" class="lnk" id="restart">Start over</button>
+      <button type="button" class="iconbtn on" id="mute" aria-pressed="false" aria-label="Mute Scout's voice" title="Scout reads its replies aloud. Tap to mute.">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="w" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="w" d="M19 5a9 9 0 0 1 0 14"/></svg>
+      </button>
+    </span>
   </header>
 
-  <div class="chat">
-    <div class="notice warn" id="n-sample" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>Sample data.</b> The board's live listings could not be read on this deployment, so the assistant is searching a small made-up sample set. Nothing it shows here is a real opening.</div></div>
-    <div class="notice warn" id="n-off" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>The assistant is paused.</b> <span id="off-why">AI requests are switched off on this deployment.</span> The <a href="index.html">board's search and filters</a> still work.</div></div>
+  <div class="notice warn" id="n-sample" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>Sample data.</b> The board's live listings could not be read on this deployment, so Scout is searching a small made-up sample set. Nothing it shows here is a real opening.</div></div>
+  <div class="notice warn" id="n-off" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>Scout is paused.</b> <span id="off-why">AI requests are switched off on this deployment.</span> The <a href="index.html">board's search and filters</a> still work.</div></div>
 
-    <form class="gate" id="gate" hidden novalidate>
-      <h2>Before you start</h2>
-      <p>The assistant is in beta. Leave your name and email so Christian can follow up and see how it is being used.</p>
-      <label for="g-name">Name</label>
-      <input id="g-name" type="text" autocomplete="name" maxlength="80" required>
-      <label for="g-email">Email</label>
-      <input id="g-email" type="email" autocomplete="email" maxlength="120" required>
-      <div class="err" id="g-err" role="alert"></div>
-      <button type="submit">Open the assistant</button>
-      <small>Used only to follow up about the board. Not shared or sold.</small>
-    </form>
-    <div class="log" id="log" aria-live="polite">
-      <div class="intro" id="intro">
-        <h2>Find your next internship.</h2>
-        <p>Say or type what you study and where you are. I'll pull the best fits from the board.</p>
+  <form class="gate" id="gate" hidden novalidate>
+    <h2>Meet Scout</h2>
+    <p>Scout is in beta. Leave your name and email so Christian can follow up and see how it is being used. Scout will use your first name.</p>
+    <label for="g-name">Name</label>
+    <input id="g-name" type="text" autocomplete="name" maxlength="80" required>
+    <label for="g-email">Email</label>
+    <input id="g-email" type="email" autocomplete="email" maxlength="120" required>
+    <div class="err" id="g-err" role="alert"></div>
+    <button type="submit">Start talking</button>
+    <small>Used only to follow up about the board. Not shared or sold.</small>
+  </form>
+
+  <div class="stage opening" id="stage">
+    <section class="agent quiet" id="agent" aria-label="Scout">
+      <div class="orb" aria-hidden="true"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="halo"></div><div class="core"><i></i><i></i><i></i><i></i></div></div>
+      <div class="text">
+        <div class="nm"><b>Scout</b><span class="state" id="state">Ready</span></div>
+        <p class="you" id="you" hidden></p>
+        <p class="say" id="say" aria-live="polite">Tell me what you study and where you'd like to be, and I'll find the internships on the board that fit.</p>
+        <div class="wave" aria-hidden="true"><i style="--h:8px"></i><i style="--h:14px"></i><i style="--h:20px"></i><i style="--h:12px"></i><i style="--h:18px"></i><i style="--h:9px"></i><i style="--h:16px"></i><i style="--h:22px"></i><i style="--h:11px"></i><i style="--h:17px"></i><i style="--h:7px"></i><i style="--h:15px"></i><i style="--h:21px"></i><i style="--h:10px"></i><i style="--h:13px"></i><i style="--h:19px"></i><i style="--h:8px"></i><i style="--h:16px"></i><i style="--h:12px"></i><i style="--h:20px"></i><i style="--h:9px"></i><i style="--h:14px"></i><i style="--h:18px"></i><i style="--h:11px"></i></div>
+        <p class="ask" id="ask" hidden></p>
+        <div class="chips" id="chips"></div>
       </div>
+    </section>
+
+    <div class="dossier" id="dossier" hidden>
+      <p class="k">Searched with</p>
+      <div class="pills" id="pills"></div>
     </div>
+
     <div class="starters" id="starters">
+      <p class="k">Or start with one of these</p>
       <button type="button">Cybersecurity internship in Miami</button>
       <button type="button">Paid software internship in Broward</button>
       <button type="button">Accounting or audit, Summer 2027</button>
@@ -388,13 +387,23 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       <button type="button">Entry-level cloud jobs</button>
     </div>
 
-    <div class="compose">
-      <form id="form">
-        <textarea id="input" rows="1" maxlength="1500" placeholder="e.g. Marketing in Broward" aria-label="Your message" autocomplete="off"></textarea>
-        <button type="button" class="mic" id="mic" hidden aria-pressed="false" aria-label="Talk instead of typing" title="Talk instead of typing. Your browser turns your speech into text, which you can check before sending."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/></svg></button>
+    <section class="listcol" id="listcol" aria-label="Scout's picks" hidden>
+      <div class="listhead">
+        <h2 id="listtitle">Scout's picks</h2>
+        <span class="n" id="listn"></span>
+        <details class="log" id="log"><summary>Conversation so far</summary><div class="body" id="logbody"></div></details>
+        <a class="open" id="openboard" href="index.html">Open on the board <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+      </div>
+      <div class="strip" id="cards"></div>
+    </section>
+
+    <div class="bottom">
+      <form class="compose" id="form">
+        <textarea id="input" rows="1" maxlength="1500" placeholder="Tap the mic, or type…" aria-label="Your message" autocomplete="off"></textarea>
+        <button type="button" class="mic" id="mic" aria-pressed="false" aria-label="Talk instead of typing" title="Talk instead of typing. Your browser turns your speech into text, which you can check before sending."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button>
         <button type="submit" class="send" id="send"><span>Send</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
       </form>
-      <div class="meta"><span id="count">0 / 1500</span><span class="voice" id="voice-note" role="status" aria-live="polite"></span><span><button type="button" id="restart">Start over</button><span class="keys"> · Enter sends, Shift+Enter for a new line</span></span><span class="disc">Answers can be wrong. Check each posting.</span></div>
+      <p class="fine"><span class="voice" id="voice-note" role="status" aria-live="polite"></span><span id="count">0 / 1500</span><span class="disc">Scout only knows what is on the board. It cannot see whether a posting has closed, so check each one before you apply.</span></p>
     </div>
   </div>
 
@@ -411,6 +420,8 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   const safeUrl = u => /^https?:\/\//i.test(String(u||'')) ? String(u) : '';
   const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./,''); } catch(e){ return ''; } };
   const API = '/api/assistant', MAX_CHARS = 1500, KEEP = 16;
+  const stage = $('#stage'), agent = $('#agent'), input = $('#input'), send = $('#send'), form = $('#form'), starters = $('#starters');
+
   // ===== Beta gate =====
   // A name and an email before the chat opens; the server refuses a turn without them. They
   // are kept in this browser so a returning visitor is not asked twice; "change" clears them.
@@ -418,12 +429,14 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   let visitor = null, gateOn = false;
   try { const v = JSON.parse(localStorage.getItem(WHO) || 'null'); if (v && v.name && v.email) visitor = { name: String(v.name), email: String(v.email) }; } catch(e){}
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const firstName = () => visitor ? visitor.name.split(/\s+/)[0] : '';
   function showGate(on){
-    $('#gate').hidden = !on; $('.chat').classList.toggle('gated', on);
+    $('#gate').hidden = !on; stage.classList.toggle('gated', on);
     $('#st-who').classList.toggle('on', !on && !!visitor); if (visitor) $('#who-name').textContent = visitor.name;
     if (on) { $('#g-name').value = visitor ? visitor.name : ''; $('#g-email').value = visitor ? visitor.email : ''; setTimeout(() => $('#g-name').focus(), 50); }
+    else greet();
   }
-  function applyGate(){ showGate(gateOn && !visitor); if (!gateOn || visitor) setTimeout(() => { if (enabled) input.focus(); }, 50); }
+  function applyGate(){ showGate(gateOn && !visitor); if (!gateOn || visitor) setTimeout(() => { if (enabled && window.matchMedia('(min-width:761px)').matches) input.focus(); }, 50); }
   $('#gate').addEventListener('submit', e => {
     e.preventDefault();
     const name = $('#g-name').value.trim().replace(/\s+/g, ' '), email = $('#g-email').value.trim().toLowerCase(), err = $('#g-err');
@@ -434,51 +447,98 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     applyGate();
   });
   $('#who-change').addEventListener('click', () => { visitor = null; try { localStorage.removeItem(WHO); } catch(e){} showGate(true); });
+
+  // ===== Scout's face =====
+  function setMode(m, label){
+    agent.classList.remove('quiet','speaking','listening','thinking','err'); agent.classList.add(m);
+    document.body.classList.remove('speaking','listening','thinking'); if (m === 'speaking' || m === 'listening' || m === 'thinking') document.body.classList.add(m);
+    $('#state').textContent = label; $('#readout-state').textContent = label;
+  }
+  // Voice out: the browser's own speech synthesis reads each reply. Off with the mute button,
+  // remembered in this browser. Replies only; nothing speaks before the visitor has acted.
+  const synth = window.speechSynthesis;
+  const MUTE = 'cob.scout.mute';
+  let muted = false, voiceObj = null;
+  try { muted = localStorage.getItem(MUTE) === '1'; } catch(e){}
+  function pickVoice(){
+    if (!synth) return;
+    const vs = synth.getVoices().filter(v => /^en/i.test(v.lang));
+    voiceObj = vs.find(v => /Samantha|Google US English|Aria|Jenny|Natural/i.test(v.name)) || vs.find(v => /en-US/i.test(v.lang)) || vs[0] || null;
+  }
+  if (synth) { pickVoice(); synth.onvoiceschanged = pickVoice; }
+  function speak(text){
+    if (!synth || muted || !text) { setMode('quiet', 'Ready'); return; }
+    try {
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(String(text).slice(0, 1200));
+      if (voiceObj) u.voice = voiceObj;
+      u.rate = 1.02;
+      u.onstart = () => setMode('speaking', 'Speaking');
+      u.onend = u.onerror = () => { if (agent.classList.contains('speaking')) setMode('quiet', 'Ready'); };
+      setMode('speaking', 'Speaking');
+      synth.speak(u);
+    } catch(e) { setMode('quiet', 'Ready'); }
+  }
+  function hush(){ if (synth) try { synth.cancel(); } catch(e){} }
+  function paintMute(){
+    $('#mute').classList.toggle('on', !muted);
+    $('#mute').setAttribute('aria-pressed', String(muted));
+    $('#mute').setAttribute('aria-label', muted ? "Unmute Scout's voice" : "Mute Scout's voice");
+    $('#mute').title = muted ? 'Scout is muted. Tap to have it read replies aloud.' : 'Scout reads its replies aloud. Tap to mute.';
+    document.querySelectorAll('#mute .w').forEach(p => p.style.display = muted ? 'none' : '');
+  }
+  paintMute();
+  $('#mute').addEventListener('click', () => { muted = !muted; try { localStorage.setItem(MUTE, muted ? '1' : '0'); } catch(e){} paintMute(); if (muted) { hush(); setMode('quiet', 'Muted'); } });
+
+  function say(html, spoken, ask, chips, opts){
+    opts = opts || {};
+    $('#say').innerHTML = html;
+    const a = $('#ask'); a.hidden = !ask; a.textContent = ask || '';
+    const c = $('#chips'); c.innerHTML = '';
+    (chips || []).forEach((ch, i) => {
+      const el = ch.href ? document.createElement('a') : document.createElement('button');
+      if (ch.href) { el.href = ch.href; if (/^https?:/.test(ch.href)) { el.target = '_blank'; el.rel = 'noopener'; } } else { el.type = 'button'; el.addEventListener('click', ch.act); }
+      el.className = (i === 0 && ch.lead !== false) ? 'lead' : '';
+      el.innerHTML = esc(ch.label) + (ch.href ? ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>' : '');
+      c.appendChild(el);
+    });
+    if (opts.err) setMode('err', 'Did not go through'); else speak(spoken == null ? $('#say').textContent + (ask ? ' ' + ask : '') : spoken);
+  }
+  function youSaid(text){ const y = $('#you'); y.hidden = !text; y.innerHTML = text ? `<b>You</b>${esc(text)}` : ''; }
+  function greet(){
+    const n = firstName();
+    $('#say').innerHTML = n ? `Hi ${esc(n)}. Tell me what you study and where you'd like to be, and I'll find the internships on the board that fit.` : `Tell me what you study and where you'd like to be, and I'll find the internships on the board that fit.`;
+  }
+  function dossier(f){
+    const d = $('#dossier'); if (!f) { d.hidden = true; return; }
+    const bits = [f.location_filter, f.eligibility, f.term, f.widened].filter(Boolean);
+    const n = (f.searched != null && f.board_size != null) ? `${f.searched} of ${f.board_size} listings searched` : '';
+    d.hidden = !(bits.length || n);
+    $('#pills').innerHTML = bits.map(b => `<span>${esc(b)}</span>`).join('') + (n ? `<span class="gap">${esc(n)}</span>` : '');
+  }
+  function opening(on){ stage.classList.toggle('opening', on); if (on) { $('#listcol').hidden = true; $('#dossier').hidden = true; youSaid(''); } starters.hidden = !on || !enabled; }
+
+  // ===== The picks =====
   const BENCH_URL = 'https://www.buildersbench.dev/';
   const BENCH = { 'Cloud & DevOps': true, 'Software, IT, Data & AI': true };
   const planLink = d => BENCH_URL + 'match.html?q=' + encodeURIComponent([d.title, d.snippet, ...d.requirements.map(r => r.text)].filter(Boolean).join('\n').slice(0, 1500));
   const DAY = 86400000, NOW = Date.now();
-  const WIDE = window.matchMedia('(min-width:641px)');
   const asDate = s => { const d = new Date(s+'T12:00:00'); return isNaN(d) ? null : d; };
   const fmtDate = s => { const d = asDate(s||''); return d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; };
   const ageLabel = days => days < 1 ? 'today' : days < 7 ? Math.max(1, Math.round(days)) + 'd ago' : days < 31 ? Math.round(days/7) + 'w ago' : days < 365 ? Math.round(days/30) + 'mo ago' : Math.round(days/365) + 'y ago';
-
-  // The conversation lives here and nowhere else: a reload starts over.
-  const history = [];      // {role, content, kind}
-  let recommendedIds = [], busy = false, enabled = false, lastSent = null;
-  const log = $('#log'), input = $('#input'), send = $('#send'), form = $('#form'), starters = $('#starters');
-
-  function add(el){ log.appendChild(el); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return el; }
-  function msg(role, html, cls){
-    const el = document.createElement('div'); el.className = 'msg ' + role;
-    el.innerHTML = `<span class="who">${role==='user'?'You':'Assistant'}</span><div class="bubble${cls?' '+cls:''}">${html}</div>`;
-    return add(el);
-  }
-  function wait(){
-    const el = document.createElement('div'); el.className = 'msg assistant'; el.id = 'wait';
-    const steps = ['Reading what you wrote', 'Filtering the board by location and eligibility', 'Ranking the closest listings'];
-    el.innerHTML = `<span class="who">Assistant</span><div class="wait"><i></i><i></i><i></i><span id="wait-t">${steps[0]}…</span></div>`;
-    add(el); let i = 0;
-    el.timer = setInterval(() => { i = Math.min(i+1, steps.length-1); const t = $('#wait-t'); if (t) t.textContent = steps[i] + '…'; }, 2200);
-    return el;
-  }
-  function unwait(){ const w = $('#wait'); if (w){ clearInterval(w.timer); w.remove(); } }
-
   function langChip(d){
     const who = d.lang.join(' / '), what = who === 'Bilingual' ? 'bilingual skills' : who;
     const how = d.langNeed === 'required' ? 'required' : d.langNeed === 'plus' ? 'a plus' : 'mentioned';
     return `<span class="chip lang" title="${esc(`The posting mentions ${what}${how==='mentioned'?'; check whether it is required':' and says it is '+how}.`)}">${esc(who)} ${how}</span>`;
   }
-  function card(m, n){
-    const d = m.listing, el = document.createElement('article'); el.className = 'row';
+  function card(m, n, weak){
+    const d = m.listing, el = document.createElement('article'); el.className = 'card' + (n === 1 && !weak ? ' top' : '') + (weak ? ' weak' : '');
     const locLine = d.locs.length===1 ? d.locs[0].loc : `${d.locs.length} locations`;
     const full = fmtDate(d.posted), dt = d.posted ? asDate(d.posted) : null, days = dt ? Math.max(0,(NOW-dt.getTime())/DAY) : null;
     const chips = [];
     if (m.outsideArea) chips.push(`<span class="chip out" title="Outside the area you named; included because few listings there matched">Outside your area</span>`);
     chips.push(`<span class="chip${d.kind==='Entry-level job'?' job':''}">${esc(d.kind)}</span>`);
     d.term.forEach(t => chips.push(`<span class="chip term">${esc(t)}</span>`));
-    if (d.pay) chips.push(`<span class="chip pay">${esc(d.pay)}</span>`);
-    if (d.mode) chips.push(`<span class="chip mode">${esc(d.mode)}</span>`);
     if (d.lang.length) chips.push(langChip(d));
     d.types.filter(t => t==='Full-time'||t==='Part-time').forEach(t => chips.push(`<span class="chip">${esc(t)}</span>`));
     if (d.level && d.level!=='Undergraduate' && d.level!=='Entry-level job') chips.push(`<span class="chip">${esc(d.level)}</span>`);
@@ -486,67 +546,64 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     const missR = new Set(m.missingRequired||[]), missP = new Set(m.missingPreferred||[]);
     const group = (kind, label) => { const rs = d.requirements.filter(r => r.kind===kind); return rs.length ? `<h4>${label}</h4><ul>${rs.map(r => `<li${missR.has(r.text)||missP.has(r.text)?' class="miss"':''}>${esc(r.text)}</li>`).join('')}</ul>` : ''; };
     const missing = d.requirements.filter(r => missR.has(r.text) || missP.has(r.text)).length;
-    const asks = d.requirements.length ? `<details class="asks"${WIDE.matches ? ' open' : ''}><summary><b>What they ask for</b><span>${d.requirements.length} item${d.requirements.length===1?'':'s'}${missing ? ` · ${missing} not in your profile` : ''}</span></summary>${group('required','Required')}${group('preferred','Preferred')}${group('unspecified','Also listed (the posting does not say if required)')}</details>`
+    const asks = d.requirements.length ? `<details class="asks"><summary><b>What they ask for</b><span>${d.requirements.length} item${d.requirements.length===1?'':'s'}${missing ? ` · ${missing} not in your profile` : ''}</span></summary>${group('required','Required')}${group('preferred','Preferred')}${group('unspecified','Also listed (the posting does not say if required)')}</details>`
       : `<div class="asks"><span class="none">The posting on the board lists no qualification bullets; check the employer's page.</span></div>`;
     const apply = safeUrl(d.apply);
     el.innerHTML = `
-      <div class="main">
-        <div class="co">${n?`<span class="rank">#${n}</span>`:''}<span class="emp">${esc(d.company)}</span>${locLine?`<span class="loc">${esc(locLine)}</span>`:''}${days!=null?`<time datetime="${esc(d.posted)}" title="${esc(full)}"${days<7?' class="fresh"':''}>${esc(ageLabel(days))}</time>`:''}</div>
-        <h3>${esc(d.title)}</h3>
-        <div class="chips">${chips.join('')}</div>
-        ${d.snippet ? `<p>${esc(d.snippet)}</p>` : ''}
-        ${m.why ? `<div class="why"><b>Why it fits</b>${esc(m.why)}</div>` : ''}
-        ${asks}
-        ${d.locs.length>1 ? `<div class="locs">${d.locs.map(l => `<a href="${esc(safeUrl(l.apply))}" target="_blank" rel="noopener" title="Opens ${esc(hostOf(l.apply))}">${esc(l.loc)}<span>apply</span></a>`).join('')}</div>` : ''}
-        <div class="srcline">${full ? `Posted ${esc(full)}` : 'Posted date unknown'} · <span class="unv" title="The board cannot see a posting the employer took down early">not verified as still open</span><span class="lnk">${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''} · <a href="index.html#q=${encodeURIComponent(d.company)}">On the board</a></span></div>
-      </div>
-      <div class="side">
-        ${apply ? `<a class="apply" href="${esc(apply)}" target="_blank" rel="noopener" title="Opens ${esc(apply)}">Apply ↗</a><span class="dest" title="This link opens ${esc(hostOf(apply))}">via ${esc(hostOf(apply))}</span>` : `<span class="dest">No apply link on the board</span>`}
-        ${BENCH[d.area] ? `<a class="plan" href="${esc(planLink(d))}" target="_blank" rel="noopener" title="Opens BuildersBench: the projects to build for this role">Projects for this role ↗</a>` : ''}
+      <div class="lab">${weak ? 'Weak match' : n === 1 ? 'Closest fit' : 'Pick'}${n ? `<span class="rank">#${n}</span>` : ''}</div>
+      <div class="head"><div><h3>${esc(d.title)}</h3><div class="meta">${esc(d.company)}${locLine?` · ${esc(locLine)}`:''}${d.mode?` · ${esc(d.mode)}`:''}${days!=null?` · <time datetime="${esc(d.posted)}" title="${esc(full)}"${days<7?' class="fresh"':''}>${esc(ageLabel(days))}</time>`:''}</div></div>
+      <div class="pay${d.pay?'':' none'}">${d.pay ? esc(d.pay) : 'Pay not listed'}</div></div>
+      <div class="tags">${chips.join('')}</div>
+      ${m.why ? `<p class="why"><b>Why it fits</b>${esc(m.why)}</p>` : (d.snippet ? `<p>${esc(d.snippet)}</p>` : '')}
+      ${asks}
+      ${d.locs.length>1 ? `<div class="locs">${d.locs.map(l => `<a href="${esc(safeUrl(l.apply))}" target="_blank" rel="noopener" title="Opens ${esc(hostOf(l.apply))}">${esc(l.loc)}<span>apply</span></a>`).join('')}</div>` : ''}
+      <div class="acts">
+        ${apply ? `<a class="apply" href="${esc(apply)}" target="_blank" rel="noopener" title="Opens ${esc(hostOf(apply))}">Apply at ${esc(d.company.split(/[\s,]+/)[0])}</a>` : `<span class="plan">No apply link on the board</span>`}
+        ${BENCH[d.area] ? `<a class="plan" href="${esc(planLink(d))}" target="_blank" rel="noopener" title="Opens BuildersBench: the projects to build for this role">Projects for this role</a>` : ''}
+        <span class="src">${full ? `Posted ${esc(full)}` : 'Posted date unknown'} · <span title="The board cannot see a posting the employer took down early">not verified as still open</span>${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''} · <a href="index.html#q=${encodeURIComponent(d.company)}">On the board</a></span>
       </div>`;
     return el;
   }
-  function filtersNote(f){
-    if (!f) return '';
-    const bits = [f.location_filter, f.eligibility, f.term, f.widened].filter(Boolean);
-    return `<div class="filters-note">${bits.map(b => `<span>${esc(b)}</span>`).join('')}<span>${esc(f.searched)} of ${esc(f.board_size)} listings searched</span></div>`;
+  function picks(items, title, weak){
+    const col = $('#listcol'), strip = $('#cards');
+    strip.innerHTML = '';
+    items.forEach((m, i) => strip.appendChild(card(m, i+1, weak)));
+    $('#listtitle').textContent = title;
+    $('#listn').textContent = items.length ? `${items.length} pick${items.length===1?'':'s'}` : '';
+    const cos = items.map(m => m.listing.company).filter((v, i, a) => a.indexOf(v) === i);
+    $('#openboard').href = cos.length ? 'index.html#q=' + encodeURIComponent(cos.slice(0, 3).join(' ')) : 'index.html';
+    col.hidden = !items.length; strip.scrollLeft = 0;
   }
-  function adjustBox(list){
-    if (!list || !list.length) return null;
-    const el = document.createElement('div'); el.className = 'adjust';
-    el.innerHTML = `<h4>Try adjusting the search</h4><ul>${list.map(a => `<li>${esc(a)}</li>`).join('')}</ul>`;
-    return el;
-  }
+
+  // ===== The conversation =====
+  // It lives here and nowhere else: a reload starts over. The log popover shows it.
+  const history = [];      // {role, content, kind}
+  let recommendedIds = [], busy = false, enabled = false, lastSent = null;
+  function logLine(who, text){ const b = $('#logbody'); const d = document.createElement('div'); d.innerHTML = `<b class="${who==='Scout'?'s':''}">${who}:</b> ${esc(text)}`; b.appendChild(d); $('#log').querySelector('summary').textContent = `Conversation (${b.children.length} turn${b.children.length===1?'':'s'})`; }
+  const adjustChips = list => (list || []).slice(0, 4).map(a => ({ label: a, act: () => ask(a), lead: false }));
 
   function show(r){
     recommendedIds = Array.isArray(r.recommendedIds) ? r.recommendedIds : recommendedIds;
     if (r.source === 'sample') $('#n-sample').hidden = false;
     if (r.kind === 'question'){
-      msg('assistant', esc(r.question), 'q'); history.push({ role:'assistant', content:r.question, kind:'question' });
+      say(esc(r.question), r.question, '', []); history.push({ role:'assistant', content:r.question, kind:'question' }); logLine('Scout', r.question);
     } else if (r.kind === 'answer' || r.kind === 'reply'){
-      msg('assistant', esc(r.reply)); history.push({ role:'assistant', content:r.reply, kind:r.kind });
+      say(esc(r.reply), r.reply, '', []); history.push({ role:'assistant', content:r.reply, kind:r.kind }); logLine('Scout', r.reply);
     } else if (r.kind === 'results'){
-      const el = document.createElement('div'); el.className = 'msg assistant';
-      el.innerHTML = `<span class="who">Assistant</span><div class="bubble">${esc(r.summary)}</div>${filtersNote(r.filters)}`;
-      const rows = document.createElement('div'); rows.className = 'rows';
-      r.matches.forEach((m, i) => rows.appendChild(card(m, i+1)));
-      el.appendChild(rows);
-      const adj = adjustBox(r.adjustments); if (adj) el.appendChild(adj);
-      add(el);
+      opening(false); dossier(r.filters);
+      picks(r.matches, "Scout's picks", false);
+      const follow = 'Ask me about any of these, or describe something different and I will search again.';
+      say(esc(r.summary), r.summary + ' ' + follow, follow, adjustChips(r.adjustments));
       history.push({ role:'assistant', kind:'results', content: `Recommended ${r.matches.length} listing(s): ` + r.matches.map(m => `${m.listing.company} - ${m.listing.title} (id ${m.listing.id})`).join('; ') + '. ' + r.summary });
-      msg('assistant', 'Ask me anything about these listings, or describe something different to search again.');
+      logLine('Scout', r.summary + ' ' + r.matches.map(m => `${m.listing.company}: ${m.listing.title}`).join('; '));
     } else if (r.kind === 'nomatch'){
-      const el = document.createElement('div'); el.className = 'msg assistant';
-      el.innerHTML = `<span class="who">Assistant</span><div class="bubble">${esc(r.summary)}</div>${filtersNote(r.filters)}`;
-      const adj = adjustBox(r.adjustments); if (adj) el.appendChild(adj);
-      if (r.closest && r.closest.length){
-        const h = document.createElement('div'); h.className = 'closest'; h.textContent = 'Closest on the board (weak matches)'; el.appendChild(h);
-        const rows = document.createElement('div'); rows.className = 'rows';
-        r.closest.forEach(d => rows.appendChild(card({ listing:d, why:'', missingRequired:[], missingPreferred:[] }, 0)));
-        el.appendChild(rows);
-      }
-      add(el);
+      opening(false); dossier(r.filters);
+      const closest = (r.closest || []).map(d => ({ listing:d, why:'', missingRequired:[], missingPreferred:[] }));
+      picks(closest, 'Closest on the board', true);
+      const ask1 = r.adjustments && r.adjustments.length ? 'You could try one of these.' : '';
+      say(esc(r.summary), r.summary + (ask1 ? ' ' + ask1 : ''), ask1, adjustChips(r.adjustments));
       history.push({ role:'assistant', kind:'nomatch', content: r.summary + (r.adjustments && r.adjustments.length ? ' Suggested: ' + r.adjustments.join(' ') : '') });
+      logLine('Scout', r.summary);
     } else {
       fail(TROUBLE, true);
     }
@@ -555,18 +612,27 @@ a{color:inherit} button{font:inherit;cursor:pointer}
   // a one-tap search of the board on what they asked, and a retry.
   function fail(text, retry){
     const q = String(lastSent || '').trim().slice(0, 120);
-    const board = q ? ` <a class="retry" href="index.html#q=${encodeURIComponent(q)}">Search the board instead</a>` : '';
-    const el = msg('assistant', `${esc(text)}<span class="acts">${retry ? '<button type="button" class="retry">Try again</button>' : ''}${retry ? board : ''}</span>`, 'err');
-    const b = el.querySelector('button.retry'); if (b) b.addEventListener('click', () => { el.remove(); ask(lastSent, true); });
+    const chips = [];
+    if (retry) chips.push({ label: 'Try again', act: () => ask(lastSent, true) });
+    if (retry && q) chips.push({ label: 'Search the board instead', href: 'index.html#q=' + encodeURIComponent(q) });
+    say(esc(text), null, '', chips, { err: true });
   }
   const TROUBLE = 'That one did not go through.';
+  let waitTimer = null;
+  function wait(){
+    const steps = ['Reading what you wrote', 'Filtering the board', 'Ranking the closest listings'];
+    let i = 0; setMode('thinking', steps[0] + '…');
+    waitTimer = setInterval(() => { i = Math.min(i+1, steps.length-1); $('#state').textContent = steps[i] + '…'; $('#readout-state').textContent = steps[i] + '…'; }, 2200);
+  }
+  function unwait(){ clearInterval(waitTimer); waitTimer = null; }
 
   async function ask(text, isRetry){
     text = String(text||'').trim();
     if (!text || busy || !enabled) return;
     if (text.length > MAX_CHARS) { fail(`Keep each message under ${MAX_CHARS} characters.`); return; }
-    if (!isRetry){ msg('user', esc(text)); history.push({ role:'user', content:text }); }
-    voice.stop(); lastSent = text; busy = true; send.disabled = true; starters.hidden = true; $('#intro') && $('#intro').remove();
+    if (!isRetry){ history.push({ role:'user', content:text }); logLine(visitor ? firstName() : 'You', text); }
+    voice.stop(); hush(); lastSent = text; busy = true; send.disabled = true; starters.hidden = true;
+    youSaid(text); $('#chips').innerHTML = ''; $('#ask').hidden = true;
     input.value = ''; count(); grow(); wait();
     try {
       const res = await fetch(API, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ messages: history.slice(-KEEP), recommendedIds, visitor: visitor || undefined }) });
@@ -574,7 +640,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       unwait();
       if (!res.ok){
         const why = body && body.error ? body.error : `The server answered ${res.status}.`;
-        if (res.status === 400 && body && body.code === 'who') { history.pop(); gateOn = true; visitor = null; try { localStorage.removeItem(WHO); } catch(e){} showGate(true); return; }
+        if (res.status === 400 && body && body.code === 'who') { history.pop(); gateOn = true; visitor = null; try { localStorage.removeItem(WHO); } catch(e){} showGate(true); setMode('quiet', 'Ready'); return; }
         if (res.status === 503 && body && (body.code === 'paused' || body.code === 'not_configured')) { setEnabled(false, why); fail(why); }
         else fail(res.status >= 500 ? TROUBLE : why, res.status !== 429 && res.status !== 400);
         if (isRetry || res.status === 400) history.pop();
@@ -582,42 +648,43 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       }
       show(body);
     } catch(e){
-      unwait(); fail('Could not reach the assistant. Check your connection.', true);
-    } finally { busy = false; send.disabled = !enabled; input.focus(); }
+      unwait(); fail('Could not reach Scout. Check your connection.', true);
+    } finally { busy = false; send.disabled = !enabled; if (window.matchMedia('(min-width:761px)').matches) input.focus(); }
   }
 
   function setEnabled(on, why){
     enabled = on; send.disabled = !on; input.disabled = !on; voice.enable(on);
     $('#n-off').hidden = on; if (!on && why) $('#off-why').textContent = why;
     starters.hidden = !on || history.length > 0;
+    if (!on) { $('#say').textContent = 'I am paused right now. The board itself still works.'; setMode('quiet', 'Paused'); }
   }
   async function boot(){
     try {
       const res = await fetch(API, { method:'GET' }); const st = await res.json();
       $('#st-n').textContent = st.listings; $('#n-sample').hidden = st.source !== 'sample';
-      $('#st-model').textContent = st.enabled ? '' : 'assistant paused';
       gateOn = !!st.gate;
-      setEnabled(!!st.enabled, st.paused ? 'AI requests are switched off while the free promotion is over.' : (!st.configured ? 'The assistant is not configured on this deployment.' : ''));
+      setEnabled(!!st.enabled, st.paused ? 'AI requests are switched off while the free promotion is over.' : (!st.configured ? 'Scout is not configured on this deployment.' : ''));
       applyGate();
     } catch(e){
-      $('#st-model').textContent = 'assistant unreachable';
-      setEnabled(false, 'The assistant could not be reached. The board itself still works.');
+      $('#readout-state').textContent = 'Unreachable';
+      setEnabled(false, 'Scout could not be reached. The board itself still works.');
     }
   }
 
   const count = () => { const n = input.value.length; const c = $('#count'); c.textContent = `${n} / ${MAX_CHARS}`; c.classList.toggle('over', n > MAX_CHARS); c.classList.toggle('near', n > MAX_CHARS - 100); };
-  const grow = () => { input.style.height = 'auto'; input.style.height = Math.min(160, input.scrollHeight) + 'px'; };
+  const grow = () => { input.style.height = 'auto'; input.style.height = Math.min(120, input.scrollHeight) + 'px'; };
   input.addEventListener('input', () => { count(); grow(); });
   input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); } });
+
   // ===== Talk instead of type =====
-  // The browser's own speech recognition writes what the visitor says into the message box.
-  // Nothing is sent until they press Send, so they can check and fix the text first. Typing
-  // always works.
+  // The browser's own speech recognition writes what the visitor says into the box. Nothing
+  // is sent until they press Send, so they can check and fix the text first. Typing always
+  // works. While it listens Scout's face shows it.
   const voice = (() => {
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
     const mic = $('#mic'), note = $('#voice-note');
     let rec = null, on = false, base = '', heard = '';
-    const say = (t, warn) => { note.textContent = t || ''; note.classList.toggle('warn', !!warn); };
+    const sayNote = (t, warn) => { note.textContent = t || ''; note.classList.toggle('warn', !!warn); };
     const lang = () => /^es\b/i.test(navigator.language || '') ? 'es-US' : 'en-US';
     const WHY = {
       'not-allowed': 'The microphone is blocked. Allow it in your browser\'s site settings, or type instead.',
@@ -627,7 +694,7 @@ a{color:inherit} button{font:inherit;cursor:pointer}
       'no-speech': 'Did not hear anything. Tap the mic and try again.',
       'language-not-supported': 'This browser cannot recognise that language. Type instead.'
     };
-    function set(v){ on = v; mic.classList.toggle('on', v); mic.setAttribute('aria-pressed', String(v)); mic.setAttribute('aria-label', v ? 'Stop listening' : 'Talk instead of typing'); }
+    function set(v){ on = v; mic.classList.toggle('on', v); mic.setAttribute('aria-pressed', String(v)); mic.setAttribute('aria-label', v ? 'Stop listening' : 'Talk instead of typing'); if (v) setMode('listening', 'Listening'); else if (agent.classList.contains('listening')) setMode('quiet', 'Ready'); }
     function write(){
       const joined = (base && heard ? base.replace(/\s+$/, '') + ' ' : base) + heard;
       input.value = joined.slice(0, MAX_CHARS); count(); grow();
@@ -639,45 +706,49 @@ a{color:inherit} button{font:inherit;cursor:pointer}
     let audioTimer = null, gotAudio = false, failed = false;
     function start(){
       if (on || input.disabled) return;
+      hush();
       rec = new Rec(); rec.lang = lang(); rec.interimResults = true; rec.continuous = CONTINUOUS;
       base = input.value; heard = ''; gotAudio = false; failed = false;
-      rec.onaudiostart = () => { gotAudio = true; clearTimeout(audioTimer); say('Listening… speak now.'); };
-      rec.onspeechstart = () => say('Hearing you… tap the mic when you are done.');
+      rec.onaudiostart = () => { gotAudio = true; clearTimeout(audioTimer); sayNote('Listening… speak now.'); };
+      rec.onspeechstart = () => sayNote('Hearing you… tap the mic when you are done.');
       rec.onresult = e => {
         let fin = '', live = '';
         for (let i = 0; i < e.results.length; i++) (e.results[i].isFinal ? (fin += e.results[i][0].transcript) : (live += e.results[i][0].transcript));
         heard = (fin + live).trim(); write();
       };
-      rec.onnomatch = () => { if (!heard) { failed = true; say('Heard something but could not make out the words. Try again a little closer to the mic.', true); } };
+      rec.onnomatch = () => { if (!heard) { failed = true; sayNote('Heard something but could not make out the words. Try again a little closer to the mic.', true); } };
       rec.onerror = e => {
         if (window.console) console.warn('speech recognition error:', e.error, e.message || '');
         if (e.error === 'aborted') return;
-        failed = true; say(WHY[e.error] || `Voice stopped (${e.error}). Type instead, or tap the mic to try again.`, true);
+        failed = true; sayNote(WHY[e.error] || `Voice stopped (${e.error}). Type instead, or tap the mic to try again.`, true);
       };
       rec.onend = () => {
         clearTimeout(audioTimer); set(false); rec = null; input.placeholder = PLACEHOLDER;
-        if (heard && !failed) say('Check the text, then press Send.');
-        else if (!failed) say(gotAudio ? 'Did not catch any words. Tap the mic and try again.' : 'No sound reached the browser. Check that your microphone is on and is the one selected in Chrome (Settings › Privacy › Microphone).', true);
+        if (heard && !failed) sayNote('Check the text, then press Send.');
+        else if (!failed) sayNote(gotAudio ? 'Did not catch any words. Tap the mic and try again.' : 'No sound reached the browser. Check that your microphone is on and is the one selected in Chrome (Settings › Privacy › Microphone).', true);
         input.focus();
       };
-      try { rec.start(); set(true); input.placeholder = 'Listening… speak now'; say('Starting the microphone…'); }
-      catch (err) { rec = null; set(false); say('Voice could not start. Type instead.', true); return; }
-      // If no sound has arrived after a few seconds, say so instead of sitting there silently.
-      audioTimer = setTimeout(() => { if (on && !gotAudio) say('Waiting for sound… if you allowed the microphone and still see this, check that the right mic is selected in Chrome.', true); }, 4000);
+      try { rec.start(); set(true); input.placeholder = 'Listening… speak now'; sayNote('Starting the microphone…'); }
+      catch (err) { rec = null; set(false); sayNote('Voice could not start. Type instead.', true); return; }
+      audioTimer = setTimeout(() => { if (on && !gotAudio) sayNote('Waiting for sound… if you allowed the microphone and still see this, check that the right mic is selected in Chrome.', true); }, 4000);
     }
     function stop(){ if (rec) try { rec.stop(); } catch (err) {} }
-    // The button always shows, so a visitor can find it; where the browser has no speech
-    // recognition (Firefox, Chrome on iPhone, in-app browsers) a tap says so instead.
-    mic.hidden = false;
-    mic.addEventListener('click', () => !Rec ? say('Talking is not available in this browser. Open this page in Safari, Chrome or Edge, or type instead.', true) : on ? stop() : start());
-    input.addEventListener('input', e => { if (!e.isTrusted) return; if (!on) say(''); });
+    // The button always shows; where the browser has no speech recognition (Firefox, Chrome
+    // on iPhone, in-app browsers) a tap says so instead.
+    mic.addEventListener('click', () => !Rec ? sayNote('Talking is not available in this browser. Open this page in Safari, Chrome or Edge, or type instead.', true) : on ? stop() : start());
+    input.addEventListener('input', e => { if (!e.isTrusted) return; if (!on) sayNote(''); });
     return { stop, enable(v){ if (!v) stop(); mic.disabled = !v; } };
   })();
 
   form.addEventListener('submit', e => { e.preventDefault(); ask(input.value); });
   starters.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { ask(b.textContent); }));
-  $('#restart-top').addEventListener('click', () => $('#restart').click());
-  $('#restart').addEventListener('click', () => { voice.stop(); history.length = 0; recommendedIds = []; log.querySelectorAll('.msg').forEach(m => m.remove()); unwait(); starters.hidden = !enabled; input.value=''; count(); input.focus(); });
+  $('#restart').addEventListener('click', () => {
+    voice.stop(); hush(); unwait(); history.length = 0; recommendedIds = []; lastSent = null;
+    $('#logbody').innerHTML = ''; $('#log').querySelector('summary').textContent = 'Conversation so far'; $('#log').open = false;
+    $('#cards').innerHTML = ''; $('#chips').innerHTML = ''; $('#ask').hidden = true;
+    opening(true); greet(); setMode('quiet', 'Ready'); input.value=''; count(); grow();
+  });
+  greet();
   boot();
 })();
 </script>

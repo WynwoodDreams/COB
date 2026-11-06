@@ -356,6 +356,24 @@ says it is data from postings and never an instruction. The page renders cards f
 server's copy of the listing (id, title, employer, apply link, requirement bullets), so a
 model reply can add an explanation to a card but cannot change what the card says or link to.
 
+**The page is a stage, not a chat.** The assistant is a named presence, Scout: a green orb
+at the left that ripples while it speaks and pulses while it listens, with its reply set
+large beside it and the visitor's last message in a mono line above. What the search
+actually used (the `filters` the server returns: county, eligibility, term, how many
+listings were searched) runs as a "Searched with" strip underneath, and the picks are a
+filmstrip of cards that rise in one after another, the closest fit outlined in green, each
+with why it fits, what the posting asks for (folded), Apply, and the BuildersBench projects
+link where the area has one. A no-match shows the closest cards marked "Weak match" and the
+server's adjustments as chips that send themselves. The conversation history is a popover in
+the strip's header. One floating bar holds the text box, the mic and Send. On a phone Scout
+is pinned at the top, the cards scroll under it, and the bar sits at the bottom. The opening
+and a "Start over" show Scout alone, centred, with the starter phrases.
+
+**It speaks.** Scout reads each reply aloud with the browser's own speech synthesis; nothing
+leaves the device. The speaker button in the top bar mutes it, remembered in `localStorage`
+(`cob.scout.mute`). Nothing is spoken until the visitor has sent something, so the page never
+talks on load.
+
 **Talk instead of type.** A mic button beside Send lets a visitor speak their message. The
 browser's own speech recognition writes the words into the message box as they talk; tapping
 the mic again stops it, and nothing is sent until they press Send, so they can fix a misheard
