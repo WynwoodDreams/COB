@@ -30,6 +30,9 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
    happens to miss disappears — a scrape is capped at a few hundred rows, so that is
    easy to do by accident. Drop the flag only when you mean to start the board over.
 
+   Every card the run drops, and the old version of every card it updates, goes to
+   `archive.json` (see "The archive file"), so commit that with the pages too.
+
    Either way the run writes `data.json` and a fresh `index.html` stamped with today's
    date, newest posting first. That is also the order the page opens in, so new listings
    are the first thing a visitor sees under "All areas".
@@ -289,6 +292,27 @@ insights page is drawn from it, through `history_series` in `build_data.py`.
   simply lack it, and the page treats a missing field as "not recorded".
 - If the site ever needs figures visitors write (a poll, say), that is the point to add a
   real database; this file is for what the build can count.
+- Since Nov 6, 2026 each line also carries `changes`: how many cards that build added,
+  updated in place and removed. Older lines lack it.
+
+## The archive file
+
+`archive.json` keeps the cards themselves. The board shows only what is open and the history
+file keeps only figures, so every card a build takes off the board, and the previous version
+of every card it updates in place, is appended here with the day (`on`), the reason (`why`)
+and the card as it was (`card`). The reasons are the ones the build prints: last posted
+before the cutoff, a closing term the export no longer lists, an ended term, held back by
+`EXCLUDED`, folded into a newer copy, or replaced by a newer version of the same role. The
+insights page reads none of it; it is the record for comparing updates later.
+
+- Commit it with the pages. A preview build skips it with `--archive -`.
+- One line per record, so diffs read. A card archived twice on one day for one reason is
+  recorded once.
+- It was backfilled from every past `index.html` in git: a card one committed board carried
+  and the next did not is recorded on the later board's date as "left the board (backfilled
+  from git)". The record starts with the board of Sep 10, 2026.
+- Nothing is ever removed from it. To bring a card back to the board, re-run the export that
+  carries it; the archive is not read by the build.
 
 ## The opportunity assistant (beta)
 

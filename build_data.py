@@ -874,6 +874,8 @@ EXCLUDED = [
  (r"^Baker Tilly", r"business valuation associate", "a salaried full-time associate role, not an internship"),
  (r"^Oasis Futsal", r"futsal coach", "a part-time coaching job, not an internship"),
  (r"^TBD Influencer", r"personal assistant intern", "unpaid personal-assistant work for an unnamed individual"),
+ (r"^Reset Real Estate", r"sales development intern", "commission-only real estate sales sold as an internship"),
+ (r"^Steps Therapy Center", r"^LMHC", "hires licensed counselors; not a student internship"),
 ]
 
 def drop_excluded(out):
@@ -1253,7 +1255,7 @@ def insights_for(cards):
 # history.json is the board's record over time: every build adds (or, on the same day,
 # replaces) one line of headline numbers, so quarters and years can be compared later. It
 # is committed with the pages, so git keeps every version and nothing needs a server.
-def snapshot_for(cards, ins):
+def snapshot_for(cards, ins, changes=None):
     P, pay = ins["pulse"], ins["pay"]
     keep = ("open", "interns", "jobs", "openings", "employers", "new7", "new14", "new30",
             "payListed", "hourlyN", "medHr", "remote", "bilingual")
@@ -1269,6 +1271,7 @@ def snapshot_for(cards, ins):
         # postings by the month they were posted, so a quarter's total survives the 90-day trim
         "postedByMonth": dict(collections.Counter(g["posted"][:7] for g in cards if g.get("posted"))),
     })
+    if changes: snap["changes"] = changes   # what this build added, updated and removed
     return snap
 
 def update_history(path, snap):
@@ -1277,6 +1280,24 @@ def update_history(path, snap):
     with open(path, 'w', encoding='utf-8') as f:   # one snapshot per line, so diffs read
         f.write("[\n" + ",\n".join(json.dumps(h, ensure_ascii=False, separators=(",", ":")) for h in hist) + "\n]\n")
     return hist
+
+def update_archive(path, records):
+    """Append every card that left the board, or was replaced, to the archive file.
+
+    The board only shows what is open, and the history file only keeps figures; this file
+    keeps the cards themselves, one line each, with the day and the reason, so nothing a
+    build drops or overwrites is lost. A card archived twice on one day for one reason is
+    recorded once.
+    """
+    arc = json.load(open(path, encoding='utf-8')) if os.path.exists(path) else []
+    seen = {(r["on"], r["why"], r["card"].get("id")) for r in arc}
+    for r in records:
+        k = (r["on"], r["why"], r["card"].get("id"))
+        if k in seen: continue
+        seen.add(k); arc.append(r)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write("[\n" + ",\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in arc) + "\n]\n")
+    return arc
 
 def quarter_of(d):
     return f"{d[:4]} Q{(int(d[5:7]) - 1) // 3 + 1}"
@@ -1459,6 +1480,7 @@ def main(argv=None):
     ap.add_argument("--out", default=os.path.join(here, "index.html"), help="rendered page (default: index.html next to this script); '-' to skip")
     ap.add_argument("--insights-template", default=os.path.join(here, "insights_template.html"))
     ap.add_argument("--history", default=os.path.join(here, "history.json"), help="where each build records its figures for the trends on the insights page (default: history.json next to this script); '-' to skip")
+    ap.add_argument("--archive", default=os.path.join(here, "archive.json"), help="where every card the build removes or replaces is kept, with the day and the reason (default: archive.json next to this script); '-' to skip")
     ap.add_argument("--visits", default=os.path.join(here, "visits.json"), help="page views recorded by record_visits.py, for the insights page ('-' to skip)")
     ap.add_argument("--no-snapshot", action="store_true", help="redraw the pages from the history as it is, without adding today's snapshot (the weekly visits job)")
     ap.add_argument("--insights-out", default=os.path.join(here, "insights.html"), help="the insights page (default: insights.html next to this script); '-' to skip")
@@ -1480,6 +1502,10 @@ def main(argv=None):
         if area not in SPOT_AREAS: ap.error(f"--sheet: unknown area {area!r}; one of: " + "; ".join(SPOT_AREAS))
     if not a.xlsx and not a.data and not a.sheet: ap.error("give a spreadsheet path, --sheet AREA PATH or --data data.json")
     cutoff = (TODAY - dt.timedelta(days=a.max_age)).strftime("%Y-%m-%d") if a.max_age else ""
+    gone = []   # (why, card) for every published card this build drops or replaces
+    changes = {"added": 0, "updated": 0, "removed": 0}
+    def record(why, cards):
+        gone.extend((why, g) for g in cards)
 
     if a.data:
         out = load_cards(a.data)
@@ -1487,6 +1513,7 @@ def main(argv=None):
         print(f"loaded {len(out)} cards from {a.data}")
         if a.max_age:
             out, stale = drop_stale(out, cutoff)
+            record(f"last posted before {cutoff}", stale)
             if stale:
                 print(f"dropped {len(stale)} card(s) last posted before {cutoff}: "
                       + "; ".join(f"{g['company']} / {g['title'][:40]} ({g['posted']})" for g in stale[:12])
@@ -1513,8 +1540,11 @@ def main(argv=None):
     out = finalize(out, upgrade=not a.keep_http)
     if a.merge:
         prior = finalize(load_cards(a.merge), upgrade=not a.keep_http)
+        was = {g.get('id'): json.loads(json.dumps(g)) for g in prior}
         fresh = len(out)
         out, added, updated, same = merge_cards(prior, out)
+        record("replaced by a newer version of the same role", [was[g.get('id')] for g in updated if g.get('id') in was])
+        changes["added"], changes["updated"] = len(added), len(updated)
         print(f"merged into {len(prior)} card(s) already on the board from {a.merge}: "
               f"{len(added)} new, {len(updated)} updated, {len(same)} already there (of {fresh} built)")
         if added:
@@ -1523,12 +1553,14 @@ def main(argv=None):
         confirmed = {g.get('id') for g in added + updated + same}
         out = finalize(out, upgrade=not a.keep_http)
         out, closing = drop_closing(out, confirmed)
+        record("term in its last two months and the export no longer lists it", closing)
         if closing:
             print(f"dropped {len(closing)} card(s) for a term in its last two months that this export no longer lists: "
                   + "; ".join(f"{g['company']} / {g['title'][:40]} ({', '.join(g['term'])})" for g in closing[:12])
                   + (" ..." if len(closing) > 12 else ""))
         if a.max_age:
             out, stale = drop_stale(out, cutoff)
+            record(f"last posted before {cutoff}", stale)
             if stale:
                 print(f"dropped {len(stale)} published card(s) last posted before {cutoff}: "
                       + "; ".join(f"{g['company']} / {g['title'][:40]} ({g['posted']})" for g in stale[:8])
@@ -1544,15 +1576,18 @@ def main(argv=None):
               + (": " + "; ".join(f"{g['company']} / {g['title'][:40]} -> {hostOf(g['locs'][0]['apply'])}" for g in changed) if changed else ""))
         out = finalize(out, upgrade=not a.keep_http)
     out, held = drop_excluded(out)
+    gone.extend((f"held back: {why}", g) for g, why in held)
     if held:
         print(f"held back {len(held)} posting(s) listed in EXCLUDED: "
               + "; ".join(f"{g['company']} / {g['title'][:40]} ({why})" for g, why in held))
     out, expired = drop_expired(out)
+    record("only term has ended", expired)
     if expired:
         print(f"dropped {len(expired)} card(s) whose only term has already ended: "
               + "; ".join(f"{g['company']} / {g['title'][:40]} ({', '.join(g['term'])})" for g in expired[:8])
               + (" ..." if len(expired) > 8 else ""))
     out, folded = dedupe_cards(out)
+    record("folded into a newer copy of the same role", folded)
     if folded:
         print(f"folded {len(folded)} duplicate card(s) into a newer copy of the same role: "
               + "; ".join(f"{g['company']} / {g['title'][:40]} ({g['posted']})" for g in folded[:8])
@@ -1579,6 +1614,12 @@ def main(argv=None):
 
     if a.stats: print_stats(out, items)
 
+    changes["removed"] = sum(1 for why, g in gone if not why.startswith("replaced"))
+    if a.archive != '-' and gone:
+        arc = update_archive(a.archive, [{"on": TODAY.isoformat(), "why": why, "card": g} for why, g in gone])
+        print(f"archived {len(gone)} card(s) to {a.archive} ({len(arc)} record(s) in all): "
+              + "; ".join(f"{n} {why}" for why, n in collections.Counter(why for why, _ in gone).most_common()))
+
     if not a.data or os.path.abspath(a.data) != os.path.abspath(a.json):
         with open(a.json, 'w', encoding='utf-8') as f: json.dump(out, f, ensure_ascii=False)
         print(f"wrote {a.json} ({os.path.getsize(a.json):,} bytes)")
@@ -1597,7 +1638,7 @@ def main(argv=None):
                 if a.no_snapshot:
                     hist = json.load(open(a.history, encoding='utf-8')) if os.path.exists(a.history) else []
                 else:
-                    hist = update_history(a.history, snapshot_for(out, ins))
+                    hist = update_history(a.history, snapshot_for(out, ins, changes))
                     print(f"wrote {a.history} ({len(hist)} snapshot(s), {hist[0]['date']} to {hist[-1]['date']})")
                 visits = load_visits(a.visits)
                 ins["history"] = history_series(hist, visits)
