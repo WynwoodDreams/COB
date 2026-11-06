@@ -58,7 +58,7 @@ button,a,input,textarea{-webkit-tap-highlight-color:rgba(0,227,123,.18)}
 
 /* sibling-site line */
 .bbar{flex:none;border-bottom:1px solid var(--rule);background:linear-gradient(180deg,rgba(0,227,123,.07),rgba(0,227,123,0))}
-.bbar a{display:flex;align-items:center;gap:12px;padding:9px 24px;min-height:40px;text-decoration:none;color:var(--mute);font-family:var(--mono);font-size:12px;letter-spacing:.02em}
+.bbar a{display:flex;align-items:center;gap:12px;padding:7px 24px;min-height:34px;text-decoration:none;color:var(--mute);font-family:var(--mono);font-size:12px;letter-spacing:.02em}
 .bbar a:hover{color:var(--ink);background:rgba(0,227,123,.05)}
 .bbar svg{flex:none;color:var(--amber)}
 .bbar .kicker{color:var(--dim);text-transform:uppercase;letter-spacing:.14em;font-size:10.5px;flex:none}
@@ -138,20 +138,20 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
 .err .orb .core i{background:var(--down)}
 
 /* what it says */
-.agent{display:flex;gap:28px;align-items:center;padding:16px 24px 10px}
-.agent .text{min-width:0;flex:1;display:flex;flex-direction:column;gap:12px}
+.agent{display:flex;gap:22px;align-items:center;padding:10px 24px 6px;--orb:100px}
+.agent .text{min-width:0;flex:1;display:flex;flex-direction:column;gap:9px}
 .agent .nm{display:flex;align-items:baseline;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 .agent .nm b{color:var(--ink);font-weight:600;font-size:13px}
 .agent .nm .state{color:var(--amber)}
 .agent .you{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--mute);line-height:1.5;max-width:60em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .agent .you[hidden]{display:none}
 .agent .you b{color:var(--dim);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:11px;margin-right:8px}
-.agent .say{margin:0;font-size:clamp(20px,2vw,27px);line-height:1.22;font-weight:700;letter-spacing:-.03em;max-width:26em;text-wrap:balance}
+.agent .say{margin:0;font-size:clamp(19px,1.8vw,24px);line-height:1.22;font-weight:700;letter-spacing:-.03em;max-width:26em;text-wrap:balance}
 .agent .say b{color:var(--amber);font-weight:800}
 .err .say{color:var(--ink)}
-.agent .ask{margin:0;font-size:15px;line-height:1.5;color:var(--mute);max-width:44em}
+.agent .ask{margin:0;font-size:14px;line-height:1.5;color:var(--mute);max-width:44em}
 .agent .ask[hidden]{display:none}
-.wave{display:flex;align-items:center;gap:3px;height:18px}
+.wave{display:flex;align-items:center;gap:3px;height:14px}
 .wave i{display:block;width:3px;height:3px;border-radius:2px;background:var(--amber);opacity:.35}
 .speaking .wave i{animation:wv 1.1s ease-in-out infinite;opacity:.9}
 @keyframes wv{0%,100%{height:3px}50%{height:var(--h,16px)}}
@@ -165,7 +165,7 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
 .chips svg{width:16px;height:16px;color:var(--amber);flex:none}
 
 /* the dossier strip: what the search actually used */
-.dossier{flex:none;display:flex;align-items:center;gap:14px;padding:9px 24px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);overflow-x:auto;scrollbar-width:none}
+.dossier{flex:none;display:flex;align-items:center;gap:14px;padding:6px 24px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);overflow-x:auto;scrollbar-width:none}
 .dossier[hidden]{display:none}
 .dossier .k{flex:none;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-weight:600;margin:0}
 .pills{display:flex;gap:8px;flex:none}
@@ -180,7 +180,7 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
 .starters button:hover{border-color:var(--amber)}
 
 /* the filmstrip */
-.listcol{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:12px 0 0;overflow:hidden}
+.listcol{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding:8px 0 0;overflow:hidden}
 .listcol[hidden]{display:none}
 .listhead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:0 24px}
 .listhead h2{margin:0;font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--dim)}
@@ -188,7 +188,7 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
 .listhead .log{margin-left:auto}
 .listhead .open{font-family:var(--mono);font-size:12px;color:var(--amber);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
 .strip{display:flex;gap:14px;padding:4px 24px 10px;overflow-x:auto;overflow-y:auto;flex:1;min-height:0;align-items:flex-start;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:var(--rule-2) transparent}
-.card{flex:none;width:350px;scroll-snap-align:start;background:var(--panel);border:1px solid var(--rule);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.card{flex:none;width:340px;scroll-snap-align:start;background:var(--panel);border:1px solid var(--rule);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
 .card:nth-child(2){animation-delay:.08s}.card:nth-child(3){animation-delay:.16s}.card:nth-child(4){animation-delay:.24s}.card:nth-child(5){animation-delay:.32s}
 @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 .card.top{border-color:var(--amber);box-shadow:0 0 32px rgba(0,227,123,.14);background:linear-gradient(180deg,rgba(0,227,123,.08),rgba(0,227,123,0) 40%),var(--panel)}
@@ -198,8 +198,8 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
 .card.weak .lab{color:var(--mute)}
 .card .head{display:flex;gap:12px;align-items:flex-start}
 .card .head>div:first-child{flex:1;min-width:0}
-.card h3{margin:0;font-size:17px;font-weight:700;letter-spacing:-.02em;line-height:1.25}
-.card .meta{font-size:13.5px;color:var(--mute);margin-top:4px}
+.card h3{margin:0;font-size:16px;font-weight:700;letter-spacing:-.02em;line-height:1.25}
+.card .meta{font-size:13px;color:var(--mute);margin-top:3px}
 .card .meta time.fresh{color:var(--amber)}
 .card .pay{font-family:var(--mono);font-weight:600;font-size:15px;flex:none;white-space:nowrap}
 .card .pay.none{color:var(--dim);font-weight:400;font-size:12.5px}
@@ -208,10 +208,11 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
 .chip.term{color:var(--ink)} .chip.job{color:var(--feat);border-color:rgba(var(--feat-rgb),.4)}
 .chip.lang{color:var(--lang);border-color:rgba(var(--lang-rgb),.4)} .chip.out{color:var(--feat);border-color:rgba(var(--feat-rgb),.4)}
 .chip.flag{color:var(--down);border-color:rgba(255,107,107,.4)} .chip.mode{color:var(--ink)}
-.card p{margin:0;font-size:14px;line-height:1.5}
+.card p{margin:0;font-size:13.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card p.why{-webkit-line-clamp:3}
 .card .why b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:3px}
 .asks{font-size:13px;color:var(--mute);line-height:1.5}
-.asks summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;padding:4px 0;min-height:32px}
+.asks summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:600;padding:2px 0;min-height:26px}
 .asks summary::-webkit-details-marker{display:none}
 .asks summary b{font-weight:600;white-space:nowrap;color:var(--ink)}
 .asks summary span{text-transform:none;letter-spacing:0;color:var(--mute)}
@@ -224,11 +225,11 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
 .card .locs{display:flex;flex-wrap:wrap;gap:6px}
 .card .locs a{font-family:var(--mono);font-size:12px;color:var(--ink);text-decoration:none;border:1px solid var(--rule-2);border-radius:999px;padding:5px 10px;min-height:32px;display:inline-flex;align-items:center;gap:6px}
 .card .locs a span{color:var(--amber)}
-.card .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:auto;padding-top:4px}
-.card .apply{min-height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:10px;background:var(--panel-2);border:1px solid var(--rule-2);color:var(--ink);font-weight:700;font-size:14px;text-decoration:none}
+.card .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:auto;padding-top:2px}
+.card .apply{min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border-radius:10px;background:var(--panel-2);border:1px solid var(--rule-2);color:var(--ink);font-weight:700;font-size:14px;text-decoration:none}
 .card.top .apply{background:var(--amber);border-color:var(--amber);color:#04120B}
-.card .plan{min-height:44px;display:inline-flex;align-items:center;padding:0 12px;border-radius:10px;border:1px solid var(--rule-2);background:transparent;color:var(--ink);font-weight:600;font-size:13px;text-decoration:none}
-.card .src{flex-basis:100%;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.6}
+.card .plan{min-height:40px;display:inline-flex;align-items:center;padding:0 12px;border-radius:10px;border:1px solid var(--rule-2);background:transparent;color:var(--ink);font-weight:600;font-size:13px;text-decoration:none}
+.card .src{flex-basis:100%;font-family:var(--mono);font-size:10.5px;color:var(--dim);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card .src a{color:var(--mute)}
 .log{position:relative;margin:0;color:var(--mute);font-size:13px}
 .log summary{cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--mute);list-style:none}
@@ -238,18 +239,18 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
 .log b{font-weight:600;color:var(--ink)} .log b.s{color:var(--amber)}
 
 /* the bar */
-.bottom{flex:none;z-index:5;padding:8px 24px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(180deg,rgba(9,13,11,0),rgba(9,13,11,.92) 40%)}
+.bottom{flex:none;z-index:5;padding:6px 24px max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:6px;background:linear-gradient(180deg,rgba(9,13,11,0),rgba(9,13,11,.92) 40%)}
 .compose{display:flex;gap:8px;align-items:center;width:100%;max-width:680px;background:rgba(16,23,20,.9);border:1px solid var(--rule-2);border-radius:999px;padding:6px 6px 6px 20px;box-shadow:0 18px 50px rgba(0,0,0,.45);backdrop-filter:blur(10px)}
 .compose:focus-within{border-color:var(--amber)}
 .compose textarea{flex:1;min-width:0;background:transparent;border:0;color:var(--ink);font:inherit;font-size:16px;outline:none;resize:none;line-height:1.4;max-height:120px;padding:6px 0}
 .compose textarea::placeholder{color:var(--dim)}
 .compose textarea:disabled{opacity:.5}
-.compose .mic{flex:none;width:54px;height:54px;border-radius:50%;background:var(--amber);border:0;color:#04120B;box-shadow:0 0 28px rgba(0,227,123,.35);display:inline-flex;align-items:center;justify-content:center}
+.compose .mic{flex:none;width:50px;height:50px;border-radius:50%;background:var(--amber);border:0;color:#04120B;box-shadow:0 0 28px rgba(0,227,123,.35);display:inline-flex;align-items:center;justify-content:center}
 .compose .mic svg{width:22px;height:22px}
 .compose .mic.on{animation:micpulse 1.2s ease-in-out infinite;background:var(--panel-2);color:var(--amber);border:2px solid var(--amber)}
 .compose .mic:disabled{opacity:.45;cursor:default;animation:none}
 @keyframes micpulse{50%{box-shadow:0 0 0 10px var(--amber-dim)}}
-.compose .send{flex:none;height:54px;padding:0 18px;border-radius:999px;background:transparent;border:1px solid var(--rule-2);color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:7px}
+.compose .send{flex:none;height:50px;padding:0 18px;border-radius:999px;background:transparent;border:1px solid var(--rule-2);color:var(--ink);font-weight:600;display:inline-flex;align-items:center;gap:7px}
 .compose .send:hover{border-color:var(--amber)}
 .compose .send:disabled{opacity:.45;cursor:default}
 .compose .send svg{width:15px;height:15px}
@@ -301,6 +302,9 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
   .listhead{padding:0 14px}
   .strip{flex-direction:column;gap:10px;padding:4px 14px 12px;overflow:visible;scroll-snap-type:none;align-items:stretch}
   .card{width:auto;padding:13px 14px}
+  .card p{-webkit-line-clamp:unset;display:block}
+  .card .src{white-space:normal}
+  .card .apply,.card .plan{min-height:44px}
   .card h3{font-size:15.5px}
   .log[open] .body{right:auto;left:0}
   .bottom{padding:8px 12px max(12px,env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--rule)}
@@ -466,19 +470,32 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
     voiceObj = vs.find(v => /Samantha|Google US English|Aria|Jenny|Natural/i.test(v.name)) || vs.find(v => /en-US/i.test(v.lang)) || vs[0] || null;
   }
   if (synth) { pickVoice(); synth.onvoiceschanged = pickVoice; }
+  // Scout never listens while it talks: the mic is stopped before a word is spoken, and in
+  // a hands-free exchange it is opened again only once the reply has finished.
   function speak(text){
-    if (!synth || muted || !text) { setMode('quiet', 'Ready'); return; }
+    voice.stop();
+    if (!synth || muted || !text) { setMode('quiet', 'Ready'); afterReply(); return; }
     try {
       synth.cancel();
       const u = new SpeechSynthesisUtterance(String(text).slice(0, 1200));
       if (voiceObj) u.voice = voiceObj;
       u.rate = 1.02;
+      let done = false;
+      const finish = () => { if (done) return; done = true; if (agent.classList.contains('speaking')) setMode('quiet', 'Ready'); afterReply(); };
       u.onstart = () => setMode('speaking', 'Speaking');
-      u.onend = u.onerror = () => { if (agent.classList.contains('speaking')) setMode('quiet', 'Ready'); };
+      u.onend = u.onerror = finish;
       setMode('speaking', 'Speaking');
       synth.speak(u);
-    } catch(e) { setMode('quiet', 'Ready'); }
+      // Some browsers never fire onend for a cancelled or failed utterance; do not leave the
+      // exchange hanging.
+      setTimeout(() => { if (!done && !synth.speaking) finish(); }, 1500);
+    } catch(e) { setMode('quiet', 'Ready'); afterReply(); }
   }
+  // Hands-free: when the visitor spoke their last message, Scout listens again after it has
+  // answered, so the exchange goes back and forth without a tap. Typing, tapping the mic
+  // while it listens, or a silence ends the loop.
+  let handsFree = false;
+  function afterReply(){ if (handsFree && enabled && !busy && !agent.classList.contains('err')) setTimeout(() => { if (handsFree && !busy) voice.listen(); }, 350); }
   function hush(){ if (synth) try { synth.cancel(); } catch(e){} }
   function paintMute(){
     $('#mute').classList.toggle('on', !muted);
@@ -502,7 +519,7 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
       el.innerHTML = esc(ch.label) + (ch.href ? ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>' : '');
       c.appendChild(el);
     });
-    if (opts.err) setMode('err', 'Did not go through'); else speak(spoken == null ? $('#say').textContent + (ask ? ' ' + ask : '') : spoken);
+    if (opts.err) { handsFree = false; voice.stop(); setMode('err', 'Did not go through'); } else speak(spoken == null ? $('#say').textContent + (ask ? ' ' + ask : '') : spoken);
   }
   function youSaid(text){ const y = $('#you'); y.hidden = !text; y.innerHTML = text ? `<b>You</b>${esc(text)}` : ''; }
   function greet(){
@@ -560,7 +577,7 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
       <div class="acts">
         ${apply ? `<a class="apply" href="${esc(apply)}" target="_blank" rel="noopener" title="Opens ${esc(hostOf(apply))}">Apply at ${esc(d.company.split(/[\s,]+/)[0])}</a>` : `<span class="plan">No apply link on the board</span>`}
         ${BENCH[d.area] ? `<a class="plan" href="${esc(planLink(d))}" target="_blank" rel="noopener" title="Opens BuildersBench: the projects to build for this role">Projects for this role</a>` : ''}
-        <span class="src">${full ? `Posted ${esc(full)}` : 'Posted date unknown'} · <span title="The board cannot see a posting the employer took down early">not verified as still open</span>${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''} · <a href="index.html#q=${encodeURIComponent(d.company)}">On the board</a></span>
+        <span class="src">${full ? `Posted ${esc(full)}` : 'Posted date unknown'} · <span title="The board cannot see a posting the employer took down early">not verified as still open</span>${d.indeed ? ` · <a href="${esc(d.indeed)}" target="_blank" rel="noopener">Original listing</a>` : ''}</span>
       </div>`;
     return el;
   }
@@ -626,8 +643,9 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
   }
   function unwait(){ clearInterval(waitTimer); waitTimer = null; }
 
-  async function ask(text, isRetry){
+  async function ask(text, isRetry, viaVoice){
     text = String(text||'').trim();
+    handsFree = !!viaVoice;
     if (!text || busy || !enabled) return;
     if (text.length > MAX_CHARS) { fail(`Keep each message under ${MAX_CHARS} characters.`); return; }
     if (!isRetry){ history.push({ role:'user', content:text }); logLine(visitor ? firstName() : 'You', text); }
@@ -699,18 +717,18 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
       const joined = (base && heard ? base.replace(/\s+$/, '') + ' ' : base) + heard;
       input.value = joined.slice(0, MAX_CHARS); count(); grow();
     }
-    // Android's recogniser misbehaves in continuous mode (it repeats or drops words), so there
-    // it listens for one phrase at a time; tapping again adds to what is already in the box.
-    const CONTINUOUS = !/Android/i.test(navigator.userAgent || '');
+    // One phrase at a time: the recogniser stops itself when the visitor pauses, and what it
+    // heard is sent right then, so a spoken message needs no tap on Send.
+    const CONTINUOUS = false;
     const PLACEHOLDER = input.placeholder;
     let audioTimer = null, gotAudio = false, failed = false;
     function start(){
-      if (on || input.disabled) return;
+      if (on || input.disabled || busy) return;
       hush();
       rec = new Rec(); rec.lang = lang(); rec.interimResults = true; rec.continuous = CONTINUOUS;
       base = input.value; heard = ''; gotAudio = false; failed = false;
       rec.onaudiostart = () => { gotAudio = true; clearTimeout(audioTimer); sayNote('Listening… speak now.'); };
-      rec.onspeechstart = () => sayNote('Hearing you… tap the mic when you are done.');
+      rec.onspeechstart = () => sayNote('Hearing you… pause when you are done and I will search.');
       rec.onresult = e => {
         let fin = '', live = '';
         for (let i = 0; i < e.results.length; i++) (e.results[i].isFinal ? (fin += e.results[i][0].transcript) : (live += e.results[i][0].transcript));
@@ -720,30 +738,33 @@ header.top .who a:hover,header.top .who button.lnk:hover{color:var(--ink)}
       rec.onerror = e => {
         if (window.console) console.warn('speech recognition error:', e.error, e.message || '');
         if (e.error === 'aborted') return;
-        failed = true; sayNote(WHY[e.error] || `Voice stopped (${e.error}). Type instead, or tap the mic to try again.`, true);
+        failed = true;
+        // Silence after Scout's reply just ends the hands-free exchange; it is not a fault.
+        if (e.error === 'no-speech' && handsFree) { sayNote('Tap the mic to talk again.'); return; }
+        sayNote(WHY[e.error] || `Voice stopped (${e.error}). Type instead, or tap the mic to try again.`, true);
       };
       rec.onend = () => {
         clearTimeout(audioTimer); set(false); rec = null; input.placeholder = PLACEHOLDER;
-        if (heard && !failed) sayNote('Check the text, then press Send.');
-        else if (!failed) sayNote(gotAudio ? 'Did not catch any words. Tap the mic and try again.' : 'No sound reached the browser. Check that your microphone is on and is the one selected in Chrome (Settings › Privacy › Microphone).', true);
-        input.focus();
+        if (heard && !failed) { sayNote(''); ask(input.value, false, true); return; }
+        handsFree = false;
+        if (!failed) sayNote(gotAudio ? 'Did not catch any words. Tap the mic to talk again.' : 'No sound reached the browser. Check that your microphone is on and is the one selected in Chrome (Settings › Privacy › Microphone).', true);
       };
       try { rec.start(); set(true); input.placeholder = 'Listening… speak now'; sayNote('Starting the microphone…'); }
       catch (err) { rec = null; set(false); sayNote('Voice could not start. Type instead.', true); return; }
       audioTimer = setTimeout(() => { if (on && !gotAudio) sayNote('Waiting for sound… if you allowed the microphone and still see this, check that the right mic is selected in Chrome.', true); }, 4000);
     }
-    function stop(){ if (rec) try { rec.stop(); } catch (err) {} }
+    function stop(){ if (rec) try { rec.abort(); } catch (err) {} }
     // The button always shows; where the browser has no speech recognition (Firefox, Chrome
     // on iPhone, in-app browsers) a tap says so instead.
-    mic.addEventListener('click', () => !Rec ? sayNote('Talking is not available in this browser. Open this page in Safari, Chrome or Edge, or type instead.', true) : on ? stop() : start());
-    input.addEventListener('input', e => { if (!e.isTrusted) return; if (!on) sayNote(''); });
-    return { stop, enable(v){ if (!v) stop(); mic.disabled = !v; } };
+    mic.addEventListener('click', () => { if (!Rec) { sayNote('Talking is not available in this browser. Open this page in Safari, Chrome or Edge, or type instead.', true); return; } if (on) { handsFree = false; heard = ''; stop(); sayNote('Tap the mic to talk again.'); } else { hush(); start(); } });
+    input.addEventListener('input', e => { if (!e.isTrusted) return; handsFree = false; if (!on) sayNote(''); });
+    return { listen(){ if (Rec) start(); }, stop, enable(v){ if (!v) stop(); mic.disabled = !v; } };
   })();
 
   form.addEventListener('submit', e => { e.preventDefault(); ask(input.value); });
   starters.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { ask(b.textContent); }));
   $('#restart').addEventListener('click', () => {
-    voice.stop(); hush(); unwait(); history.length = 0; recommendedIds = []; lastSent = null;
+    handsFree = false; voice.stop(); hush(); unwait(); history.length = 0; recommendedIds = []; lastSent = null;
     $('#logbody').innerHTML = ''; $('#log').querySelector('summary').textContent = 'Conversation so far'; $('#log').open = false;
     $('#cards').innerHTML = ''; $('#chips').innerHTML = ''; $('#ask').hidden = true;
     opening(true); greet(); setMode('quiet', 'Ready'); input.value=''; count(); grow();
