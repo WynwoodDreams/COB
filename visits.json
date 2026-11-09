@@ -1,6 +1,6 @@
 {
 "source": "Vercel Web Analytics, production only, page views by day",
-"updated": "2026-11-03",
+"updated": "2026-11-09",
 "days": {
 "2026-10-06": {
 "board": 21,
@@ -199,11 +199,53 @@
 "visitors": 6
 },
 "2026-11-03": {
-"board": 9,
+"board": 12,
 "insights": 2,
-"assistant": 2,
+"assistant": 5,
 "other": 0,
 "visitors": 5
+},
+"2026-11-04": {
+"board": 3,
+"insights": 0,
+"assistant": 0,
+"other": 0,
+"visitors": 2
+},
+"2026-11-05": {
+"board": 4,
+"insights": 2,
+"assistant": 1,
+"other": 0,
+"visitors": 5
+},
+"2026-11-06": {
+"board": 13,
+"insights": 3,
+"assistant": 3,
+"other": 0,
+"visitors": 7
+},
+"2026-11-07": {
+"board": 1,
+"insights": 0,
+"assistant": 1,
+"other": 0,
+"visitors": 2
+},
+"2026-11-08": {
+"board": 9,
+"insights": 3,
+"assistant": 0,
+"other": 0,
+"visitors": 7
+},
+"2026-11-09": {
+"board": 2,
+"insights": 0,
+"assistant": 0,
+"other": 0,
+"visitors": 1
 }
 }
 }
