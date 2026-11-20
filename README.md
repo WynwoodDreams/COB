@@ -69,12 +69,26 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
    a Fall card an October scrape no longer carries is far more likely gone than open.
    A card that also names a later term stays either way; the run prints what it dropped. In September 2026, for example, "Summer 2026"
    disappears from the Term filter while "Fall 2026" stays. Listings that never name a
-   term are kept. Postings more than 90 days old (`--max-age`) are
-   dropped on both sides of a merge, and again whenever the page is re-rendered with `--data`,
-   so the board sheds its own stale cards and an export's older rows never come back in. Useful flags:
+   term are kept. Postings more than 60 days old (`--max-age`; it was 90 until Nov 20, 2026)
+   are dropped on both sides of a merge, and again whenever the page is re-rendered with `--data`,
+   so the board sheds its own stale cards and an export's older rows never come back in.
+
+   A posting that names its own application deadline leaves the board the day after it.
+   `deadline_for` in `build_data.py` reads a date tied to a deadline cue ("Application
+   deadline: Monday, December 21st", "Deadline: October 31st, 2026", "November 9 – December 4:
+   Applications Open", "31/01/2027" read day first when it has to be); a start date, a
+   programme date or an opening date does not count, and "meet tight deadlines" is not a
+   deadline. A year-less date is read as the first one on or after the posting date, the
+   latest deadline a posting names wins, and the card keeps it as `deadline`, so it still
+   leaves on time after its row has dropped out of the exports. Cards from older builds,
+   which no longer carry their description, are read from their title, summary and bullets.
+
+   The board lists **internships only** (`INTERNSHIPS_ONLY` in `build_data.py`, from Nov 20,
+   2026). An entry-level job, whether from a sheet or a card the build reads as one, is dropped
+   and archived; set the flag to `False` to bring jobs back. Useful flags:
 
    - `--date "Oct 1, 2026"` to set the "updated" label yourself
-   - `--max-age 0` to keep postings older than 90 days. The build drops them by
+   - `--max-age 0` to keep postings older than 60 days. The build drops them by
      default: the export reaches a year back, and a dead apply link costs more trust than
      a missing listing earns.
    - `--stats` to print how postings were categorised
@@ -93,8 +107,11 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
 ## The Cloud & DevOps area
 
 Cloud & DevOps is an ordinary area in the list, between Software, IT, Data & AI and Civil.
-It has no highlight, pin or badge. It is the area that carries entry-level **jobs** as well as
-internships, and every card in it says which it is. Its listings come from a hand-made
+It has no highlight, pin or badge. It was the area that carried entry-level **jobs** as well as
+internships. Since the board went internships-only (Nov 20, 2026, `INTERNSHIPS_ONLY`) its jobs
+are dropped, and with no cloud internships open the area, its guide and its BuildersBench link
+are hidden; the area list only shows areas that have cards. A cloud internship brings it
+back. What follows describes the sheet it is fed from. Its listings come from a hand-made
 sheet rather than the Indeed export, an .xlsx or a .csv with the columns Company, Role,
 Location and Direct Apply URL, plus any of Posted, Type or Job Type, Experience, Salary,
 a summary column and a caveats column. The reader also takes the names a sheet is likely
@@ -331,7 +348,8 @@ How a turn works:
 2. **Retrieve, deterministically.** `retrieve.js` turns the profile into filters and a
    keyword score over the board's own listings: place names map to counties (`PLACES`), an
    undergraduate never sees graduate-only listings, "internship" never returns an entry-level
-   job, "Returning interns only" is skipped, a named term and a language are boosts rather
+   job (and while the board carries no jobs, a request for one is searched as internships and
+   the reply says the board lists internships only), "Returning interns only" is skipped, a named term and a language are boosts rather
    than filters, and interests are widened with `SYNONYMS` ("cybersecurity" also finds SOC,
    threat, GRC). Fewer than three in the named county widens to the rest of South Florida and
    says so. The top 12 go to the model; a listing that is not among them cannot be recommended.

@@ -6,7 +6,7 @@ identical when you change one.
 
 | Site | Repo | Live | Job in the ecosystem |
 |---|---|---|---|
-| Christian's Opportunity Board (COB) | `WynwoodDreams/COB` | https://cob-eta.vercel.app/ | **Find** a role: internships and entry-level jobs across Miami-Dade, Broward and Palm Beach |
+| Christian's Opportunity Board (COB) | `WynwoodDreams/COB` | https://cob-eta.vercel.app/ | **Find** a role: internships across Miami-Dade, Broward and Palm Beach (internships only since 2026-11-20) |
 | BuildersBench | `WynwoodDreams/4Projects` | https://www.buildersbench.dev/ | **Prepare**: portfolio projects that close the gap between a student and a role |
 | ResumeCanvas | `WynwoodDreams/resumecanvas` | https://resumecanvas-seven.vercel.app/ (from `twa-manifest.json`; confirm) | **Apply**: build and tailor the resume for a specific posting |
 
@@ -112,7 +112,7 @@ What each site accepts from the others. Add a row here whenever you add or chang
 
 | Target | Link | Carries | Status |
 |---|---|---|---|
-| BuildersBench | `/#path=<id>` | Opens one career path (`ai`, `cloud`, `cs`, `cyber`, `data`, `helpdesk`, `swe`, `tech-it`) | Works; COB links Cloud & DevOps here |
+| BuildersBench | `/#path=<id>` | Opens one career path (`ai`, `cloud`, `cs`, `cyber`, `data`, `helpdesk`, `swe`, `tech-it`) | Works; COB's Cloud & DevOps area links `#path=cloud`, hidden while COB has no cloud internships (since 2026-11-20, when COB dropped its entry-level jobs) |
 | BuildersBench | `/#project=<id>` | Opens one project | Works |
 | BuildersBench | `/match.html?q=<posting text>` (or `#q=`) | Prefills Career Match with a job's title, summary and requirements and runs the match | Works (fixed 2026-10-31); COB's "Projects for this role" uses it |
 | ResumeCanvas | `/?voice=1` | Starts voice dictation | Works |

@@ -149,14 +149,22 @@ test('an empty reply is retried once with more room before falling back', async 
   assert.equal(gw.calls[1].body.max_tokens, gw.calls[0].body.max_tokens * 2);
 });
 
-test('the starter "Entry-level cloud jobs" returns cloud jobs even with no model at all', async () => {
+test('a job request on the internships-only board returns internships and says so, even with no model', async () => {
   const { h } = make({ gateway: { empty: 99 } });
   const r = await h.run({ messages: [{ role: 'user', content: 'Entry-level cloud jobs' }] });
   assert.ok(r.kind === 'results' || r.kind === 'nomatch', r.kind);
-  assert.match(r.filters.eligibility, /entry-level jobs only/);
+  assert.match(r.filters.eligibility, /internships only/);
+  assert.match(r.filters.board, /internships only/);
   const shown = r.kind === 'results' ? r.matches.map(m => m.listing) : r.closest;
   assert.ok(shown.length >= 1);
-  for (const d of shown) assert.equal(d.kind, 'Entry-level job');
+  for (const d of shown) assert.equal(d.kind, 'Internship');
+});
+
+test('the starter "Engineering internship in Palm Beach" finds listings with no model at all', async () => {
+  const { h } = make({ gateway: { empty: 99 } });
+  const r = await h.run({ messages: [{ role: 'user', content: 'Engineering internship in Palm Beach' }] });
+  assert.equal(r.kind, 'results');
+  assert.ok(r.matches.length >= 1);
 });
 
 test('the model is configurable', async () => {

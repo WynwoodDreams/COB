@@ -41,6 +41,9 @@ SPOT_AREAS = collections.OrderedDict([
 # cyber and help-desk titles in Software, IT, Data & AI, "Cyber Risk Services" in Audit.
 RETIRED_AREAS = {"Cybersecurity", "IT Support / Help Desk"}
 JOB_LEVEL = "Entry-level job"
+# The board lists internships only (owner's call, Nov 20, 2026). A sheet row or a card the
+# build reads as an entry-level job is dropped and archived. False brings jobs back.
+INTERNSHIPS_ONLY = True
 CATS = [
  *[(name, spec['title']) for name, spec in SPOT_AREAS.items()],
  ("Health Sciences & Pharmacy", r"pharmac|nurse|nursing|respiratory|medical assistant|\bMA/|chiropract|veterinar|patient care|dietetic|dietitian|nutrition"),
@@ -634,6 +637,47 @@ def made_id(d, company, title):
     key = s(d.get('externalApplyLink')) or "|".join([company, title, s(d.get('location'))])
     return "x" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
 
+# ---------- application deadlines ----------
+# A posting that names its own deadline ("Application deadline: Monday, December 21st",
+# "Deadline: October 31st, 2026", "November 9 – December 4: Applications Open") leaves the
+# board the day after it. Only a date tied to a deadline cue counts: a start date, a program
+# date or an opening date says nothing about when applications close. A year-less date is
+# read as the first one on or after the posting date, and the latest deadline named wins.
+_MONTHS = {m: i + 1 for i, m in enumerate("jan feb mar apr may jun jul aug sep oct nov dec".split())}
+_DATE = (r"(?:(?:mon|tues|wednes|thurs|fri|satur|sun)day,?\s+)?"
+         r"(?:(?P<mon>jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(?P<day>\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(?P<yr>20\d\d))?"
+         r"|(?P<n1>\d{1,2})/(?P<n2>\d{1,2})(?:/(?P<ny>20\d\d|\d\d))?)(?![\d/])")
+_DL_CUE = (r"deadline\b|apply by|apply before|no later than|closing date|"
+           r"applications? (?:are |will be |must be )?(?:due|close[sd]?|accepted (?:through|until)|received by)|"
+           r"(?:posting|position|role) (?:will )?(?:close|end|expire)s?(?: on)?")
+DEADLINE_RES = [
+    # the date right after the cue, past punctuation and a linking word: "Deadline: Dec 4",
+    # "applications accepted through 12/4", never "meet deadlines ... starting June 1"
+    re.compile(rf"(?:{_DL_CUE})[\s:,\-–—]*(?:(?:is|on|by|of)\s+)?{_DATE}", re.I),
+    re.compile(rf"{_DATE.replace('?P<', '?P<a_')}\s*[–—-]\s*{_DATE}\s*:?\s*applications? (?:are )?open", re.I),   # a window
+]
+def _deadline_date(m, posted):
+    g = m.groupdict()
+    try:
+        if g.get('mon'):
+            mon, day, yr = _MONTHS[g['mon'].lower()[:3]], int(g['day']), g.get('yr')
+        else:
+            a, b = int(g['n1']), int(g['n2'])
+            mon, day = (b, a) if a > 12 else (a, b)   # 31/01/2027 is day first
+            yr = g.get('ny'); yr = ("20" + yr) if yr and len(yr) == 2 else yr
+        base = dt.date.fromisoformat(posted) if posted else TODAY
+        d = dt.date(int(yr) if yr else base.year, mon, day)
+        if not yr and d < base: d = d.replace(year=d.year + 1)
+    except (ValueError, TypeError, KeyError):
+        return ""
+    # a date far outside the posting's life is a misread, not a deadline
+    if not (base - dt.timedelta(days=400) <= d <= base + dt.timedelta(days=540)): return ""
+    return d.isoformat()
+
+def deadline_for(text, posted=""):
+    found = [_deadline_date(m, posted) for r in DEADLINE_RES for m in r.finditer(text or "")]
+    return max((d for d in found if d), default="")
+
 NOT_INTERNSHIPS = []
 def build_items(data, upgrade=True):
     items, seen, skipped = [], set(), 0
@@ -660,6 +704,7 @@ def build_items(data, upgrade=True):
             types=types, posted=date_str(d.get('postingDateParsed')),
             apply=url_or_blank(d.get('externalApplyLink'), upgrade) or indeed, indeed=indeed,
             snippet=snippet_for(desc), details=details_for(desc), flag=flag_for(title, desc, pay), county=county_for(loc),
+            deadline=deadline_for(title + "\n" + desc, date_str(d.get('postingDateParsed'))),
         ))
         items[-1]['lang'], items[-1]['langNeed'] = langs_for(title, desc)
     return items, skipped
@@ -805,6 +850,7 @@ def group_items(items):
             if it['posted'] > g['posted']: g['posted'] = it['posted']
             if not g['pay'] and it['pay']: g['pay'] = it['pay']
             if not g['indeed'] and it['indeed']: g['indeed'] = it['indeed']
+            if (it.get('deadline') or "") > (g.get('deadline') or ""): g['deadline'] = it['deadline']
             for m in it['majors']:
                 if m not in g['majors']: g['majors'].append(m)
             for t in it['term']:
@@ -862,6 +908,11 @@ def finalize(out, upgrade=True):
         g['company'] = company_name(g['company'])
         g['hubs'] = hubs_for(g)
         g['posted'] = date_str(g.get('posted'))
+        # a card from an older build has no description left, so its deadline is read from
+        # the title, summary and requirement bullets it carries; a stored one is kept
+        dl = max(date_str(g.get('deadline')), deadline_for("\n".join([g['title'], g.get('snippet') or ""] + list(g.get('details') or [])), g['posted']))
+        if dl: g['deadline'] = dl
+        else: g.pop('deadline', None)
         # Languages: cards from older builds no longer have their full description, so they are
         # read from the title, summary and requirement bullets they do carry. That finds less than
         # the full posting would, and never contradicts it: a fresh build adds to this, never removes.
@@ -953,6 +1004,22 @@ def drop_closing(out, confirmed):
             kept.append(g)
     return kept, closing
 
+def drop_jobs(out):
+    """Split off entry-level jobs while the board lists internships only (INTERNSHIPS_ONLY)."""
+    if not INTERNSHIPS_ONLY: return out, []
+    kept, jobs = [], []
+    for g in out:
+        (jobs if g.get('kind') == "Job" else kept).append(g)
+    return kept, jobs
+
+def drop_past_deadline(out):
+    """Split off cards whose own posting names an application deadline that has passed."""
+    today = TODAY.isoformat()
+    kept, past = [], []
+    for g in out:
+        (past if g.get('deadline') and g['deadline'] < today else kept).append(g)
+    return kept, past
+
 def drop_stale(out, cutoff):
     """Split cards by whether their newest posting predates the cutoff. Dead links cost trust."""
     kept, stale = [], []
@@ -1023,6 +1090,7 @@ def merge_into(g, n):
         if l not in g.setdefault('lang', []): g['lang'].append(l)
     if LANG_RANK.get(n.get('langNeed') or "", 0) > LANG_RANK.get(g.get('langNeed') or "", 0): g['langNeed'] = n['langNeed']
     if s(n.get('posted')) > s(g.get('posted')): g['posted'] = n['posted']
+    if s(n.get('deadline')) > s(g.get('deadline')): g['deadline'] = n['deadline']   # the latest one named wins
     g['count'] = max(int(g.get('count') or 1), int(n.get('count') or 1), len(g.get('locs') or []))
     return json.dumps(g, sort_keys=True, ensure_ascii=False) != before
 
@@ -1524,8 +1592,8 @@ def main(argv=None):
     ap.add_argument("--assistant-template", default=os.path.join(here, "assistant_template.html"))
     ap.add_argument("--assistant-out", default=os.path.join(here, "assistant.html"), help="the assistant page (default: assistant.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
-    ap.add_argument("--max-age", type=int, default=90, metavar="DAYS",
-                    help="drop postings older than DAYS (default 90; use 0 to keep everything). "
+    ap.add_argument("--max-age", type=int, default=60, metavar="DAYS",
+                    help="drop postings older than DAYS (default 60; use 0 to keep everything). "
                          "A dead apply link costs more trust than a missing listing earns.")
     ap.add_argument("--keep-http", action="store_true", help="leave plain-HTTP apply links alone instead of upgrading them to HTTPS")
     ap.add_argument("--strict", action="store_true", help="exit non-zero if a listing contains text shaped like an AI instruction")
@@ -1623,6 +1691,16 @@ def main(argv=None):
         print(f"dropped {len(expired)} card(s) whose only term has already ended: "
               + "; ".join(f"{g['company']} / {g['title'][:40]} ({', '.join(g['term'])})" for g in expired[:8])
               + (" ..." if len(expired) > 8 else ""))
+    out, jobs = drop_jobs(out)
+    record("an entry-level job; the board lists internships only", jobs)
+    if jobs:
+        print(f"dropped {len(jobs)} entry-level job(s); the board lists internships only (INTERNSHIPS_ONLY): "
+              + "; ".join(f"{g['company']} / {g['title'][:40]}" for g in jobs[:8]) + (" ..." if len(jobs) > 8 else ""))
+    out, past = drop_past_deadline(out)
+    record("application deadline passed", past)
+    if past:
+        print(f"dropped {len(past)} card(s) whose application deadline has passed: "
+              + "; ".join(f"{g['company']} / {g['title'][:40]} ({g['deadline']})" for g in past[:8]) + (" ..." if len(past) > 8 else ""))
     out, folded = dedupe_cards(out)
     record("folded into a newer copy of the same role", folded)
     if folded:
