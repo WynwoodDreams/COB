@@ -40,7 +40,7 @@ function intake(body) {
 }
 function profileOf(t) {
   const interests = [];
-  for (const k of ['cybersecurity', 'research', 'engineering', 'accounting', 'audit', 'finance', 'marine biology', 'scuba diving instructor', 'marketing']) if (t.includes(k)) interests.push(k);
+  for (const k of ['cybersecurity', 'research', 'engineering', 'accounting', 'audit', 'finance', 'marine biology', 'oceanography', 'scuba diving instructor', 'marketing']) if (t.includes(k)) interests.push(k);
   if (t.includes('cyber') && !interests.includes('cybersecurity')) interests.push('cybersecurity');
   const loc = (/(miami|fort lauderdale|broward|boca raton|fau|palm beach|orlando)/.exec(t) || [])[1] || '';
   return {

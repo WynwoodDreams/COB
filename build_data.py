@@ -9,7 +9,7 @@ Typical use (from the repo root):
     python3 build_data.py --sheet "Cloud & DevOps" cloud.csv --merge index.html   # add a hand-made sheet
 
 The spreadsheet needs these columns: company, positionName, location,
-postingDateParsed, externalApplyLink, salary, description. It can also carry jobType/0..3,
+postingDateParsed, externalApplyLink, salary, description. It can also carry jobType/0, /1, ...,
 url (the Indeed posting) and id; a row without an id gets one made from its apply link.
 
 A --sheet is a hand-made list of jobs and internships for one spotlight area (SPOT_AREAS),
@@ -111,6 +111,25 @@ CATEGORY_OVERRIDES = [
  (r"^Southern Glazer", r"\(OneTech\)", "Software, IT, Data & AI"),
  (r"^JM Family", r"^sales planning intern$", "Sales & Business Development"),   # "planning" read as civil
  (r"^Greentech Renewables", r"^intern$", "Sales & Business Development"),      # electrical-distribution sales programme
+ # Nov 20 export
+ (r"^Carnival", r"occupational safety", "Science, Sustainability & Environment"),   # chemical management and SDS work
+ (r"^Teva", r"industrial hygien", "Science, Sustainability & Environment"),
+ (r"^Carnival", r"marine asset management|dry dock", "Business, Management & Operations"),   # "asset management" read as finance
+ (r"^Carnival", r"housekeeping", "Hospitality, Events, Sports & Entertainment"),
+ (r"^Princess", r"entertainment operations", "Hospitality, Events, Sports & Entertainment"),
+ (r"^Princess", r"\b(ux|digital) design", "Creative: Media, Design & Production"),
+ (r"^Moss$", r"talent development", "Human Resources & Talent"),
+ (r"^The Hartford", r"underwriting", "Finance, Banking & Insurance"),
+ (r"^Federal Reserve", r"facilities", "Business, Management & Operations"),     # "Bank" in the name read as finance
+ (r"^Mini-Circuits", r"^intern - general$", "Business, Management & Operations"),   # one posting for every department
+ (r"^Community Care Plan", r"credentialing|quality management", "Business, Management & Operations"),
+ (r"^UKG$", r"global security", "Software, IT, Data & AI"),                       # the cybersecurity track
+ (r"^ESCOL Network", r"mixing engineer", "Creative: Media, Design & Production"),   # audio mixing, not engineering
+ (r"^NBCUniversal", r"media tech", "Software, IT, Data & AI"),
+ (r"^NBCUniversal", r"\bnews\b|production & operations", "Creative: Media, Design & Production"),
+ (r"^Southern Poverty Law", r"digital|design", "Creative: Media, Design & Production"),   # "Law" in the name read as legal
+ (r"^WGI$", r"geomatics", "Civil, Structural & Environmental Engineering"),       # surveying
+ (r"^Holland America", r"travel sourcing", "Business, Management & Operations"),
 ]
 
 def classify(title, desc, company=''):
@@ -338,17 +357,25 @@ COMMISSION = re.compile(r"commission[- ]based|commission[- ]only|100% commission
                         r"earn(?:s|ed|ing)? commissions?|commissions? (?:per|from)\b|uncapped commission|"
                         r"performance[- ]based commission|(?:pay|salary|rate|base) (?:plus|and) commission|commission (?:eligible|structure|pay)", re.I)
 JUNK_PAY = re.compile(r"^(up to |from )?\$[0-4](\.\d+)?/(mo|wk|yr|hr)$", re.I)   # "Up to $1/mo" is a placeholder, not pay
+# A figure that cannot mean what its unit says: "$100 a year" is a placeholder, and "$19 a
+# week" is an hourly rate filed under the wrong unit (NBCUniversal, Nov 20). Either sends
+# the build to the description for the real figure.
+IMPLAUSIBLE_PAY = re.compile(r"^(?:up to |from )?\$(?:\d{1,2}(?:\.\d+)?/wk|\d{1,3}(?:\.\d+)?/yr)$", re.I)
 
 def pay_for(sal, desc):
     sal = s(sal)
     if sal:
         sal = sal.replace(" an hour","/hr").replace(" a year","/yr").replace(" a month","/mo").replace(" a week","/wk").replace(" a day","/day")
-        return "" if JUNK_PAY.match(sal) else sal
+        if JUNK_PAY.match(sal): return ""
+        if not IMPLAUSIBLE_PAY.match(sal): return sal
     d = desc[:4000]
     m = re.search(r"\$\s?\d{2}(?:\.\d\d)?\s*(?:-|–|to)\s*\$?\s?\d{2}(?:\.\d\d)?\s*(?:/|per)\s*(?:hour|hr)", d, re.I)
     if m: return m.group(0).replace("per hour","/hr").replace("per hr","/hr").replace(" ","")
     m = re.search(r"\$\s?\d{2}(?:\.\d\d)?\s*(?:/|per)\s*(?:hour|hr)", d, re.I)
     if m: return m.group(0).replace("per hour","/hr").replace("per hr","/hr").replace(" ","")
+    # "The hourly rate for student interns is $19.00", often near the end of a long posting
+    m = re.search(r"hourly (?:rate|wage|pay)\b[^$.]{0,40}\$\s?(\d{2}(?:\.\d\d)?)", desc, re.I)
+    if m: return f"${float(m.group(1)):g}/hr"
     if re.search(r"\bpaid internship|\bpaid,|\bpaid\b.{0,20}\bintern|hourly (rate|wage|pay)|stipend|academic credit", d, re.I):
         if re.search(r"unpaid", d, re.I): return "Unpaid / credit"
         return "Paid"
@@ -452,6 +479,7 @@ COMPANY_NAMES = {
  "team tti": "Techtronic Industries (TTI)",
  "techtronic industries co ltd": "Techtronic Industries (TTI)",
  "baker tilly canada": "Baker Tilly",   # US roles on Baker Tilly's US careers site
+ "adswizz": "SiriusXM",   # a SiriusXM brand; the Nov 20 export carries one posting under both names
 }
 def company_name(c):
     return COMPANY_NAMES.get(norm_company(c), c)
@@ -620,7 +648,9 @@ def build_items(data, upgrade=True):
         loc = clean_loc(d.get('location'))
         pay = pay_for(d.get('salary'), desc)
         types = []
-        for k in ('jobType', 'jobType/0', 'jobType/1', 'jobType/2', 'jobType/3'):
+        # jobType/0, /1, ... as many as the export has (the Nov 20 one went to /4)
+        for k in sorted((k for k in d if k == 'jobType' or re.fullmatch(r'jobType/\d+', k or '')),
+                        key=lambda k: -1 if k == 'jobType' else int(k.split('/')[1])):
             v = s(d.get(k))
             if v and v not in types: types.append(v)
         items.append(dict(
@@ -828,6 +858,7 @@ def finalize(out, upgrade=True):
             g[k] = [x for x in (g.get(k) or []) if x]
         for k in ('pay', 'level', 'mode', 'flag', 'snippet', 'company', 'cat', 'kind'):
             g[k] = s(g.get(k))
+        if JUNK_PAY.match(g['pay']) or IMPLAUSIBLE_PAY.match(g['pay']): g['pay'] = ""   # a published card keeps a pay figure through a merge
         g['company'] = company_name(g['company'])
         g['hubs'] = hubs_for(g)
         g['posted'] = date_str(g.get('posted'))
@@ -876,6 +907,12 @@ EXCLUDED = [
  (r"^TBD Influencer", r"personal assistant intern", "unpaid personal-assistant work for an unnamed individual"),
  (r"^Reset Real Estate", r"sales development intern", "commission-only real estate sales sold as an internship"),
  (r"^Steps Therapy Center", r"^LMHC", "hires licensed counselors; not a student internship"),
+ (r"^Tribune Publishing", r"^intern$", "the Orlando Sentinel newsroom, for Orlando residents; Indeed filed it under Deerfield Beach"),
+ (r"^McKim", r"water/wastewater", "the job is at the Jacksonville office; Indeed filed it under Boca Raton"),
+ (r"^Eight Sleep", r"field service engineer", "a 4-to-10-week field-service contract; the posting never mentions students"),
+ (r"^CMC Therapy", r"registered intern or licensed", "hires licensed counselors; not a student internship"),
+ (r"^Marriage and Family Services", r"licensed/registered intern", "hires licensed counselors; not a student internship"),
+ (r"^L\.I\.F\.E Center", r"^licensed mental health counselor", "hires licensed counselors; not a student internship"),
 ]
 
 def drop_excluded(out):

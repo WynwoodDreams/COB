@@ -20,7 +20,7 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
 
 ## Refresh the listings
 
-1. Export a new spreadsheet with the same columns (company, positionName, location, postedAt, postingDateParsed, externalApplyLink, salary, description). `url`, `id` and `jobType/0-3` are optional: an export without `id` and `url` still builds, each row getting an id made from its apply link, but its cards have no "Original listing" link and no Full-time or Part-time chip.
+1. Export a new spreadsheet with the same columns (company, positionName, location, postedAt, postingDateParsed, externalApplyLink, salary, description). `url`, `id` and `jobType/0`, `jobType/1`, ... (however many the export has) are optional: an export without `id` and `url` still builds, each row getting an id made from its apply link, but its cards have no "Original listing" link and no Full-time or Part-time chip.
 2. From this folder run:
 
        python3 build_data.py path/to/listings.xlsx --merge index.html
@@ -515,7 +515,10 @@ sentence in the shapes a requirement actually takes — "major in", "majors:", "
 preferred majors", "Accounting major".
 
 **Pay.** The salary cell wins when Indeed has one; placeholder amounts like "Up to $1 a
-month" are dropped. "Commission" is only pay when the posting talks about earning it; a
+month" are dropped, and so is a figure that cannot mean what its unit says ("$100 a year",
+"$19 a week" on an hourly role), which sends the build to the description for the real one
+("The hourly rate for student interns is $19.00"); a published card loses such a figure on the
+next build. "Commission" is only pay when the posting talks about earning it; a
 hospital's "Commission on Dietetic Registration" is not.
 
 A classifier change only reaches the cards whose rows are in the export you build from:
