@@ -9,7 +9,7 @@ Typical use (from the repo root):
     python3 build_data.py --sheet "Cloud & DevOps" cloud.csv --merge index.html   # add a hand-made sheet
 
 The spreadsheet needs these columns: company, positionName, location,
-postingDateParsed, externalApplyLink, salary, description. It can also carry jobType/0..3,
+postingDateParsed, externalApplyLink, salary, description. It can also carry jobType/0, /1, ...,
 url (the Indeed posting) and id; a row without an id gets one made from its apply link.
 
 A --sheet is a hand-made list of jobs and internships for one spotlight area (SPOT_AREAS),
@@ -41,6 +41,9 @@ SPOT_AREAS = collections.OrderedDict([
 # cyber and help-desk titles in Software, IT, Data & AI, "Cyber Risk Services" in Audit.
 RETIRED_AREAS = {"Cybersecurity", "IT Support / Help Desk"}
 JOB_LEVEL = "Entry-level job"
+# The board lists internships only (owner's call, Nov 20, 2026). A sheet row or a card the
+# build reads as an entry-level job is dropped and archived. False brings jobs back.
+INTERNSHIPS_ONLY = True
 CATS = [
  *[(name, spec['title']) for name, spec in SPOT_AREAS.items()],
  ("Health Sciences & Pharmacy", r"pharmac|nurse|nursing|respiratory|medical assistant|\bMA/|chiropract|veterinar|patient care|dietetic|dietitian|nutrition"),
@@ -111,6 +114,25 @@ CATEGORY_OVERRIDES = [
  (r"^Southern Glazer", r"\(OneTech\)", "Software, IT, Data & AI"),
  (r"^JM Family", r"^sales planning intern$", "Sales & Business Development"),   # "planning" read as civil
  (r"^Greentech Renewables", r"^intern$", "Sales & Business Development"),      # electrical-distribution sales programme
+ # Nov 20 export
+ (r"^Carnival", r"occupational safety", "Science, Sustainability & Environment"),   # chemical management and SDS work
+ (r"^Teva", r"industrial hygien", "Science, Sustainability & Environment"),
+ (r"^Carnival", r"marine asset management|dry dock", "Business, Management & Operations"),   # "asset management" read as finance
+ (r"^Carnival", r"housekeeping", "Hospitality, Events, Sports & Entertainment"),
+ (r"^Princess", r"entertainment operations", "Hospitality, Events, Sports & Entertainment"),
+ (r"^Princess", r"\b(ux|digital) design", "Creative: Media, Design & Production"),
+ (r"^Moss$", r"talent development", "Human Resources & Talent"),
+ (r"^The Hartford", r"underwriting", "Finance, Banking & Insurance"),
+ (r"^Federal Reserve", r"facilities", "Business, Management & Operations"),     # "Bank" in the name read as finance
+ (r"^Mini-Circuits", r"^intern - general$", "Business, Management & Operations"),   # one posting for every department
+ (r"^Community Care Plan", r"credentialing|quality management", "Business, Management & Operations"),
+ (r"^UKG$", r"global security", "Software, IT, Data & AI"),                       # the cybersecurity track
+ (r"^ESCOL Network", r"mixing engineer", "Creative: Media, Design & Production"),   # audio mixing, not engineering
+ (r"^NBCUniversal", r"media tech", "Software, IT, Data & AI"),
+ (r"^NBCUniversal", r"\bnews\b|production & operations", "Creative: Media, Design & Production"),
+ (r"^Southern Poverty Law", r"digital|design", "Creative: Media, Design & Production"),   # "Law" in the name read as legal
+ (r"^WGI$", r"geomatics", "Civil, Structural & Environmental Engineering"),       # surveying
+ (r"^Holland America", r"travel sourcing", "Business, Management & Operations"),
 ]
 
 def classify(title, desc, company=''):
@@ -338,17 +360,25 @@ COMMISSION = re.compile(r"commission[- ]based|commission[- ]only|100% commission
                         r"earn(?:s|ed|ing)? commissions?|commissions? (?:per|from)\b|uncapped commission|"
                         r"performance[- ]based commission|(?:pay|salary|rate|base) (?:plus|and) commission|commission (?:eligible|structure|pay)", re.I)
 JUNK_PAY = re.compile(r"^(up to |from )?\$[0-4](\.\d+)?/(mo|wk|yr|hr)$", re.I)   # "Up to $1/mo" is a placeholder, not pay
+# A figure that cannot mean what its unit says: "$100 a year" is a placeholder, and "$19 a
+# week" is an hourly rate filed under the wrong unit (NBCUniversal, Nov 20). Either sends
+# the build to the description for the real figure.
+IMPLAUSIBLE_PAY = re.compile(r"^(?:up to |from )?\$(?:\d{1,2}(?:\.\d+)?/wk|\d{1,3}(?:\.\d+)?/yr)$", re.I)
 
 def pay_for(sal, desc):
     sal = s(sal)
     if sal:
         sal = sal.replace(" an hour","/hr").replace(" a year","/yr").replace(" a month","/mo").replace(" a week","/wk").replace(" a day","/day")
-        return "" if JUNK_PAY.match(sal) else sal
+        if JUNK_PAY.match(sal): return ""
+        if not IMPLAUSIBLE_PAY.match(sal): return sal
     d = desc[:4000]
     m = re.search(r"\$\s?\d{2}(?:\.\d\d)?\s*(?:-|–|to)\s*\$?\s?\d{2}(?:\.\d\d)?\s*(?:/|per)\s*(?:hour|hr)", d, re.I)
     if m: return m.group(0).replace("per hour","/hr").replace("per hr","/hr").replace(" ","")
     m = re.search(r"\$\s?\d{2}(?:\.\d\d)?\s*(?:/|per)\s*(?:hour|hr)", d, re.I)
     if m: return m.group(0).replace("per hour","/hr").replace("per hr","/hr").replace(" ","")
+    # "The hourly rate for student interns is $19.00", often near the end of a long posting
+    m = re.search(r"hourly (?:rate|wage|pay)\b[^$.]{0,40}\$\s?(\d{2}(?:\.\d\d)?)", desc, re.I)
+    if m: return f"${float(m.group(1)):g}/hr"
     if re.search(r"\bpaid internship|\bpaid,|\bpaid\b.{0,20}\bintern|hourly (rate|wage|pay)|stipend|academic credit", d, re.I):
         if re.search(r"unpaid", d, re.I): return "Unpaid / credit"
         return "Paid"
@@ -452,6 +482,7 @@ COMPANY_NAMES = {
  "team tti": "Techtronic Industries (TTI)",
  "techtronic industries co ltd": "Techtronic Industries (TTI)",
  "baker tilly canada": "Baker Tilly",   # US roles on Baker Tilly's US careers site
+ "adswizz": "SiriusXM",   # a SiriusXM brand; the Nov 20 export carries one posting under both names
 }
 def company_name(c):
     return COMPANY_NAMES.get(norm_company(c), c)
@@ -606,13 +637,56 @@ def made_id(d, company, title):
     key = s(d.get('externalApplyLink')) or "|".join([company, title, s(d.get('location'))])
     return "x" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
 
+# ---------- application deadlines ----------
+# A posting that names its own deadline ("Application deadline: Monday, December 21st",
+# "Deadline: October 31st, 2026", "November 9 – December 4: Applications Open") leaves the
+# board the day after it. Only a date tied to a deadline cue counts: a start date, a program
+# date or an opening date says nothing about when applications close. A year-less date is
+# read as the first one on or after the posting date, and the latest deadline named wins.
+_MONTHS = {m: i + 1 for i, m in enumerate("jan feb mar apr may jun jul aug sep oct nov dec".split())}
+_DATE = (r"(?:(?:mon|tues|wednes|thurs|fri|satur|sun)day,?\s+)?"
+         r"(?:(?P<mon>jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(?P<day>\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(?P<yr>20\d\d))?"
+         r"|(?P<n1>\d{1,2})/(?P<n2>\d{1,2})(?:/(?P<ny>20\d\d|\d\d))?)(?![\d/])")
+_DL_CUE = (r"deadline\b|apply by|apply before|no later than|closing date|"
+           r"applications? (?:are |will be |must be )?(?:due|close[sd]?|accepted (?:through|until)|received by)|"
+           r"(?:posting|position|role) (?:will )?(?:close|end|expire)s?(?: on)?")
+DEADLINE_RES = [
+    # the date right after the cue, past punctuation and a linking word: "Deadline: Dec 4",
+    # "applications accepted through 12/4", never "meet deadlines ... starting June 1"
+    re.compile(rf"(?:{_DL_CUE})[\s:,\-–—]*(?:(?:is|on|by|of)\s+)?{_DATE}", re.I),
+    re.compile(rf"{_DATE.replace('?P<', '?P<a_')}\s*[–—-]\s*{_DATE}\s*:?\s*applications? (?:are )?open", re.I),   # a window
+]
+def _deadline_date(m, posted):
+    g = m.groupdict()
+    try:
+        if g.get('mon'):
+            mon, day, yr = _MONTHS[g['mon'].lower()[:3]], int(g['day']), g.get('yr')
+        else:
+            a, b = int(g['n1']), int(g['n2'])
+            mon, day = (b, a) if a > 12 else (a, b)   # 31/01/2027 is day first
+            yr = g.get('ny'); yr = ("20" + yr) if yr and len(yr) == 2 else yr
+        base = dt.date.fromisoformat(posted) if posted else TODAY
+        d = dt.date(int(yr) if yr else base.year, mon, day)
+        if not yr and d < base: d = d.replace(year=d.year + 1)
+    except (ValueError, TypeError, KeyError):
+        return ""
+    # a date far outside the posting's life is a misread, not a deadline
+    if not (base - dt.timedelta(days=400) <= d <= base + dt.timedelta(days=540)): return ""
+    return d.isoformat()
+
+def deadline_for(text, posted=""):
+    found = [_deadline_date(m, posted) for r in DEADLINE_RES for m in r.finditer(text or "")]
+    return max((d for d in found if d), default="")
+
 NOT_INTERNSHIPS = []
+NOT_INTERNSHIP_ITEMS = []   # the same rows, built like any other, so the ledger keeps them
 def build_items(data, upgrade=True):
     items, seen, skipped = [], set(), 0
     for d in data:
         title = s(d.get('positionName')); company = company_name(s(d.get('company'))); desc = s(d.get('description'))
         if not title and not company: skipped += 1; continue
-        if not is_internship(title, desc): NOT_INTERNSHIPS.append(f"{company} / {title[:50]}"); continue
+        intern = is_internship(title, desc)
+        if not intern: NOT_INTERNSHIPS.append(f"{company} / {title[:50]}")
         pid = s(d.get('id')) or s(d.get('url')) or made_id(d, company, title)
         if pid in seen: skipped += 1; continue
         seen.add(pid)
@@ -620,7 +694,9 @@ def build_items(data, upgrade=True):
         loc = clean_loc(d.get('location'))
         pay = pay_for(d.get('salary'), desc)
         types = []
-        for k in ('jobType', 'jobType/0', 'jobType/1', 'jobType/2', 'jobType/3'):
+        # jobType/0, /1, ... as many as the export has (the Nov 20 one went to /4)
+        for k in sorted((k for k in d if k == 'jobType' or re.fullmatch(r'jobType/\d+', k or '')),
+                        key=lambda k: -1 if k == 'jobType' else int(k.split('/')[1])):
             v = s(d.get(k))
             if v and v not in types: types.append(v)
         items.append(dict(
@@ -630,8 +706,10 @@ def build_items(data, upgrade=True):
             types=types, posted=date_str(d.get('postingDateParsed')),
             apply=url_or_blank(d.get('externalApplyLink'), upgrade) or indeed, indeed=indeed,
             snippet=snippet_for(desc), details=details_for(desc), flag=flag_for(title, desc, pay), county=county_for(loc),
+            deadline=deadline_for(title + "\n" + desc, date_str(d.get('postingDateParsed'))),
         ))
         items[-1]['lang'], items[-1]['langNeed'] = langs_for(title, desc)
+        if not intern: NOT_INTERNSHIP_ITEMS.append(items.pop())
     return items, skipped
 
 # ---------- a hand-made sheet for a spotlight area ----------
@@ -775,6 +853,7 @@ def group_items(items):
             if it['posted'] > g['posted']: g['posted'] = it['posted']
             if not g['pay'] and it['pay']: g['pay'] = it['pay']
             if not g['indeed'] and it['indeed']: g['indeed'] = it['indeed']
+            if (it.get('deadline') or "") > (g.get('deadline') or ""): g['deadline'] = it['deadline']
             for m in it['majors']:
                 if m not in g['majors']: g['majors'].append(m)
             for t in it['term']:
@@ -828,9 +907,15 @@ def finalize(out, upgrade=True):
             g[k] = [x for x in (g.get(k) or []) if x]
         for k in ('pay', 'level', 'mode', 'flag', 'snippet', 'company', 'cat', 'kind'):
             g[k] = s(g.get(k))
+        if JUNK_PAY.match(g['pay']) or IMPLAUSIBLE_PAY.match(g['pay']): g['pay'] = ""   # a published card keeps a pay figure through a merge
         g['company'] = company_name(g['company'])
         g['hubs'] = hubs_for(g)
         g['posted'] = date_str(g.get('posted'))
+        # a card from an older build has no description left, so its deadline is read from
+        # the title, summary and requirement bullets it carries; a stored one is kept
+        dl = max(date_str(g.get('deadline')), deadline_for("\n".join([g['title'], g.get('snippet') or ""] + list(g.get('details') or [])), g['posted']))
+        if dl: g['deadline'] = dl
+        else: g.pop('deadline', None)
         # Languages: cards from older builds no longer have their full description, so they are
         # read from the title, summary and requirement bullets they do carry. That finds less than
         # the full posting would, and never contradicts it: a fresh build adds to this, never removes.
@@ -876,6 +961,12 @@ EXCLUDED = [
  (r"^TBD Influencer", r"personal assistant intern", "unpaid personal-assistant work for an unnamed individual"),
  (r"^Reset Real Estate", r"sales development intern", "commission-only real estate sales sold as an internship"),
  (r"^Steps Therapy Center", r"^LMHC", "hires licensed counselors; not a student internship"),
+ (r"^Tribune Publishing", r"^intern$", "the Orlando Sentinel newsroom, for Orlando residents; Indeed filed it under Deerfield Beach"),
+ (r"^McKim", r"water/wastewater", "the job is at the Jacksonville office; Indeed filed it under Boca Raton"),
+ (r"^Eight Sleep", r"field service engineer", "a 4-to-10-week field-service contract; the posting never mentions students"),
+ (r"^CMC Therapy", r"registered intern or licensed", "hires licensed counselors; not a student internship"),
+ (r"^Marriage and Family Services", r"licensed/registered intern", "hires licensed counselors; not a student internship"),
+ (r"^L\.I\.F\.E Center", r"^licensed mental health counselor", "hires licensed counselors; not a student internship"),
 ]
 
 def drop_excluded(out):
@@ -915,6 +1006,22 @@ def drop_closing(out, confirmed):
         else:
             kept.append(g)
     return kept, closing
+
+def drop_jobs(out):
+    """Split off entry-level jobs while the board lists internships only (INTERNSHIPS_ONLY)."""
+    if not INTERNSHIPS_ONLY: return out, []
+    kept, jobs = [], []
+    for g in out:
+        (jobs if g.get('kind') == "Job" else kept).append(g)
+    return kept, jobs
+
+def drop_past_deadline(out):
+    """Split off cards whose own posting names an application deadline that has passed."""
+    today = TODAY.isoformat()
+    kept, past = [], []
+    for g in out:
+        (past if g.get('deadline') and g['deadline'] < today else kept).append(g)
+    return kept, past
 
 def drop_stale(out, cutoff):
     """Split cards by whether their newest posting predates the cutoff. Dead links cost trust."""
@@ -986,6 +1093,7 @@ def merge_into(g, n):
         if l not in g.setdefault('lang', []): g['lang'].append(l)
     if LANG_RANK.get(n.get('langNeed') or "", 0) > LANG_RANK.get(g.get('langNeed') or "", 0): g['langNeed'] = n['langNeed']
     if s(n.get('posted')) > s(g.get('posted')): g['posted'] = n['posted']
+    if s(n.get('deadline')) > s(g.get('deadline')): g['deadline'] = n['deadline']   # the latest one named wins
     g['count'] = max(int(g.get('count') or 1), int(n.get('count') or 1), len(g.get('locs') or []))
     return json.dumps(g, sort_keys=True, ensure_ascii=False) != before
 
@@ -1299,6 +1407,126 @@ def update_archive(path, records):
         f.write("[\n" + ",\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in arc) + "\n]\n")
     return arc
 
+# ---------- the ledger: every posting ever seen ----------
+# The board shows what is open, the archive keeps what left it, and history.json keeps
+# figures. ledger.json answers "what was posted in the last N months": one record per
+# posting the build has ever seen, whether it reached the board or not, with the first and
+# last day a build saw it, what became of it, and the latest version of the card.
+#   status "open"       on the board now
+#   status "removed"    was on the board; `why` and `removed` say when and why it left
+#   status "not shown"  seen in an export or sheet but never put on the board (too old on
+#                       arrival, not an internship, a job, held back, its deadline passed)
+# Nothing is ever deleted from it. `--report MONTHS` summarises it.
+LEDGER_SKIP = ("replaced by a newer version", "folded into a newer copy")   # the same role under another record
+
+def load_ledger(path):
+    if not path or path == '-' or not os.path.exists(path): return {}
+    return {r["id"]: r for r in json.load(open(path, encoding='utf-8'))}
+
+def write_ledger(path, led):
+    recs = sorted(led.values(), key=lambda r: r["id"])
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write("[\n" + ",\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in recs) + "\n]\n")
+
+def ledger_seen(led, card, on, status, why=""):
+    """Record that a build saw this card on `on`, and what it did with it."""
+    r = led.get(card.get("id"))
+    if not r:
+        r = led[card["id"]] = {"id": card["id"], "first": on, "last": on, "status": status}
+    r["last"] = max(r["last"], on); r["first"] = min(r["first"], on)
+    if status == "open":
+        r["status"] = "open"; r.pop("why", None); r.pop("removed", None)
+    elif status == "gone":
+        if r["status"] == "open":   # it was on the board: it has been removed
+            r.update(status="removed", why=why, removed=on)
+        elif r["status"] == "not shown" or "why" not in r:
+            r.update(status="not shown", why=why)
+    elif r["status"] == "not shown" or "why" not in r:   # "not shown": never overwrite a removal
+        r.update(status="not shown", why=why)
+    if status in ("open", "gone") or r["status"] == "not shown": r["card"] = card
+    return r
+
+def update_ledger(path, on, board, gone, unshown):
+    led = load_ledger(path)
+    for g in board: ledger_seen(led, g, on, "open")
+    for why, g in gone:
+        if not why.startswith(LEDGER_SKIP): ledger_seen(led, g, on, "gone", why)
+    for why, g in unshown:
+        if g.get("id") not in led or led[g["id"]]["status"] == "not shown": ledger_seen(led, g, on, "not shown", why)
+        else: led[g["id"]]["last"] = max(led[g["id"]]["last"], on)
+    write_ledger(path, led)
+    return led
+
+def months_back(d, n):
+    y, m = divmod(d.year * 12 + d.month - 1 - n, 12)
+    return dt.date(y, m + 1, min(d.day, 28))
+
+def report_for(led, months, today=None):
+    """A plain-words summary of every posting dated in the last `months` months, in Markdown."""
+    today = today or TODAY
+    start = months_back(today, months).isoformat()
+    recs, seen = [], set()
+    # one role counts once: a repost under a new posting id is folded into its latest record,
+    # matched the way the board matches (employer + title, or the same title words)
+    for r in sorted(led.values(), key=lambda r: (r["last"], s(r["card"].get("posted"))), reverse=True):
+        keys = {card_key(r["card"]), card_alias(r["card"])}
+        if keys & seen: continue
+        seen |= keys
+        if s(r["card"].get("posted")) >= start: recs.append(r)
+    # Held-back postings (sales pitches, licensed-clinician hires, jobs filed under the wrong
+    # city) and rows that are not internships count in the totals but not in the market figures.
+    kept_off = lambda r: s(r.get("why")).startswith(("held back", "not an internship"))
+    every = recs
+    recs = [r for r in every if not kept_off(r)]
+    cards = [r["card"] for r in recs]
+    interns = [g for g in cards if g.get("kind") != "Job"]
+    first_board = min((r["first"] for r in led.values()), default="")
+    pct = lambda n, d: f"{round(100 * n / d)}%" if d else "—"
+    line = lambda c, n: f"{c} ({n})"
+    out = [f"# Everything posted, {dt.date.fromisoformat(start):%b %-d, %Y} to {today:%b %-d, %Y}", ""]
+    out.append(f"Every posting dated in the last {months} months that the board's builds have seen, whether it "
+               f"is still open, has left the board, or never reached it. The record starts {first_board}; "
+               f"anything posted before then is counted only if a later export still carried it.")
+    out += ["", "## Totals", ""]
+    status = collections.Counter(r["status"] for r in recs)
+    out.append(f"- **{len(every)} postings seen**; {len(every) - len(recs)} were held back as not real South Florida "
+               f"student roles (listed at the end), so the figures below cover the other {len(recs)}")
+    out.append(f"- **{len(recs)} postings** ({sum(int(g.get('count') or 1) for g in cards)} openings across locations) "
+               f"from **{len({g['company'] for g in cards})} employers**")
+    out.append(f"- {len(interns)} internships, {len(cards) - len(interns)} entry-level jobs")
+    out.append(f"- {status['open']} open now, {status['removed']} removed from the board, {status['not shown']} never shown")
+    paid = sum(1 for g in cards if g.get("pay")); ps = pay_stats(interns)
+    out.append(f"- {pct(paid, len(cards))} say what they pay" + (f"; internships quoting an hourly figure ({ps['n']}) have a median of "
+               f"${ps['med']:.2f}/hr, the middle half ${ps['lo']:.2f} to ${ps['hi']:.2f}" if ps else ""))
+    out.append(f"- {pct(sum(1 for g in cards if g.get('mode')), len(cards))} remote or hybrid; "
+               f"{pct(sum(1 for g in cards if g.get('lang')), len(cards))} mention Spanish, Portuguese or Haitian Creole")
+    by_month = collections.Counter(g["posted"][:7] for g in cards)
+    out += ["", "## By month posted", "", "| Month | Postings | Internships | Jobs |", "|---|---:|---:|---:|"]
+    for m in sorted(by_month):
+        ms = [g for g in cards if g["posted"][:7] == m]
+        out.append(f"| {dt.date.fromisoformat(m + '-01'):%b %Y} | {len(ms)} | {sum(1 for g in ms if g.get('kind') != 'Job')} | {sum(1 for g in ms if g.get('kind') == 'Job')} |")
+    def table(title, counter, n=None):
+        out.extend(["", f"## {title}", ""] + [f"- {line(k, v)}" for k, v in counter.most_common(n)])
+    table("By area", collections.Counter(g.get("cat") for g in cards if g.get("cat")))
+    table("By county", collections.Counter(c for g in cards for c in g.get("counties") or []))
+    table("By level", collections.Counter(g.get("level") for g in cards if g.get("level")))
+    table("By term named", collections.Counter(t for g in cards for t in g.get("term") or []), 8)
+    table("Employers with the most postings", collections.Counter(g["company"] for g in cards), 15)
+    rows, _ = pay_rows({a: [g for g in interns if g.get("cat") == a] for a in {g.get("cat") for g in interns}}, "area")
+    if rows:
+        out += ["", "## Hourly pay by area (internships, 5 or more hourly figures)", "", "| Area | Median | Middle half | Figures |", "|---|---:|---:|---:|"]
+        out += [f"| {r['area']} | ${r['med']:.2f} | ${r['lo']:.2f} to ${r['hi']:.2f} | {r['n']} |" for r in rows]
+    table("Skills employers asked for", collections.Counter(dict(skills_in(cards))), 15)
+    def reason(w):
+        if re.match(r"last posted before|posted before .* too old", w or ""): return "aged off: posted more than 60 days earlier (90 before Nov 20, 2026)"
+        if w == "left the board": return "left the board before Nov 6, 2026, when builds began recording why"
+        return w
+    gone = collections.Counter(reason(r.get("why")) for r in every if r["status"] != "open")
+    if gone:
+        out += ["", "## Why the rest are not on the board", ""] + [f"- {line(k, v)}" for k, v in gone.most_common()]
+    out += ["", f"_From ledger.json, {today:%b %-d, %Y}. Pay counts what postings published, not what every intern earned._", ""]
+    return "\n".join(out)
+
 def quarter_of(d):
     return f"{d[:4]} Q{(int(d[5:7]) - 1) // 3 + 1}"
 
@@ -1481,14 +1709,17 @@ def main(argv=None):
     ap.add_argument("--insights-template", default=os.path.join(here, "insights_template.html"))
     ap.add_argument("--history", default=os.path.join(here, "history.json"), help="where each build records its figures for the trends on the insights page (default: history.json next to this script); '-' to skip")
     ap.add_argument("--archive", default=os.path.join(here, "archive.json"), help="where every card the build removes or replaces is kept, with the day and the reason (default: archive.json next to this script); '-' to skip")
+    ap.add_argument("--ledger", default=os.path.join(here, "ledger.json"), help="every posting ever seen, open, removed or never shown (default: ledger.json next to this script); '-' to skip")
+    ap.add_argument("--report", type=int, metavar="MONTHS", help="print a summary of everything posted in the last MONTHS months, from the ledger, and build nothing")
+    ap.add_argument("--report-out", metavar="PATH", help="with --report, also write the summary to PATH (Markdown)")
     ap.add_argument("--visits", default=os.path.join(here, "visits.json"), help="page views recorded by record_visits.py, for the insights page ('-' to skip)")
     ap.add_argument("--no-snapshot", action="store_true", help="redraw the pages from the history as it is, without adding today's snapshot (the weekly visits job)")
     ap.add_argument("--insights-out", default=os.path.join(here, "insights.html"), help="the insights page (default: insights.html next to this script); '-' to skip")
     ap.add_argument("--assistant-template", default=os.path.join(here, "assistant_template.html"))
     ap.add_argument("--assistant-out", default=os.path.join(here, "assistant.html"), help="the assistant page (default: assistant.html next to this script); '-' to skip")
     ap.add_argument("--date", default=f"{TODAY:%b} {TODAY.day}, {TODAY.year}", help="'updated' label, e.g. 'Sep 10, 2026'")
-    ap.add_argument("--max-age", type=int, default=90, metavar="DAYS",
-                    help="drop postings older than DAYS (default 90; use 0 to keep everything). "
+    ap.add_argument("--max-age", type=int, default=60, metavar="DAYS",
+                    help="drop postings older than DAYS (default 60; use 0 to keep everything). "
                          "A dead apply link costs more trust than a missing listing earns.")
     ap.add_argument("--keep-http", action="store_true", help="leave plain-HTTP apply links alone instead of upgrading them to HTTPS")
     ap.add_argument("--strict", action="store_true", help="exit non-zero if a listing contains text shaped like an AI instruction")
@@ -1498,11 +1729,20 @@ def main(argv=None):
     ap.add_argument("--stats", action="store_true", help="print classification counters")
     ap.add_argument("--check", action="store_true", help="also write check.txt, one line per card, for eyeballing categories")
     a = ap.parse_args(argv)
+    if a.report:
+        led = load_ledger(a.ledger)
+        if not led: sys.exit(f"no ledger at {a.ledger}: run a build first")
+        md = report_for(led, a.report)
+        print(md)
+        if a.report_out:
+            with open(a.report_out, 'w', encoding='utf-8') as f: f.write(md)
+        return
     for area, _ in a.sheet:
         if area not in SPOT_AREAS: ap.error(f"--sheet: unknown area {area!r}; one of: " + "; ".join(SPOT_AREAS))
     if not a.xlsx and not a.data and not a.sheet: ap.error("give a spreadsheet path, --sheet AREA PATH or --data data.json")
     cutoff = (TODAY - dt.timedelta(days=a.max_age)).strftime("%Y-%m-%d") if a.max_age else ""
     gone = []   # (why, card) for every published card this build drops or replaces
+    unshown = []   # (why, card) for every row this build read but never put on the board
     changes = {"added": 0, "updated": 0, "removed": 0}
     def record(why, cards):
         gone.extend((why, g) for g in cards)
@@ -1532,9 +1772,11 @@ def main(argv=None):
         if a.max_age:
             stale = [it for it in items if it['posted'] and it['posted'] < cutoff]
             items = [it for it in items if not (it['posted'] and it['posted'] < cutoff)]
+            unshown.extend((f"posted before {cutoff}, already too old when an export carried it", g) for g in finalize(group_items(stale)))
             print(f"dropped {len(stale)} postings older than {cutoff}" + (": " + "; ".join(f"{it['company']} / {it['title'][:40]} ({it['posted']})" for it in stale[:8]) + (" ..." if len(stale) > 8 else "") if stale else ""))
         out = group_items(items)
         print(f"read {len(data)} rows, skipped {skipped} (blank or duplicate id), grouped {len(items)} postings into {len(out)} cards")
+        unshown.extend(("not an internship (a manager, coordinator or new-grad role)", g) for g in finalize(group_items(NOT_INTERNSHIP_ITEMS)))
         if NOT_INTERNSHIPS:
             print(f"left out {len(NOT_INTERNSHIPS)} posting(s) that are jobs, not internships: " + "; ".join(NOT_INTERNSHIPS[:8]) + (" ..." if len(NOT_INTERNSHIPS) > 8 else ""))
     out = finalize(out, upgrade=not a.keep_http)
@@ -1586,6 +1828,16 @@ def main(argv=None):
         print(f"dropped {len(expired)} card(s) whose only term has already ended: "
               + "; ".join(f"{g['company']} / {g['title'][:40]} ({', '.join(g['term'])})" for g in expired[:8])
               + (" ..." if len(expired) > 8 else ""))
+    out, jobs = drop_jobs(out)
+    record("an entry-level job; the board lists internships only", jobs)
+    if jobs:
+        print(f"dropped {len(jobs)} entry-level job(s); the board lists internships only (INTERNSHIPS_ONLY): "
+              + "; ".join(f"{g['company']} / {g['title'][:40]}" for g in jobs[:8]) + (" ..." if len(jobs) > 8 else ""))
+    out, past = drop_past_deadline(out)
+    record("application deadline passed", past)
+    if past:
+        print(f"dropped {len(past)} card(s) whose application deadline has passed: "
+              + "; ".join(f"{g['company']} / {g['title'][:40]} ({g['deadline']})" for g in past[:8]) + (" ..." if len(past) > 8 else ""))
     out, folded = dedupe_cards(out)
     record("folded into a newer copy of the same role", folded)
     if folded:
@@ -1615,6 +1867,10 @@ def main(argv=None):
     if a.stats: print_stats(out, items)
 
     changes["removed"] = sum(1 for why, g in gone if not why.startswith("replaced"))
+    if a.ledger != '-':
+        led = update_ledger(a.ledger, TODAY.isoformat(), out, gone, unshown)
+        st = collections.Counter(r["status"] for r in led.values())
+        print(f"ledger {a.ledger}: {len(led)} posting(s) ever seen, {st['open']} open, {st['removed']} removed, {st['not shown']} never shown")
     if a.archive != '-' and gone:
         arc = update_archive(a.archive, [{"on": TODAY.isoformat(), "why": why, "card": g} for why, g in gone])
         print(f"archived {len(gone)} card(s) to {a.archive} ({len(arc)} record(s) in all): "

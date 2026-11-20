@@ -39,7 +39,7 @@ test('retrieval is deterministic on location and eligibility', () => {
   assert.ok(r.candidates.every(d => d.kind !== 'Job'), 'internships only');
   assert.ok(r.candidates.every(d => d.level !== 'Graduate'));
   assert.ok(r.candidates.some(d => /cyber/i.test(d.title)));
-  const r2 = retrieve(L, { interests: ['marine biology', 'scuba diving instructor'], location: 'Miami', wantsJob: 'internship' });
+  const r2 = retrieve(L, { interests: ['oceanography', 'scuba diving instructor'], location: 'Miami', wantsJob: 'internship' });
   assert.equal(r2.strong, 0); assert.ok(r2.adjustments.length >= 2);
 });
 test('extractJson copes with fences and prose', () => {
@@ -94,7 +94,7 @@ test('scenario 2: bilingual engineering student, research internship', async () 
 
 test('scenario 3: no matching listings says so and suggests adjustments', async () => {
   const { h, gw } = make();
-  const r = await h.run({ messages: [{ role: 'user', content: 'I want to be a scuba diving instructor, marine biology is my thing, I live in Miami, internship please.' }], recommendedIds: [] });
+  const r = await h.run({ messages: [{ role: 'user', content: 'I want to be a scuba diving instructor, oceanography is my thing, I live in Miami, internship please.' }], recommendedIds: [] });
   assert.equal(r.kind, 'nomatch'); assert.match(r.summary, /No strong matches/);
   assert.ok(r.adjustments.length >= 2); assert.ok(r.closest.length <= 3);
   assert.equal(gw.calls.length, 1, 'no ranking call when nothing matched');
@@ -149,14 +149,22 @@ test('an empty reply is retried once with more room before falling back', async 
   assert.equal(gw.calls[1].body.max_tokens, gw.calls[0].body.max_tokens * 2);
 });
 
-test('the starter "Entry-level cloud jobs" returns cloud jobs even with no model at all', async () => {
+test('a job request on the internships-only board returns internships and says so, even with no model', async () => {
   const { h } = make({ gateway: { empty: 99 } });
   const r = await h.run({ messages: [{ role: 'user', content: 'Entry-level cloud jobs' }] });
   assert.ok(r.kind === 'results' || r.kind === 'nomatch', r.kind);
-  assert.match(r.filters.eligibility, /entry-level jobs only/);
+  assert.match(r.filters.eligibility, /internships only/);
+  assert.match(r.filters.board, /internships only/);
   const shown = r.kind === 'results' ? r.matches.map(m => m.listing) : r.closest;
   assert.ok(shown.length >= 1);
-  for (const d of shown) assert.equal(d.kind, 'Entry-level job');
+  for (const d of shown) assert.equal(d.kind, 'Internship');
+});
+
+test('the starter "Engineering internship in Palm Beach" finds listings with no model at all', async () => {
+  const { h } = make({ gateway: { empty: 99 } });
+  const r = await h.run({ messages: [{ role: 'user', content: 'Engineering internship in Palm Beach' }] });
+  assert.equal(r.kind, 'results');
+  assert.ok(r.matches.length >= 1);
 });
 
 test('the model is configurable', async () => {

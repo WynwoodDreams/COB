@@ -430,7 +430,7 @@ code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--pa
   $('#read-txt').textContent = `${P.new14} new in the last two weeks ${read==='flat' ? 'against' : read==='up' ? 'vs' : 'vs'} ${P.prev14} in the two before.` + (top ? ` ${top[0]} is ${pct(top[1], P.open)}% of what's open.` : '');
 
   const cells = [
-    { k:'Open listings', v:`${P.open}<small>${P.openings} openings</small>`, s:`${P.interns} internships · ${plural(P.jobs,'entry-level job')}` },
+    { k:'Open listings', v:`${P.open}<small>${P.openings} openings</small>`, s: P.jobs ? `${P.interns} internships · ${plural(P.jobs,'entry-level job')}` : plural(P.interns,'internship') },
     { k:'New · 7d / 14d / 30d', v:`<em>${P.new7}</em><span class="sep">/</span>${P.new14}<span class="sep">/</span>${P.new30}`, s: read==='down' ? `<span class="dn">▼</span> ${P.prev14} the prior 14 days` : read==='up' ? `▲ ${P.prev14} the prior 14 days` : `${P.prev14} the prior 14 days` },
     { k:'Median pay', v: P.medHr != null ? `<em>${fmt$(P.medHr)}/hr</em>` : '—', s:`${P.hourlyN} internships quote hourly` },
     { k:'List pay', v:`${pct(P.payListed, P.open)}%`, s:`${P.payListed} of ${P.open} say what they pay`, meter: pct(P.payListed, P.open) },

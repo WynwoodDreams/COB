@@ -20,7 +20,7 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
 
 ## Refresh the listings
 
-1. Export a new spreadsheet with the same columns (company, positionName, location, postedAt, postingDateParsed, externalApplyLink, salary, description). `url`, `id` and `jobType/0-3` are optional: an export without `id` and `url` still builds, each row getting an id made from its apply link, but its cards have no "Original listing" link and no Full-time or Part-time chip.
+1. Export a new spreadsheet with the same columns (company, positionName, location, postedAt, postingDateParsed, externalApplyLink, salary, description). `url`, `id` and `jobType/0`, `jobType/1`, ... (however many the export has) are optional: an export without `id` and `url` still builds, each row getting an id made from its apply link, but its cards have no "Original listing" link and no Full-time or Part-time chip.
 2. From this folder run:
 
        python3 build_data.py path/to/listings.xlsx --merge index.html
@@ -54,7 +54,7 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
    name the board shows; add a line there when a new export does it again.
 
    Review what a new export adds before publishing it: run it with `--out` and `--json`
-   pointed at scratch files, read the new cards, and check that each one's location matches
+   pointed at scratch files (and `--history - --archive - --ledger -`, so the preview records nothing), read the new cards, and check that each one's location matches
    its description (Indeed has filed an Irvine, California job under Miami). Two lists in
    `build_data.py` carry what you find. `EXCLUDED` holds postings kept off the board, as
    (employer regex, title regex, reason) lines, so the next export cannot bring them back;
@@ -69,12 +69,26 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
    a Fall card an October scrape no longer carries is far more likely gone than open.
    A card that also names a later term stays either way; the run prints what it dropped. In September 2026, for example, "Summer 2026"
    disappears from the Term filter while "Fall 2026" stays. Listings that never name a
-   term are kept. Postings more than 90 days old (`--max-age`) are
-   dropped on both sides of a merge, and again whenever the page is re-rendered with `--data`,
-   so the board sheds its own stale cards and an export's older rows never come back in. Useful flags:
+   term are kept. Postings more than 60 days old (`--max-age`; it was 90 until Nov 20, 2026)
+   are dropped on both sides of a merge, and again whenever the page is re-rendered with `--data`,
+   so the board sheds its own stale cards and an export's older rows never come back in.
+
+   A posting that names its own application deadline leaves the board the day after it.
+   `deadline_for` in `build_data.py` reads a date tied to a deadline cue ("Application
+   deadline: Monday, December 21st", "Deadline: October 31st, 2026", "November 9 – December 4:
+   Applications Open", "31/01/2027" read day first when it has to be); a start date, a
+   programme date or an opening date does not count, and "meet tight deadlines" is not a
+   deadline. A year-less date is read as the first one on or after the posting date, the
+   latest deadline a posting names wins, and the card keeps it as `deadline`, so it still
+   leaves on time after its row has dropped out of the exports. Cards from older builds,
+   which no longer carry their description, are read from their title, summary and bullets.
+
+   The board lists **internships only** (`INTERNSHIPS_ONLY` in `build_data.py`, from Nov 20,
+   2026). An entry-level job, whether from a sheet or a card the build reads as one, is dropped
+   and archived; set the flag to `False` to bring jobs back. Useful flags:
 
    - `--date "Oct 1, 2026"` to set the "updated" label yourself
-   - `--max-age 0` to keep postings older than 90 days. The build drops them by
+   - `--max-age 0` to keep postings older than 60 days. The build drops them by
      default: the export reaches a year back, and a dead apply link costs more trust than
      a missing listing earns.
    - `--stats` to print how postings were categorised
@@ -93,8 +107,11 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
 ## The Cloud & DevOps area
 
 Cloud & DevOps is an ordinary area in the list, between Software, IT, Data & AI and Civil.
-It has no highlight, pin or badge. It is the area that carries entry-level **jobs** as well as
-internships, and every card in it says which it is. Its listings come from a hand-made
+It has no highlight, pin or badge. It was the area that carried entry-level **jobs** as well as
+internships. Since the board went internships-only (Nov 20, 2026, `INTERNSHIPS_ONLY`) its jobs
+are dropped, and with no cloud internships open the area, its guide and its BuildersBench link
+are hidden; the area list only shows areas that have cards. A cloud internship brings it
+back. What follows describes the sheet it is fed from. Its listings come from a hand-made
 sheet rather than the Indeed export, an .xlsx or a .csv with the columns Company, Role,
 Location and Direct Apply URL, plus any of Posted, Type or Job Type, Experience, Salary,
 a summary column and a caveats column. The reader also takes the names a sheet is likely
@@ -314,6 +331,34 @@ insights page reads none of it; it is the record for comparing updates later.
 - Nothing is ever removed from it. To bring a card back to the board, re-run the export that
   carries it; the archive is not read by the build.
 
+## The ledger
+
+`ledger.json` is the record of everything posted, so a question like "what did the last six
+months look like?" has an answer even though the board only shows what is open. It holds one
+record per posting any build has seen, whether it reached the board or not:
+
+- `status`: `open` (on the board now), `removed` (was on the board; `why` and `removed` say
+  why and when it left) or `not shown` (seen in an export or sheet but never put up: already
+  older than the age limit on arrival, not an internship, a job, held back by `EXCLUDED`, its
+  deadline passed).
+- `first` and `last`: the first and last day a build saw it.
+- `card`: the latest version of the card, with everything the board shows.
+
+Every build updates it, and nothing is ever deleted from it. It was backfilled on Nov 20,
+2026 from every `index.html` in git (back to the first board on Sep 10, 2026) and from
+`archive.json`; a card that left an early board without a recorded reason says "left the
+board". Postings dated before Sep 10 are in it only if an export still carried them. Commit
+it with the pages; a preview build skips it with `--ledger -`.
+
+To summarise any window, without building anything:
+
+    python3 build_data.py --report 6 --report-out report.md
+
+prints (and writes) every posting dated in the last 6 months: totals, postings by month,
+area, county, level, term, the top employers, hourly pay by area, the skills asked for, and
+why each one that is not open left. A role reposted under a new Indeed id counts once.
+Held-back postings are counted in the totals and kept out of the figures.
+
 ## The opportunity assistant (beta)
 
 `assistant.html` is a third page, linked from the board's "Ask the assistant" button: a visitor describes themselves in
@@ -331,7 +376,8 @@ How a turn works:
 2. **Retrieve, deterministically.** `retrieve.js` turns the profile into filters and a
    keyword score over the board's own listings: place names map to counties (`PLACES`), an
    undergraduate never sees graduate-only listings, "internship" never returns an entry-level
-   job, "Returning interns only" is skipped, a named term and a language are boosts rather
+   job (and while the board carries no jobs, a request for one is searched as internships and
+   the reply says the board lists internships only), "Returning interns only" is skipped, a named term and a language are boosts rather
    than filters, and interests are widened with `SYNONYMS` ("cybersecurity" also finds SOC,
    threat, GRC). Fewer than three in the named county widens to the rest of South Florida and
    says so. The top 12 go to the model; a listing that is not among them cannot be recommended.
@@ -515,7 +561,10 @@ sentence in the shapes a requirement actually takes — "major in", "majors:", "
 preferred majors", "Accounting major".
 
 **Pay.** The salary cell wins when Indeed has one; placeholder amounts like "Up to $1 a
-month" are dropped. "Commission" is only pay when the posting talks about earning it; a
+month" are dropped, and so is a figure that cannot mean what its unit says ("$100 a year",
+"$19 a week" on an hourly role), which sends the build to the description for the real one
+("The hourly rate for student interns is $19.00"); a published card loses such a figure on the
+next build. "Commission" is only pay when the posting talks about earning it; a
 hospital's "Commission on Dietetic Registration" is not.
 
 A classifier change only reaches the cards whose rows are in the export you build from:
@@ -668,6 +717,7 @@ is the one place untrusted input is processed on your machine.
 - `build_data.py`: reads the spreadsheet, leaves out postings that are jobs rather than internships, classifies each one (area, majors, term, level, pay, work mode) as described under "How a posting is read", merges the same role across locations into one card, folds the result into the listings already published when `--merge` is given, and renders the page.
 - `featured.json`: paid placements, read by every build. See "Featured listings".
 - `history.json`: one line of figures per build, back to the first board. See "The history file".
+- `ledger.json`: every posting ever seen, open, removed or never shown. See "The ledger".
 - `visits.json`, `record_visits.py`, `.github/workflows/visits.yml`: page views by day, the script that records them from Vercel, and the Monday job that runs it. See "Visits".
 - `insights_template.html`: the insights page's markup, styles and script. `__INSIGHTS__` and `__DATE__` are filled in by the build. See "The insights page".
 - `assistant_template.html`, `assistant.html`: the assistant page and its build. `api/assistant.js` is the Vercel function, `lib/assistant/` the code behind it, `test/` its tests and local server. See "The opportunity assistant".
