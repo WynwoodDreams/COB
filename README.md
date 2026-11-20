@@ -54,7 +54,7 @@ line. The page number is kept in the address as `#page=N`, and any filter goes b
    name the board shows; add a line there when a new export does it again.
 
    Review what a new export adds before publishing it: run it with `--out` and `--json`
-   pointed at scratch files, read the new cards, and check that each one's location matches
+   pointed at scratch files (and `--history - --archive - --ledger -`, so the preview records nothing), read the new cards, and check that each one's location matches
    its description (Indeed has filed an Irvine, California job under Miami). Two lists in
    `build_data.py` carry what you find. `EXCLUDED` holds postings kept off the board, as
    (employer regex, title regex, reason) lines, so the next export cannot bring them back;
@@ -330,6 +330,34 @@ insights page reads none of it; it is the record for comparing updates later.
   from git)". The record starts with the board of Sep 10, 2026.
 - Nothing is ever removed from it. To bring a card back to the board, re-run the export that
   carries it; the archive is not read by the build.
+
+## The ledger
+
+`ledger.json` is the record of everything posted, so a question like "what did the last six
+months look like?" has an answer even though the board only shows what is open. It holds one
+record per posting any build has seen, whether it reached the board or not:
+
+- `status`: `open` (on the board now), `removed` (was on the board; `why` and `removed` say
+  why and when it left) or `not shown` (seen in an export or sheet but never put up: already
+  older than the age limit on arrival, not an internship, a job, held back by `EXCLUDED`, its
+  deadline passed).
+- `first` and `last`: the first and last day a build saw it.
+- `card`: the latest version of the card, with everything the board shows.
+
+Every build updates it, and nothing is ever deleted from it. It was backfilled on Nov 20,
+2026 from every `index.html` in git (back to the first board on Sep 10, 2026) and from
+`archive.json`; a card that left an early board without a recorded reason says "left the
+board". Postings dated before Sep 10 are in it only if an export still carried them. Commit
+it with the pages; a preview build skips it with `--ledger -`.
+
+To summarise any window, without building anything:
+
+    python3 build_data.py --report 6 --report-out report.md
+
+prints (and writes) every posting dated in the last 6 months: totals, postings by month,
+area, county, level, term, the top employers, hourly pay by area, the skills asked for, and
+why each one that is not open left. A role reposted under a new Indeed id counts once.
+Held-back postings are counted in the totals and kept out of the figures.
 
 ## The opportunity assistant (beta)
 
@@ -689,6 +717,7 @@ is the one place untrusted input is processed on your machine.
 - `build_data.py`: reads the spreadsheet, leaves out postings that are jobs rather than internships, classifies each one (area, majors, term, level, pay, work mode) as described under "How a posting is read", merges the same role across locations into one card, folds the result into the listings already published when `--merge` is given, and renders the page.
 - `featured.json`: paid placements, read by every build. See "Featured listings".
 - `history.json`: one line of figures per build, back to the first board. See "The history file".
+- `ledger.json`: every posting ever seen, open, removed or never shown. See "The ledger".
 - `visits.json`, `record_visits.py`, `.github/workflows/visits.yml`: page views by day, the script that records them from Vercel, and the Monday job that runs it. See "Visits".
 - `insights_template.html`: the insights page's markup, styles and script. `__INSIGHTS__` and `__DATE__` are filled in by the build. See "The insights page".
 - `assistant_template.html`, `assistant.html`: the assistant page and its build. `api/assistant.js` is the Vercel function, `lib/assistant/` the code behind it, `test/` its tests and local server. See "The opportunity assistant".

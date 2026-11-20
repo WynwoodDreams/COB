@@ -679,12 +679,14 @@ def deadline_for(text, posted=""):
     return max((d for d in found if d), default="")
 
 NOT_INTERNSHIPS = []
+NOT_INTERNSHIP_ITEMS = []   # the same rows, built like any other, so the ledger keeps them
 def build_items(data, upgrade=True):
     items, seen, skipped = [], set(), 0
     for d in data:
         title = s(d.get('positionName')); company = company_name(s(d.get('company'))); desc = s(d.get('description'))
         if not title and not company: skipped += 1; continue
-        if not is_internship(title, desc): NOT_INTERNSHIPS.append(f"{company} / {title[:50]}"); continue
+        intern = is_internship(title, desc)
+        if not intern: NOT_INTERNSHIPS.append(f"{company} / {title[:50]}")
         pid = s(d.get('id')) or s(d.get('url')) or made_id(d, company, title)
         if pid in seen: skipped += 1; continue
         seen.add(pid)
@@ -707,6 +709,7 @@ def build_items(data, upgrade=True):
             deadline=deadline_for(title + "\n" + desc, date_str(d.get('postingDateParsed'))),
         ))
         items[-1]['lang'], items[-1]['langNeed'] = langs_for(title, desc)
+        if not intern: NOT_INTERNSHIP_ITEMS.append(items.pop())
     return items, skipped
 
 # ---------- a hand-made sheet for a spotlight area ----------
@@ -1404,6 +1407,126 @@ def update_archive(path, records):
         f.write("[\n" + ",\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in arc) + "\n]\n")
     return arc
 
+# ---------- the ledger: every posting ever seen ----------
+# The board shows what is open, the archive keeps what left it, and history.json keeps
+# figures. ledger.json answers "what was posted in the last N months": one record per
+# posting the build has ever seen, whether it reached the board or not, with the first and
+# last day a build saw it, what became of it, and the latest version of the card.
+#   status "open"       on the board now
+#   status "removed"    was on the board; `why` and `removed` say when and why it left
+#   status "not shown"  seen in an export or sheet but never put on the board (too old on
+#                       arrival, not an internship, a job, held back, its deadline passed)
+# Nothing is ever deleted from it. `--report MONTHS` summarises it.
+LEDGER_SKIP = ("replaced by a newer version", "folded into a newer copy")   # the same role under another record
+
+def load_ledger(path):
+    if not path or path == '-' or not os.path.exists(path): return {}
+    return {r["id"]: r for r in json.load(open(path, encoding='utf-8'))}
+
+def write_ledger(path, led):
+    recs = sorted(led.values(), key=lambda r: r["id"])
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write("[\n" + ",\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in recs) + "\n]\n")
+
+def ledger_seen(led, card, on, status, why=""):
+    """Record that a build saw this card on `on`, and what it did with it."""
+    r = led.get(card.get("id"))
+    if not r:
+        r = led[card["id"]] = {"id": card["id"], "first": on, "last": on, "status": status}
+    r["last"] = max(r["last"], on); r["first"] = min(r["first"], on)
+    if status == "open":
+        r["status"] = "open"; r.pop("why", None); r.pop("removed", None)
+    elif status == "gone":
+        if r["status"] == "open":   # it was on the board: it has been removed
+            r.update(status="removed", why=why, removed=on)
+        elif r["status"] == "not shown" or "why" not in r:
+            r.update(status="not shown", why=why)
+    elif r["status"] == "not shown" or "why" not in r:   # "not shown": never overwrite a removal
+        r.update(status="not shown", why=why)
+    if status in ("open", "gone") or r["status"] == "not shown": r["card"] = card
+    return r
+
+def update_ledger(path, on, board, gone, unshown):
+    led = load_ledger(path)
+    for g in board: ledger_seen(led, g, on, "open")
+    for why, g in gone:
+        if not why.startswith(LEDGER_SKIP): ledger_seen(led, g, on, "gone", why)
+    for why, g in unshown:
+        if g.get("id") not in led or led[g["id"]]["status"] == "not shown": ledger_seen(led, g, on, "not shown", why)
+        else: led[g["id"]]["last"] = max(led[g["id"]]["last"], on)
+    write_ledger(path, led)
+    return led
+
+def months_back(d, n):
+    y, m = divmod(d.year * 12 + d.month - 1 - n, 12)
+    return dt.date(y, m + 1, min(d.day, 28))
+
+def report_for(led, months, today=None):
+    """A plain-words summary of every posting dated in the last `months` months, in Markdown."""
+    today = today or TODAY
+    start = months_back(today, months).isoformat()
+    recs, seen = [], set()
+    # one role counts once: a repost under a new posting id is folded into its latest record,
+    # matched the way the board matches (employer + title, or the same title words)
+    for r in sorted(led.values(), key=lambda r: (r["last"], s(r["card"].get("posted"))), reverse=True):
+        keys = {card_key(r["card"]), card_alias(r["card"])}
+        if keys & seen: continue
+        seen |= keys
+        if s(r["card"].get("posted")) >= start: recs.append(r)
+    # Held-back postings (sales pitches, licensed-clinician hires, jobs filed under the wrong
+    # city) and rows that are not internships count in the totals but not in the market figures.
+    kept_off = lambda r: s(r.get("why")).startswith(("held back", "not an internship"))
+    every = recs
+    recs = [r for r in every if not kept_off(r)]
+    cards = [r["card"] for r in recs]
+    interns = [g for g in cards if g.get("kind") != "Job"]
+    first_board = min((r["first"] for r in led.values()), default="")
+    pct = lambda n, d: f"{round(100 * n / d)}%" if d else "—"
+    line = lambda c, n: f"{c} ({n})"
+    out = [f"# Everything posted, {dt.date.fromisoformat(start):%b %-d, %Y} to {today:%b %-d, %Y}", ""]
+    out.append(f"Every posting dated in the last {months} months that the board's builds have seen, whether it "
+               f"is still open, has left the board, or never reached it. The record starts {first_board}; "
+               f"anything posted before then is counted only if a later export still carried it.")
+    out += ["", "## Totals", ""]
+    status = collections.Counter(r["status"] for r in recs)
+    out.append(f"- **{len(every)} postings seen**; {len(every) - len(recs)} were held back as not real South Florida "
+               f"student roles (listed at the end), so the figures below cover the other {len(recs)}")
+    out.append(f"- **{len(recs)} postings** ({sum(int(g.get('count') or 1) for g in cards)} openings across locations) "
+               f"from **{len({g['company'] for g in cards})} employers**")
+    out.append(f"- {len(interns)} internships, {len(cards) - len(interns)} entry-level jobs")
+    out.append(f"- {status['open']} open now, {status['removed']} removed from the board, {status['not shown']} never shown")
+    paid = sum(1 for g in cards if g.get("pay")); ps = pay_stats(interns)
+    out.append(f"- {pct(paid, len(cards))} say what they pay" + (f"; internships quoting an hourly figure ({ps['n']}) have a median of "
+               f"${ps['med']:.2f}/hr, the middle half ${ps['lo']:.2f} to ${ps['hi']:.2f}" if ps else ""))
+    out.append(f"- {pct(sum(1 for g in cards if g.get('mode')), len(cards))} remote or hybrid; "
+               f"{pct(sum(1 for g in cards if g.get('lang')), len(cards))} mention Spanish, Portuguese or Haitian Creole")
+    by_month = collections.Counter(g["posted"][:7] for g in cards)
+    out += ["", "## By month posted", "", "| Month | Postings | Internships | Jobs |", "|---|---:|---:|---:|"]
+    for m in sorted(by_month):
+        ms = [g for g in cards if g["posted"][:7] == m]
+        out.append(f"| {dt.date.fromisoformat(m + '-01'):%b %Y} | {len(ms)} | {sum(1 for g in ms if g.get('kind') != 'Job')} | {sum(1 for g in ms if g.get('kind') == 'Job')} |")
+    def table(title, counter, n=None):
+        out.extend(["", f"## {title}", ""] + [f"- {line(k, v)}" for k, v in counter.most_common(n)])
+    table("By area", collections.Counter(g.get("cat") for g in cards if g.get("cat")))
+    table("By county", collections.Counter(c for g in cards for c in g.get("counties") or []))
+    table("By level", collections.Counter(g.get("level") for g in cards if g.get("level")))
+    table("By term named", collections.Counter(t for g in cards for t in g.get("term") or []), 8)
+    table("Employers with the most postings", collections.Counter(g["company"] for g in cards), 15)
+    rows, _ = pay_rows({a: [g for g in interns if g.get("cat") == a] for a in {g.get("cat") for g in interns}}, "area")
+    if rows:
+        out += ["", "## Hourly pay by area (internships, 5 or more hourly figures)", "", "| Area | Median | Middle half | Figures |", "|---|---:|---:|---:|"]
+        out += [f"| {r['area']} | ${r['med']:.2f} | ${r['lo']:.2f} to ${r['hi']:.2f} | {r['n']} |" for r in rows]
+    table("Skills employers asked for", collections.Counter(dict(skills_in(cards))), 15)
+    def reason(w):
+        if re.match(r"last posted before|posted before .* too old", w or ""): return "aged off: posted more than 60 days earlier (90 before Nov 20, 2026)"
+        if w == "left the board": return "left the board before Nov 6, 2026, when builds began recording why"
+        return w
+    gone = collections.Counter(reason(r.get("why")) for r in every if r["status"] != "open")
+    if gone:
+        out += ["", "## Why the rest are not on the board", ""] + [f"- {line(k, v)}" for k, v in gone.most_common()]
+    out += ["", f"_From ledger.json, {today:%b %-d, %Y}. Pay counts what postings published, not what every intern earned._", ""]
+    return "\n".join(out)
+
 def quarter_of(d):
     return f"{d[:4]} Q{(int(d[5:7]) - 1) // 3 + 1}"
 
@@ -1586,6 +1709,9 @@ def main(argv=None):
     ap.add_argument("--insights-template", default=os.path.join(here, "insights_template.html"))
     ap.add_argument("--history", default=os.path.join(here, "history.json"), help="where each build records its figures for the trends on the insights page (default: history.json next to this script); '-' to skip")
     ap.add_argument("--archive", default=os.path.join(here, "archive.json"), help="where every card the build removes or replaces is kept, with the day and the reason (default: archive.json next to this script); '-' to skip")
+    ap.add_argument("--ledger", default=os.path.join(here, "ledger.json"), help="every posting ever seen, open, removed or never shown (default: ledger.json next to this script); '-' to skip")
+    ap.add_argument("--report", type=int, metavar="MONTHS", help="print a summary of everything posted in the last MONTHS months, from the ledger, and build nothing")
+    ap.add_argument("--report-out", metavar="PATH", help="with --report, also write the summary to PATH (Markdown)")
     ap.add_argument("--visits", default=os.path.join(here, "visits.json"), help="page views recorded by record_visits.py, for the insights page ('-' to skip)")
     ap.add_argument("--no-snapshot", action="store_true", help="redraw the pages from the history as it is, without adding today's snapshot (the weekly visits job)")
     ap.add_argument("--insights-out", default=os.path.join(here, "insights.html"), help="the insights page (default: insights.html next to this script); '-' to skip")
@@ -1603,11 +1729,20 @@ def main(argv=None):
     ap.add_argument("--stats", action="store_true", help="print classification counters")
     ap.add_argument("--check", action="store_true", help="also write check.txt, one line per card, for eyeballing categories")
     a = ap.parse_args(argv)
+    if a.report:
+        led = load_ledger(a.ledger)
+        if not led: sys.exit(f"no ledger at {a.ledger}: run a build first")
+        md = report_for(led, a.report)
+        print(md)
+        if a.report_out:
+            with open(a.report_out, 'w', encoding='utf-8') as f: f.write(md)
+        return
     for area, _ in a.sheet:
         if area not in SPOT_AREAS: ap.error(f"--sheet: unknown area {area!r}; one of: " + "; ".join(SPOT_AREAS))
     if not a.xlsx and not a.data and not a.sheet: ap.error("give a spreadsheet path, --sheet AREA PATH or --data data.json")
     cutoff = (TODAY - dt.timedelta(days=a.max_age)).strftime("%Y-%m-%d") if a.max_age else ""
     gone = []   # (why, card) for every published card this build drops or replaces
+    unshown = []   # (why, card) for every row this build read but never put on the board
     changes = {"added": 0, "updated": 0, "removed": 0}
     def record(why, cards):
         gone.extend((why, g) for g in cards)
@@ -1637,9 +1772,11 @@ def main(argv=None):
         if a.max_age:
             stale = [it for it in items if it['posted'] and it['posted'] < cutoff]
             items = [it for it in items if not (it['posted'] and it['posted'] < cutoff)]
+            unshown.extend((f"posted before {cutoff}, already too old when an export carried it", g) for g in finalize(group_items(stale)))
             print(f"dropped {len(stale)} postings older than {cutoff}" + (": " + "; ".join(f"{it['company']} / {it['title'][:40]} ({it['posted']})" for it in stale[:8]) + (" ..." if len(stale) > 8 else "") if stale else ""))
         out = group_items(items)
         print(f"read {len(data)} rows, skipped {skipped} (blank or duplicate id), grouped {len(items)} postings into {len(out)} cards")
+        unshown.extend(("not an internship (a manager, coordinator or new-grad role)", g) for g in finalize(group_items(NOT_INTERNSHIP_ITEMS)))
         if NOT_INTERNSHIPS:
             print(f"left out {len(NOT_INTERNSHIPS)} posting(s) that are jobs, not internships: " + "; ".join(NOT_INTERNSHIPS[:8]) + (" ..." if len(NOT_INTERNSHIPS) > 8 else ""))
     out = finalize(out, upgrade=not a.keep_http)
@@ -1730,6 +1867,10 @@ def main(argv=None):
     if a.stats: print_stats(out, items)
 
     changes["removed"] = sum(1 for why, g in gone if not why.startswith("replaced"))
+    if a.ledger != '-':
+        led = update_ledger(a.ledger, TODAY.isoformat(), out, gone, unshown)
+        st = collections.Counter(r["status"] for r in led.values())
+        print(f"ledger {a.ledger}: {len(led)} posting(s) ever seen, {st['open']} open, {st['removed']} removed, {st['not shown']} never shown")
     if a.archive != '-' and gone:
         arc = update_archive(a.archive, [{"on": TODAY.isoformat(), "why": why, "card": g} for why, g in gone])
         print(f"archived {len(gone)} card(s) to {a.archive} ({len(arc)} record(s) in all): "
